@@ -1,0 +1,442 @@
+{
+  "app": {
+    "name": "NODEZZLE",
+    "tagline": "Не программируй. Собери.",
+    "telegramTagline": "Не программируй бота. Собери его."
+  },
+  "common": {
+    "loading": "Загрузка…",
+    "save": "Сохранить",
+    "saving": "Сохранение…",
+    "saved": "Сохранено",
+    "delete": "Удалить",
+    "create": "Создать",
+    "cancel": "Отмена",
+    "ok": "ОК",
+    "search": "Поиск",
+    "back": "Назад",
+    "open": "Открыть",
+    "run": "Запустить",
+    "stop": "Стоп",
+    "name": "Название",
+    "close": "Закрыть",
+    "noResults": "Ничего не найдено"
+  },
+  "landing": {
+    "nav": {
+      "features": "Возможности",
+      "playground": "Playground",
+      "dashboard": "Открыть панель"
+    },
+    "hero": {
+      "subtitle": "Не программируй. Собери.",
+      "lead": "Собирайте Telegram-ботов, веб-интерфейсы и целые системы из соединяемых деталей — как цифровой конструктор.",
+      "cta": "Начать собирать",
+      "ctaSecondary": "Попробовать Playground",
+      "chips": {
+        "telegram": "Telegram",
+        "logic": "Логика",
+        "model": "Модель",
+        "reply": "Ответ"
+      }
+    },
+    "playground": {
+      "title": "Попробуйте прямо сейчас",
+      "lead": "Соберите первый поток: сообщение → логика → ответ. Нажмите «Запустить» и посмотрите, как данные текут по соединениям.",
+      "messageLabel": "Ваше сообщение боту",
+      "run": "Запустить",
+      "reset": "Сбросить",
+      "steps": {
+        "message": "Сообщение",
+        "logic": "Логика",
+        "reply": "Ответ"
+      },
+      "chat": {
+        "title": "Telegram — демонстрация",
+        "user": "Вы",
+        "bot": "NODEZZLE Bot",
+        "empty": "Здесь появится переписка с ботом."
+      }
+    },
+    "features": {
+      "title": "Из чего состоит NODEZZLE",
+      "canvas": {
+        "title": "Бесконечный Canvas",
+        "text": "Drag & Drop, зум, переименование, undo/redo, minimap, поиск и drag-соединения — проект рассчитан на очень большие схемы."
+      },
+      "models": {
+        "title": "Модели",
+        "text": "Соберите блоки в модель, задайте публичный контракт — и модель становится новой деталью. Модели вкладываются друг в друга."
+      },
+      "platforms": {
+        "title": "Telegram + Web",
+        "text": "Два направления, одно ядро. Telegram-бот и веб-интерфейс используют общие модели и данные."
+      },
+      "runtime": {
+        "title": "Живое выполнение",
+        "text": "Состояния блоков IDLE → RUNNING → SUCCESS/ERROR, частицы на соединениях, журнал и история выполнения."
+      },
+      "types": {
+        "title": "Умные соединения",
+        "text": "Каждый INPUT/OUTPUT имеет тип. Совместимые порты подсвечиваются при подключении, несовместимые — нет. Конвертеры — для преобразований."
+      },
+      "i18n": {
+        "title": "Русский интерфейс",
+        "text": "Основная локаль ru-RU: весь UI, блоки и документация на русском. Архитектура готова к новым языкам."
+      }
+    },
+    "footer": {
+      "rights": "NODEZZLE — визуальная среда сборки систем. Не программируй. Собери."
+    }
+  },
+  "dashboard": {
+    "title": "Панель управления",
+    "subtitle": "Ваши проекты, модели и последние изменения",
+    "newProject": "Новый проект",
+    "kinds": {
+      "telegram": "Telegram-бот",
+      "web": "Web / HTML",
+      "telegram-web": "Telegram + Web",
+      "empty": "Пустой проект"
+    },
+    "names": {
+      "telegram": "Telegram-бот",
+      "web": "Web / HTML",
+      "telegram-web": "Telegram + Web",
+      "empty": "Проект"
+    },
+    "defaultCanvasName": "Схема",
+    "create": "Создать",
+    "emptyTitle": "Пока нет проектов",
+    "emptyLead": "Создайте новый проект или загрузите пример, чтобы посмотреть, как это работает.",
+    "createEmpty": "Создать пустой проект",
+    "loadDemo": "Загрузить пример: Telegram-бот",
+    "open": "Открыть",
+    "modified": "Изменён",
+    "deleteConfirm": "Удалить проект «{{name}}»? Это действие нельзя отменить.",
+    "projectKind": "Тип проекта",
+    "modelsCount": "Моделей: {{count}}",
+    "blocksCount": "Деталей: {{count}}"
+  },
+  "canvas": {
+    "toolbar": {
+      "undo": "Отменить (Ctrl+Z)",
+      "redo": "Повторить (Ctrl+Shift+Z)"
+    },
+    "save": {
+      "idle": "Черновик",
+      "saving": "Сохранение…",
+      "saved": "Сохранено {{time}}"
+    },
+    "palette": {
+      "title": "Детали",
+      "searchPlaceholder": "Найти деталь…",
+      "dragHint": "Перетащите деталь на Canvas",
+      "empty": "В этой категории пока нет деталей"
+    },
+    "node": {
+      "noBlock": "Неизвестный блок",
+      "error": "Ошибка",
+      "trigger": "триггер"
+    },
+    "inspector": {
+      "title": "Настройка детали",
+      "label": "Отображаемое имя",
+      "labelPlaceholder": "Название по умолчанию",
+      "config": "Параметры",
+      "info": "Технический ID",
+      "category": "Категория",
+      "lastRun": "Последнее выполнение",
+      "inputs": "Входы",
+      "outputs": "Выходы",
+      "duration": "Время",
+      "noRun": "Блок ещё не выполнялся"
+    },
+    "empty": {
+      "title": "Пустая схема",
+      "lead": "Перетащите детали из библиотеки слева, соедините порты и нажмите «Запустить»."
+    }
+  },
+  "execution": {
+    "status": {
+      "idle": "Ожидание",
+      "waiting": "Ожидание события",
+      "running": "Выполняется",
+      "success": "Успешно",
+      "error": "Ошибка",
+      "stopped": "Остановлено"
+    },
+    "panel": {
+      "title": "Отладка",
+      "tabs": {
+        "simulator": "Симулятор",
+        "chat": "Чат Telegram",
+        "log": "Журнал",
+        "history": "История"
+      },
+      "simulator": {
+        "source": "Источник события",
+        "sourceTelegram": "Telegram",
+        "sourceWeb": "Web",
+        "text": "Текст сообщения",
+        "command": "Команда (пусто — обычное сообщение)",
+        "userId": "ID пользователя",
+        "chatId": "ID чата",
+        "webJson": "Данные события (JSON)",
+        "hint": "Симулятор запускает схему так же, как это сделало бы Telegram или Web-событие."
+      },
+      "chat": {
+        "empty": "Здесь появятся сообщения, отправленные схемой.",
+        "user": "Вы",
+        "bot": "NODEZZLE",
+        "photo": "Фото"
+      },
+      "log": {
+        "empty": "Журнал пуст. Запустите схему."
+      },
+      "history": {
+        "empty": "История пуста. Запустите схему, и здесь появятся записи о выполнении.",
+        "duration": "{{ms}} мс"
+      }
+    }
+  },
+  "errors": {
+    "ERR_EMPTY_INPUT": "Нет входного значения",
+    "ERR_INVALID_NUMBER": "Не удалось преобразовать значение в число",
+    "ERR_INVALID_JSON": "Некорректный JSON",
+    "ERR_INVALID_BOOLEAN": "Не удалось преобразовать значение в логическое (ожидается: true/false, да/нет, 1/0)",
+    "ERR_INVALID_OBJECT": "Ожидается объект",
+    "ERR_MODEL_NOT_FOUND": "Модель не найдена — укажите ID модели",
+    "ERR_MODEL_EXECUTION": "Ошибка выполнения модели",
+    "ERR_CYCLE": "Обнаружен цикл потока данных",
+    "ERR_NO_TRIGGER": "Ни один триггер не сработал — проверьте параметры симулятора",
+    "ERR_EMPTY_CANVAS": "Пустая схема — добавьте детали",
+    "ERR_BLOCK_NOT_FOUND": "Неизвестный блок или повреждённая схема",
+    "ERR_DUPLICATE_EDGE": "Дублирующееся соединение",
+    "ERR_NODE_FAILED": "Ошибка выполнения блока",
+    "ERR_RUNTIME": "Внутренняя ошибка выполнения",
+    "ERR_CANCELLED": "Выполнение остановлено"
+  },
+  "portTypes": {
+    "any": "Любой",
+    "text": "Текст",
+    "number": "Число",
+    "boolean": "Логическое",
+    "json": "JSON",
+    "object": "Объект",
+    "array": "Массив",
+    "file": "Файл",
+    "image": "Изображение",
+    "user": "Пользователь",
+    "date": "Дата",
+    "url": "URL",
+    "secret": "Секрет",
+    "telegram_message": "Telegram-сообщение",
+    "event": "Событие",
+    "error": "Ошибка"
+  },
+  "categories": {
+    "core": "Ядро",
+    "logic": "Логика",
+    "data": "Данные",
+    "flow": "Поток",
+    "telegram": "Telegram",
+    "web": "Web",
+    "models": "Модели",
+    "memory": "Память и хранилище",
+    "http": "HTTP / Web",
+    "datetime": "Дата и время",
+    "media": "Файлы и медиа",
+    "security": "Безопасность",
+    "debug": "Отладка",
+    "ai": "AI"
+  },
+  "blocks": {
+    "ports": {
+      "text": "Текст",
+      "value": "Значение",
+      "number": "Число",
+      "json": "JSON",
+      "object": "Объект",
+      "boolean": "Логическое",
+      "payload": "Данные",
+      "result": "Результат",
+      "true": "Да",
+      "false": "Нет",
+      "other": "Иначе",
+      "case_1": "Случай 1",
+      "case_2": "Случай 2",
+      "case_3": "Случай 3",
+      "user_id": "ID пользователя",
+      "chat_id": "ID чата",
+      "username": "Имя пользователя",
+      "message": "Сообщение",
+      "command": "Команда",
+      "args": "Аргументы",
+      "photo": "Фото",
+      "caption": "Подпись",
+      "message_id": "ID сообщения",
+      "error": "Ошибка",
+      "data": "Данные",
+      "url": "URL"
+    },
+    "core.text": {
+      "label": "Текст",
+      "description": "Постоянное текстовое значение"
+    },
+    "core.number": {
+      "label": "Число",
+      "description": "Постоянное числовое значение"
+    },
+    "core.json": {
+      "label": "JSON",
+      "description": "Постоянное значение в формате JSON"
+    },
+    "core.input": {
+      "label": "Вход модели",
+      "description": "Точка входа модели: берёт значение из контракта модели"
+    },
+    "core.output": {
+      "label": "Выход модели",
+      "description": "Точка выхода модели: передаёт значение в контракт модели"
+    },
+    "data.text_to_number": {
+      "label": "Текст → Число",
+      "description": "Преобразует текст в число"
+    },
+    "data.number_to_text": {
+      "label": "Число → Текст",
+      "description": "Преобразует число в текст"
+    },
+    "data.text_to_boolean": {
+      "label": "Текст → Логическое",
+      "description": "Преобразует текст в true/false"
+    },
+    "data.text_to_json": {
+      "label": "Текст → JSON",
+      "description": "Разбирает JSON-строку"
+    },
+    "data.json_to_text": {
+      "label": "JSON → Текст",
+      "description": "Преобразует значение в JSON-строку"
+    },
+    "data.to_object": {
+      "label": "В объект",
+      "description": "Упаковывает значение в объект с указанным ключом"
+    },
+    "data.from_object": {
+      "label": "Из объекта",
+      "description": "Достаёт значение из объекта по ключу"
+    },
+    "logic.condition": {
+      "label": "Условие",
+      "description": "Проверяет значение и делит поток на «Да» и «Нет»"
+    },
+    "logic.switch": {
+      "label": "Переключатель",
+      "description": "Делит поток по значениям (до 3 случаев + «Иначе»)"
+    },
+    "flow.delay": {
+      "label": "Задержка",
+      "description": "Ожидает указанное время и пропускает значение"
+    },
+    "telegram.message_received": {
+      "label": "Получено сообщение",
+      "description": "Срабатывает при получении сообщения в боте"
+    },
+    "telegram.command": {
+      "label": "Команда",
+      "description": "Срабатывает при команде (например /start)"
+    },
+    "telegram.send_message": {
+      "label": "Отправить сообщение",
+      "description": "Отправляет текст в чат (сейчас — симуляция)"
+    },
+    "telegram.send_photo": {
+      "label": "Отправить фото",
+      "description": "Отправляет фото в чат (сейчас — симуляция)"
+    },
+    "web.page": {
+      "label": "Страница",
+      "description": "Событие: загрузка страницы"
+    },
+    "web.button": {
+      "label": "Кнопка",
+      "description": "Событие: нажатие кнопки"
+    },
+    "web.form": {
+      "label": "Форма",
+      "description": "Событие: отправка формы"
+    },
+    "models.call": {
+      "label": "Вызов модели",
+      "description": "Вызывает модель по ID: объект-вход → контракт → объект-результат"
+    },
+    "debug.log": {
+      "label": "Лог",
+      "description": "Записывает значение в журнал и пропускает его дальше"
+    },
+    "datetime.now": {
+      "label": "Текущее время",
+      "description": "Выдаёт текущую дату и время (ISO 8601)"
+    },
+    "memory.variable": {
+      "label": "Переменная",
+      "description": "Хранение значения между запусками (скоро)"
+    },
+    "memory.shared": {
+      "label": "Общее хранилище",
+      "description": "SHARED MEMORY между моделями (скоро)"
+    },
+    "error.handle": {
+      "label": "Обработчик ошибок",
+      "description": "Реагирует на сигнал ошибки (скоро)"
+    },
+    "event.send": {
+      "label": "Отправить событие",
+      "description": "SEND EVENT: рассылка события другим блокам (скоро)"
+    },
+    "event.receive": {
+      "label": "Получить событие",
+      "description": "RECEIVE EVENT: приём события (скоро)"
+    },
+    "http.request": {
+      "label": "HTTP-запрос",
+      "description": "Внешний API (скоро)"
+    },
+    "ai.text": {
+      "label": "AI: запрос",
+      "description": "Обращение к языковой модели (скоро)"
+    },
+    "config": {
+      "value": "Значение",
+      "command": "Команда",
+      "operator": "Оператор",
+      "target": "Сравнивать с",
+      "trueValue": "Если «Да» — значение",
+      "falseValue": "Если «Нет» — значение",
+      "delayMs": "Задержка (мс)",
+      "portId": "Порт контракта",
+      "modelId": "ID модели",
+      "key": "Ключ",
+      "label": "Подпись в журнале",
+      "case_1": "Значение случая 1",
+      "case_2": "Значение случая 2",
+      "case_3": "Значение случая 3",
+      "name": "Имя",
+      "url": "URL",
+      "method": "Метод",
+      "prompt": "Запрос"
+    },
+    "operators": {
+      "equals": "Равно",
+      "notEquals": "Не равно",
+      "contains": "Содержит",
+      "notContains": "Не содержит",
+      "is_empty": "Пустое",
+      "not_empty": "Не пустое",
+      "greater": "Больше",
+      "less": "Меньше"
+    }
+  }
+}

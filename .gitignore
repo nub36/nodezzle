@@ -1,0 +1,37 @@
+# NODEZZLE — игнорирование Git
+# Реальные секреты и локальные артефакты НЕ коммитятся.
+# Разрешены только названия переменных и фиктивные значения — см. .env.example
+
+# --- Переменные окружения (никаких реальных credentials) ---
+.env
+.env.*
+!.env.example
+
+# --- Зависимости ---
+node_modules/
+
+# --- Сборка ---
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# --- Кэши и локальные артефакты ---
+.cache/
+.vite/
+coverage/
+.npm/
+.yarn/
+.pnp.*
+
+# --- Логи ---
+logs/
+*.log
+npm-debug.log*
+
+# --- ОС / редакторы ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
