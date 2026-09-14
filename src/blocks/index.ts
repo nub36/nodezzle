@@ -22,6 +22,7 @@ import { coreValueBlocks } from './core/values';
 import { logicOperatorBlocks } from './logic/operators';
 import { dataStructureBlocks } from './data/structures';
 import { flowControlBlocks } from './flow/control';
+import { telegramExtendedBlocks } from './telegram/extended';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -33,6 +34,7 @@ const ALL_BLOCKS = [
   ...logicBlocks,
   ...flowBlocks,
   ...telegramBlocks,
+  ...telegramExtendedBlocks,
   ...webBlocks,
   ...modelBlocks,
   ...debugBlocks,
