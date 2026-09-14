@@ -15,6 +15,7 @@ import type { WorkspaceStore } from '../workspaces/store.ts';
 import type { SecretStore } from '../secrets/store.ts';
 import type { TelegramBotMeta, TelegramBotStore } from './bots.ts';
 import { createTelegramApi, type TelegramTransport } from './api.ts';
+import type { AuditStore } from '../audit/store.ts';
 
 /** Запретные адреса: локальные и служебные — вебхук обязан быть публичным. */
 const FORBIDDEN_HOSTS = /^(localhost|127\.|0\.|10\.|169\.254\.|192\.168\.|\[::1?\])/i;
@@ -41,6 +42,7 @@ export interface WebhookManageDeps extends AuthDeps {
   workspaces: WorkspaceStore;
   secrets: SecretStore;
   bots: TelegramBotStore;
+  audit: AuditStore;
   /** Фабрика транспорта; в тестах — только мок. */
   transportFor?: (token: string) => TelegramTransport;
 }
@@ -71,6 +73,15 @@ export function registerWebhookManageRoutes(router: Router, deps: WebhookManageD
     const transport = transportFor(token);
     // Секрет пути одновременно служит секретным заголовком вебхука.
     await transport.setWebhook({ url, secretToken: bot.webhookPath });
+    deps.audit.append({
+      workspaceId: ctx.params.id,
+      actorUserId: currentUser(ctx, deps)!.id,
+      action: 'telegram.webhook_register',
+      targetType: 'telegram_bot',
+      targetId: bot.id,
+      // Путь вебхука не логируем — это секрет.
+      metadata: { origin },
+    });
     sendJson(ctx.res, 200, { ok: true, url });
   });
 
@@ -90,9 +101,16 @@ export function registerWebhookManageRoutes(router: Router, deps: WebhookManageD
 
   // Удалить вебхук.
   router.delete('/api/workspaces/:id/telegram-bots/:botId/webhook', async (ctx) => {
-    const { token } = requireBot(ctx);
+    const { bot, token } = requireBot(ctx);
     const transport = transportFor(token);
     await transport.deleteWebhook();
+    deps.audit.append({
+      workspaceId: ctx.params.id,
+      actorUserId: currentUser(ctx, deps)!.id,
+      action: 'telegram.webhook_delete',
+      targetType: 'telegram_bot',
+      targetId: bot.id,
+    });
     sendJson(ctx.res, 200, { ok: true });
   });
 }

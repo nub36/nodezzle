@@ -50,6 +50,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     const document = parseDocument(body);
     if (deps.projects.exists(document.id)) throw conflict('Проект с таким идентификатором уже существует');
     const created = deps.projects.create(workspaceId, document);
+    deps.audit.append({
+      workspaceId,
+      actorUserId: user.id,
+      action: 'project.create',
+      targetType: 'project',
+      targetId: created.id,
+      metadata: { name: document.name },
+    });
     sendJson(ctx.res, 201, { project: created.document, updatedAt: created.updatedAt });
   });
 
@@ -70,6 +78,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     const document = parseDocument(body);
     if (document.id !== ctx.params.id) throw badRequest('Идентификатор документа не совпадает с адресом проекта');
     deps.projects.update(ctx.params.id, document);
+    deps.audit.append({
+      workspaceId: existing.workspaceId,
+      actorUserId: user.id,
+      action: 'project.update',
+      targetType: 'project',
+      targetId: ctx.params.id,
+      metadata: { name: document.name },
+    });
     const fresh = deps.projects.get(ctx.params.id);
     sendJson(ctx.res, 200, { project: fresh!.document, updatedAt: fresh!.updatedAt });
   });
@@ -80,6 +96,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     const row = deps.projects.get(ctx.params.id);
     if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
     deps.projects.delete(ctx.params.id);
+    deps.audit.append({
+      workspaceId: row.workspaceId,
+      actorUserId: user.id,
+      action: 'project.delete',
+      targetType: 'project',
+      targetId: ctx.params.id,
+      metadata: { name: row.document.name },
+    });
     sendJson(ctx.res, 200, { ok: true });
   });
 
@@ -94,6 +118,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
       ? body.label.trim().slice(0, VERSION_LABEL_MAX)
       : `Версия от ${new Date().toLocaleString('ru-RU')}`;
     const version = deps.versions.create(ctx.params.id, row.document, label);
+    deps.audit.append({
+      workspaceId: row.workspaceId,
+      actorUserId: user.id,
+      action: 'version.create',
+      targetType: 'project_version',
+      targetId: version.id,
+      metadata: { projectId: ctx.params.id, label },
+    });
     sendJson(ctx.res, 201, { version });
   });
 
@@ -124,6 +156,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     if (!snapshot) throw notFound('Версия не найдена');
     // Восстановление перезаписывает черновик; сама версия остаётся.
     deps.projects.update(ctx.params.id, snapshot);
+    deps.audit.append({
+      workspaceId: row.workspaceId,
+      actorUserId: user.id,
+      action: 'version.restore',
+      targetType: 'project_version',
+      targetId: ctx.params.versionId,
+      metadata: { projectId: ctx.params.id },
+    });
     sendJson(ctx.res, 200, { project: snapshot });
   });
 
@@ -144,6 +184,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     // Одна публикация на проект: прежняя LIVE уходит в архив.
     deps.versions.archiveLive(ctx.params.id);
     const version = deps.versions.create(ctx.params.id, row.document, label, 'LIVE');
+    deps.audit.append({
+      workspaceId: row.workspaceId,
+      actorUserId: user.id,
+      action: 'project.publish',
+      targetType: 'project_version',
+      targetId: version.id,
+      metadata: { projectId: ctx.params.id, label },
+    });
     sendJson(ctx.res, 201, { version });
   });
 

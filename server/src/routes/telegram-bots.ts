@@ -70,6 +70,14 @@ export function registerTelegramBotRoutes(router: Router, deps: BotDeps): void {
     const projectId = resolveProject(workspaceId, body.projectId);
     assertUniqueBinding(workspaceId, projectId);
     const bot = deps.bots.create(workspaceId, secretId, projectId);
+    deps.audit.append({
+      workspaceId,
+      actorUserId: currentUser(ctx, deps)!.id,
+      action: 'telegram.bot_connect',
+      targetType: 'telegram_bot',
+      targetId: bot.id,
+      metadata: { projectId, secretId },
+    });
     sendJson(ctx.res, 201, { bot });
   });
 
@@ -93,12 +101,30 @@ export function registerTelegramBotRoutes(router: Router, deps: BotDeps): void {
       assertUniqueBinding(workspaceId, patch.projectId, bot.id);
     }
     const updated = deps.bots.update(workspaceId, bot.id, patch);
+    deps.audit.append({
+      workspaceId,
+      actorUserId: currentUser(ctx, deps)!.id,
+      action: 'telegram.bot_update',
+      targetType: 'telegram_bot',
+      targetId: bot.id,
+      metadata: {
+        ...('projectId' in patch ? { projectId: patch.projectId } : {}),
+        ...('secretId' in patch ? { secretId: patch.secretId } : {}),
+      },
+    });
     sendJson(ctx.res, 200, { bot: updated });
   });
 
   router.delete('/api/workspaces/:id/telegram-bots/:botId', (ctx) => {
     const { workspaceId, bot } = requireBot(ctx);
     deps.bots.delete(workspaceId, bot.id);
+    deps.audit.append({
+      workspaceId,
+      actorUserId: currentUser(ctx, deps)!.id,
+      action: 'telegram.bot_disconnect',
+      targetType: 'telegram_bot',
+      targetId: bot.id,
+    });
     sendJson(ctx.res, 200, { ok: true });
   });
 }

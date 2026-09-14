@@ -34,6 +34,7 @@ export function registerSecretRoutes(router: Router, deps: SecretDeps): void {
 
   router.post('/api/workspaces/:id/secrets', async (ctx) => {
     const workspaceId = requireWorkspace(ctx);
+    const user = currentUser(ctx, deps)!;
     const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
     if (typeof body.name !== 'string' || body.name.trim() === '') throw badRequest('Поле "name" обязательно');
     if (typeof body.value !== 'string' || body.value.length === 0) throw badRequest('Поле "value" обязательно');
@@ -42,6 +43,14 @@ export function registerSecretRoutes(router: Router, deps: SecretDeps): void {
     if (body.value.length > VALUE_MAX) throw badRequest(`Значение секрета длиннее ${VALUE_MAX} символов`);
     try {
       const secret = deps.secrets.create(workspaceId, name, body.value);
+      deps.audit.append({
+        workspaceId,
+        actorUserId: user.id,
+        action: 'secret.create',
+        targetType: 'secret',
+        targetId: secret.id,
+        metadata: { name },
+      });
       // Отвечаем только метаданными: значение остаётся на сервере.
       sendJson(ctx.res, 201, { secret });
     } catch (err) {
@@ -52,7 +61,15 @@ export function registerSecretRoutes(router: Router, deps: SecretDeps): void {
 
   router.delete('/api/workspaces/:id/secrets/:secretId', (ctx) => {
     const workspaceId = requireWorkspace(ctx);
+    const user = currentUser(ctx, deps)!;
     if (!deps.secrets.delete(workspaceId, ctx.params.secretId)) throw notFound('Секрет не найден');
+    deps.audit.append({
+      workspaceId,
+      actorUserId: user.id,
+      action: 'secret.delete',
+      targetType: 'secret',
+      targetId: ctx.params.secretId,
+    });
     sendJson(ctx.res, 200, { ok: true });
   });
 }

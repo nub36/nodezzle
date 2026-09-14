@@ -23,6 +23,7 @@ import { registerSecretRoutes } from './routes/secrets.ts';
 import { registerExecutionRoutes } from './routes/execution.ts';
 import { createTelegramBotStore } from './telegram/bots.ts';
 import { createExecutionStore, createStepStore } from './execution/journal.ts';
+import { createAuditStore } from './audit/store.ts';
 import { registerTelegramBotRoutes } from './routes/telegram-bots.ts';
 import { registerWebhookRoutes } from './routes/webhook.ts';
 import type { RateLimiter } from './security/rate-limit.ts';
@@ -77,12 +78,14 @@ export function createApp(deps: AppDeps): App {
   const secrets = createSecretStore(deps.db, deps.config);
   const bots = createTelegramBotStore(deps.db);
   const executions = createExecutionStore(deps.db);
+  const audit = createAuditStore(deps.db);
   const steps = createStepStore(deps.db);
   const authDeps = {
     config: deps.config,
     store: createAuthStore(deps.db),
     authLimiter: createRateLimiter(AUTH_LIMIT_PER_WINDOW, AUTH_WINDOW_MS),
     workspaces,
+    audit,
   };
   registerAuthRoutes(router, authDeps);
   registerWorkspaceRoutes(router, { ...authDeps, workspaces });
@@ -94,6 +97,7 @@ export function createApp(deps: AppDeps): App {
     workspaces,
     secrets,
     bots,
+    audit,
     transportFor: deps.telegramTransportFor ? (token) => deps.telegramTransportFor!(token) : undefined,
   });
   registerWebhookRoutes(router, {

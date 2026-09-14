@@ -22,6 +22,7 @@ import {
   verifySignedToken,
 } from '../security/sessions.ts';
 import type { RateLimiter } from '../security/rate-limit.ts';
+import type { AuditStore } from '../audit/store.ts';
 
 export interface AuthDeps {
   config: ServerConfig;
@@ -30,6 +31,8 @@ export interface AuthDeps {
   authLimiter: RateLimiter;
   /** Если передан — при регистрации создаётся рабочее пространство по умолчанию. */
   workspaces?: WorkspaceStore;
+  /** Журнал действий (подэтап 5.9). */
+  audit: AuditStore;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -87,6 +90,13 @@ export function registerAuthRoutes(router: Router, deps: AuthDeps): void {
     const user = deps.store.createUser(email, name, passwordHash);
     // Новому пользователю сразу создаём личное рабочее пространство.
     if (deps.workspaces) deps.workspaces.create(user.id, 'Мои проекты');
+    deps.audit.append({
+      actorUserId: user.id,
+      action: 'auth.register',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email, ip: clientIp(req) },
+    });
     issueSession(res, deps, user.id);
     sendJson(res, 201, { user: { id: user.id, email: user.email, name: user.name } });
   });
@@ -101,6 +111,13 @@ export function registerAuthRoutes(router: Router, deps: AuthDeps): void {
     // Единый ответ на неверный адрес и неверный пароль — без перечисления,
     // кто зарегистрирован в системе.
     if (!ok) throw unauthorized('Неверный адрес или пароль');
+    deps.audit.append({
+      actorUserId: record!.id,
+      action: 'auth.login',
+      targetType: 'user',
+      targetId: record!.id,
+      metadata: { ip: clientIp(req) },
+    });
     issueSession(res, deps, record!.id);
     sendJson(res, 200, { user: { id: record!.id, email: record!.email, name: record!.name } });
   });
@@ -110,7 +127,18 @@ export function registerAuthRoutes(router: Router, deps: AuthDeps): void {
     const signed = cookies.nodezzle_session;
     if (signed) {
       const token = verifySignedToken(signed, deps.config.sessionSecret);
-      if (token) deps.store.deleteSession(token);
+      if (token) {
+        const session = deps.store.getSession(token);
+        deps.store.deleteSession(token);
+        if (session) {
+          deps.audit.append({
+            actorUserId: session.userId,
+            action: 'auth.logout',
+            targetType: 'user',
+            targetId: session.userId,
+          });
+        }
+      }
     }
     res.setHeader('Set-Cookie', clearSessionCookie());
     sendJson(res, 200, { ok: true });
