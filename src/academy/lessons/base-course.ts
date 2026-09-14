@@ -730,4 +730,136 @@ export const baseCourse: readonly LessonDefinition[] = [
       },
     ],
   },
+
+  // ---------- Уровень 7. Отладка ----------
+  {
+    id: 'debug-why-not-working',
+    level: 7,
+    track: 'debug',
+    titleKey: K('debug-why-not-working') + '.title',
+    descriptionKey: K('debug-why-not-working') + '.description',
+    estimatedMinutes: 8,
+    difficulty: 'basic',
+    prerequisites: ['basics-chain'],
+    sandbox: true,
+    relatedBlockIds: ['debug.log', 'core.text'],
+    steps: [
+      {
+        id: 'about',
+        kind: 'information',
+        titleKey: K('debug-why-not-working') + '.steps.about.title',
+        textKey: K('debug-why-not-working') + '.steps.about.text',
+      },
+      {
+        id: 'add-text',
+        kind: 'add-block',
+        blockId: 'core.text',
+        titleKey: K('debug-why-not-working') + '.steps.addText.title',
+        textKey: K('debug-why-not-working') + '.steps.addText.text',
+      },
+      {
+        id: 'add-log',
+        kind: 'add-block',
+        blockId: 'debug.log',
+        titleKey: K('debug-why-not-working') + '.steps.addLog.title',
+        textKey: K('debug-why-not-working') + '.steps.addLog.text',
+      },
+      {
+        id: 'connect',
+        kind: 'connect',
+        fromBlockId: 'core.text',
+        toBlockId: 'debug.log',
+        titleKey: K('debug-why-not-working') + '.steps.connect.title',
+        textKey: K('debug-why-not-working') + '.steps.connect.text',
+      },
+      {
+        id: 'run',
+        kind: 'run',
+        titleKey: K('debug-why-not-working') + '.steps.run.title',
+        textKey: K('debug-why-not-working') + '.steps.run.text',
+        target: 'run',
+      },
+      {
+        id: 'open-debug',
+        kind: 'open-debug',
+        titleKey: K('debug-why-not-working') + '.steps.openDebug.title',
+        textKey: K('debug-why-not-working') + '.steps.openDebug.text',
+        target: 'debug',
+      },
+      {
+        id: 'ports-tab',
+        kind: 'information',
+        titleKey: K('debug-why-not-working') + '.steps.portsTab.title',
+        textKey: K('debug-why-not-working') + '.steps.portsTab.text',
+        target: 'debug',
+      },
+      {
+        id: 'history-tab',
+        kind: 'information',
+        titleKey: K('debug-why-not-working') + '.steps.historyTab.title',
+        textKey: K('debug-why-not-working') + '.steps.historyTab.text',
+        target: 'history',
+      },
+      {
+        id: 'quiz-where',
+        kind: 'quiz',
+        titleKey: K('debug-why-not-working') + '.steps.quizWhere.title',
+        textKey: K('debug-why-not-working') + '.steps.quizWhere.text',
+        questionKey: K('debug-why-not-working') + '.steps.quizWhere.question',
+        options: [
+          { id: 'ports', labelKey: K('debug-why-not-working') + '.steps.quizWhere.optPorts', correct: true },
+          { id: 'chat', labelKey: K('debug-why-not-working') + '.steps.quizWhere.optChat', correct: false },
+          { id: 'inspector', labelKey: K('debug-why-not-working') + '.steps.quizWhere.optInspector', correct: false },
+        ],
+      },
+    ],
+  },
+
+  // ---------- Уровень 8. Черновик, LIVE и публикация ----------
+  // Честно: переключатель режимов на холсте визуальный, серверные
+  // версии — в развитии; урок объясняет понятия и показывает факт.
+  {
+    id: 'publish-versions',
+    level: 8,
+    track: 'publish',
+    titleKey: K('publish-versions') + '.title',
+    descriptionKey: K('publish-versions') + '.description',
+    estimatedMinutes: 5,
+    difficulty: 'basic',
+    prerequisites: ['debug-why-not-working'],
+    sandbox: false,
+    plannedNoteKey: K('publish-versions') + '.plannedNote',
+    steps: [
+      {
+        id: 'about',
+        kind: 'information',
+        titleKey: K('publish-versions') + '.steps.about.title',
+        textKey: K('publish-versions') + '.steps.about.text',
+      },
+      {
+        id: 'modes',
+        kind: 'information',
+        titleKey: K('publish-versions') + '.steps.modes.title',
+        textKey: K('publish-versions') + '.steps.modes.text',
+      },
+      {
+        id: 'preview',
+        kind: 'publish-preview',
+        titleKey: K('publish-versions') + '.steps.preview.title',
+        textKey: K('publish-versions') + '.steps.preview.text',
+      },
+      {
+        id: 'quiz-live',
+        kind: 'quiz',
+        titleKey: K('publish-versions') + '.steps.quizLive.title',
+        textKey: K('publish-versions') + '.steps.quizLive.text',
+        questionKey: K('publish-versions') + '.steps.quizLive.question',
+        options: [
+          { id: 'frozen', labelKey: K('publish-versions') + '.steps.quizLive.optFrozen', correct: true },
+          { id: 'draft', labelKey: K('publish-versions') + '.steps.quizLive.optDraft', correct: false },
+          { id: 'always', labelKey: K('publish-versions') + '.steps.quizLive.optAlways', correct: false },
+        ],
+      },
+    ],
+  },
 ];

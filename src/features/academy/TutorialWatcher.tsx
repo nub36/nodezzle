@@ -33,10 +33,14 @@ export function TutorialWatcher() {
   const stepIndex = useTutorialStore((s) => s.stepIndex);
   const startedFor = useRef<string | null>(null);
 
-  // Запуск урока: только в учебном проекте этого урока.
+  // Запуск урока: уроки с песочницей — только в учебном проекте урока;
+  // уроки без песочницы (знакомство) стартуют на любой странице с ?lesson=.
   useEffect(() => {
-    if (lesson === undefined || project === null) return;
-    if (project.meta.tutorial?.lessonId !== lesson.id) return;
+    if (lesson === undefined) return;
+    if (lesson.sandbox) {
+      if (project === null) return;
+      if (project.meta.tutorial?.lessonId !== lesson.id) return;
+    }
     if (startedFor.current === lesson.id) return;
     startedFor.current = lesson.id;
     const resumeStep = useAcademyStore.getState().progress.lessons[lesson.id]?.stepIndex ?? 0;

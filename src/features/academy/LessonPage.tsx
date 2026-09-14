@@ -57,6 +57,11 @@ export function LessonPage() {
     setBusy(true);
     try {
       begin(lesson.id);
+      if (!lesson.sandbox) {
+        // Уроки без песочницы идут прямо здесь, без учебного проекта.
+        navigate(`/academy?lesson=${encodeURIComponent(lesson.id)}`);
+        return;
+      }
       const projectId = await openLessonSandbox(lesson);
       navigate(lessonCanvasPath(projectId, lesson.id));
     } finally {
@@ -69,6 +74,10 @@ export function LessonPage() {
     setBusy(true);
     try {
       reset(lesson.id);
+      if (!lesson.sandbox) {
+        navigate(`/academy?lesson=${encodeURIComponent(lesson.id)}`);
+        return;
+      }
       const projectId = await openLessonSandbox(lesson);
       // Очистить учебную схему (и сразу сохранить), чтобы перезапуск
       // холста не поднял старое состояние из хранилища.
@@ -146,7 +155,7 @@ export function LessonPage() {
               {lesson.relatedBlockIds.map((blockId) => (
                 <Link
                   key={blockId}
-                  to={`/academy/blocks?block=${encodeURIComponent(blockId)}`}
+                  to={`/academy/reference?block=${encodeURIComponent(blockId)}`}
                   className="rounded-lg border border-line px-2.5 py-1 font-mono text-xs text-muted transition-colors hover:border-cyan-400/40 hover:text-ink"
                 >
                   {blockId}

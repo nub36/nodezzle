@@ -46,8 +46,6 @@ import { Toolbar } from './Toolbar';
 import { CreateModelDialog } from './CreateModelDialog';
 import { GroupFrames } from './GroupFrames';
 import { DebugPanel } from './DebugPanel';
-import { TutorialWatcher } from '@/features/academy/TutorialWatcher';
-import { TutorialOverlay } from '@/features/academy/TutorialOverlay';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { isCompatible } from '@/core/type-system/compatibility';
 import { CATEGORY_COLORS } from './categoryColors';
@@ -105,8 +103,6 @@ function CanvasInner({ projectId }: { projectId: string }) {
       <Toolbar onToggleDebug={() => setDebugOpen(!debugOpen)} />
       <FlowCanvas />
       <DebugPanel open={debugOpen} projectId={projectId} />
-      <TutorialWatcher />
-      <TutorialOverlay />
     </div>
   );
 }

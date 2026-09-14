@@ -104,6 +104,9 @@ export function AcademyPage() {
             <Link to="/academy/reference" className="btn-ghost !py-1.5 text-xs">
               📚 {t('academy.reference.open')}
             </Link>
+            <Link to="/academy/glossary" className="btn-ghost !py-1.5 text-xs">
+              📖 {t('academy.glossary.open')}
+            </Link>
           </div>
           <h1 className="text-gradient mb-1 text-3xl font-black tracking-tight">{t('academy.title')}</h1>
           <p className="mb-4 text-sm text-muted">{t('academy.subtitle')}</p>
