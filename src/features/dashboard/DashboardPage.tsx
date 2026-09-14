@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import type { ProjectKind, ProjectSummary } from '@/core/project/schema';
 import { useProjectStore } from '@/store/project-store';
 import { formatDateRu } from '@/lib/utils';
+import { TelegramBotPanel } from '@/features/telegram/TelegramBotPanel';
 
 const KIND_ICONS: Record<ProjectKind, string> = {
   telegram: '🤖',
@@ -158,6 +159,9 @@ export function DashboardPage() {
             ))}
           </div>
         )}
+
+        {/* Подключение Telegram-бота (токен — только через сервер) */}
+        <TelegramBotPanel />
       </main>
     </div>
   );
