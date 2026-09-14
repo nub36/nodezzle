@@ -15,6 +15,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { arrangePair } from './helpers';
 
 async function skipOnboardingIfShown(page: Page): Promise<void> {
   const skip = page.getByTestId('onboarding-skip');
@@ -31,7 +32,7 @@ async function newProject(page: Page): Promise<void> {
 }
 
 /** Координаты центра локатора. */
-async function centerOf(page: Page, locator: ReturnType<Page['locator']>): Promise<{ x: number; y: number }> {
+async function centerOf(locator: ReturnType<Page['locator']>): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox();
   if (box === null) throw new Error('нет координат элемента');
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -41,9 +42,8 @@ async function centerOf(page: Page, locator: ReturnType<Page['locator']>): Promi
 async function dragConnection(
   page: Page,
   sourceHandle: ReturnType<Page['locator']>,
-  targetHandle: ReturnType<Page['locator']>,
 ): Promise<void> {
-  const from = await centerOf(page, sourceHandle);
+  const from = await centerOf(sourceHandle);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   // Короткий сдвиг, чтобы жест соединения начался.
@@ -61,7 +61,7 @@ test.describe('Соединение деталей: визуальный жиз�
     // Добавляем «Текст» и «Число из текста».
     await page.getByTestId('library-search').fill('текст');
     await page.getByTestId('library-item-core.text').first().click();
-    await page.getByTestId('library-search').fill('число из текста');
+    await page.getByTestId('library-search').fill('data.text_to_number');
     await page.getByTestId('library-item-data.text_to_number').first().click();
     await page.getByTestId('library-search').fill('');
 
@@ -70,10 +70,11 @@ test.describe('Соединение деталей: визуальный жиз�
     await expect(source).toBeVisible();
     await expect(target).toBeVisible();
 
+    await arrangePair(page, source, target);
     const sourceHandle = source.locator('.nzz-handle[data-port-id="text"][data-port-direction="output"]');
     const targetHandle = target.locator('.nzz-handle[data-port-id="value"][data-port-direction="input"]');
 
-    await dragConnection(page, sourceHandle, targetHandle);
+    await dragConnection(page, sourceHandle);
 
     // CONNECTION DRAG: исходный порт активен, узел помечен.
     await expect(sourceHandle).toHaveAttribute('data-port-active', 'true');
@@ -82,7 +83,7 @@ test.describe('Соединение деталей: визуальный жиз�
     await expect(targetHandle).toHaveAttribute('data-port-compatible', 'true');
 
     // Наведение на цель — состояние «готов к подключению».
-    const to = await centerOf(page, targetHandle);
+    const to = await centerOf(targetHandle);
     await page.mouse.move(to.x, to.y, { steps: 12 });
     await expect(targetHandle).toHaveAttribute('data-port-ready', 'true');
 
@@ -107,20 +108,21 @@ test.describe('Соединение деталей: визуальный жиз�
     // «Число» (выход типа Число) и «Число из текста» (вход типа Текст).
     await page.getByTestId('library-search').fill('число');
     await page.getByTestId('library-item-core.number').first().click();
-    await page.getByTestId('library-search').fill('число из текста');
+    await page.getByTestId('library-search').fill('data.text_to_number');
     await page.getByTestId('library-item-data.text_to_number').first().click();
     await page.getByTestId('library-search').fill('');
 
     const source = page.getByTestId('canvas-node-core.number');
     const target = page.getByTestId('canvas-node-data.text_to_number');
+    await arrangePair(page, source, target);
     const sourceHandle = source.locator('.nzz-handle[data-port-id="value"][data-port-direction="output"]');
     const targetHandle = target.locator('.nzz-handle[data-port-id="value"][data-port-direction="input"]');
 
-    await dragConnection(page, sourceHandle, targetHandle);
+    await dragConnection(page, sourceHandle);
 
     // Несовместимый вход помечен; состояние готовности не появляется.
     await expect(targetHandle).toHaveAttribute('data-port-compatible', 'false');
-    const to = await centerOf(page, targetHandle);
+    const to = await centerOf(targetHandle);
     await page.mouse.move(to.x, to.y, { steps: 10 });
     await expect(targetHandle).not.toHaveAttribute('data-port-ready');
 
@@ -150,25 +152,26 @@ test.describe('Соединение деталей: визуальный жиз�
     await expect(page.getByTestId('tutorial-card')).toBeVisible();
 
     // Шаг 1/4 — добавить «Сообщение получено».
-    await page.getByTestId('library-category-telegram_events').click();
+    await page.getByTestId('library-search').fill('telegram.message_received');
     await page.getByTestId('library-item-telegram.message_received').first().click();
     // Шаг 2/4 — добавить «Запись в журнал».
     await expect(page.getByTestId('tutorial-card')).toHaveAttribute('data-step-id', 'add-log');
-    await page.getByTestId('library-category-debug').click();
+    await page.getByTestId('library-search').fill('debug.log');
     await page.getByTestId('library-item-debug.log').first().click();
 
     // Шаг 3/4 — соединение: требуемые порты подсвечены Академией.
     await expect(page.getByTestId('tutorial-card')).toHaveAttribute('data-step-id', 'connect');
     const msgNode = page.getByTestId('canvas-node-telegram.message_received');
     const logNode = page.getByTestId('canvas-node-debug.log');
+    await arrangePair(page, msgNode, logNode);
     const msgOut = msgNode.locator('.nzz-handle[data-port-id="text"][data-port-direction="output"]');
     const logIn = logNode.locator('.nzz-handle[data-port-id="value"][data-port-direction="input"]');
     await expect(msgOut).toHaveClass(/port-academy/);
     await expect(logIn).toHaveClass(/port-academy/);
 
     // Соединяем: визуальное подтверждение + шаг урока завершаются.
-    await dragConnection(page, msgOut, logIn);
-    const to = await centerOf(page, logIn);
+    await dragConnection(page, msgOut);
+    const to = await centerOf(logIn);
     await page.mouse.move(to.x, to.y, { steps: 10 });
     await page.mouse.up();
 

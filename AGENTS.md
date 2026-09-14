@@ -18,7 +18,7 @@
 
 NODEZZLE (NODE + PUZZLE) — визуальная среда сборки Telegram-ботов, веб-интерфейсов и систем из соединяемых деталей. Философия: **«Не программируй. Собери.»** Полная концепция — [docs/CONCEPT.md](docs/CONCEPT.md).
 
-Текущий статус: см. **[docs/agent-plan/STATUS.md](docs/agent-plan/STATUS.md)** (фундамент выполнен в коммите `a1b0c20`; следующий этап — «Этап 2 — Canvas UI», план — [docs/agent-plan/02-CANVAS-UI.md](docs/agent-plan/02-CANVAS-UI.md)). Дорожная карта — [docs/ROADMAP.md](docs/ROADMAP.md).
+Текущий статус: см. **[docs/agent-plan/STATUS.md](docs/agent-plan/STATUS.md)**. Этапы 1–5 завершены; развитие компактного интерфейса и обучения — [07-COMPACT-LEARNING.md](docs/agent-plan/07-COMPACT-LEARNING.md). Дорожная карта — [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## 2. Репозиторий — долговременная память проекта
 

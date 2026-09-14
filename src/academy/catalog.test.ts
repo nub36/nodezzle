@@ -58,7 +58,7 @@ describe('Каталог Академии', () => {
         if (lookup(key) === undefined) missing.push(`${lesson.id}: ${key}`);
       }
       for (const step of lesson.steps) {
-        const keys: Array<string | undefined> = [step.titleKey, step.textKey, step.hintKey];
+        const keys: Array<string | undefined> = [step.titleKey, step.textKey, step.hintKey, step.detailsKey];
         if (step.kind === 'quiz') {
           keys.push(step.questionKey);
           keys.push(...step.options.map((o) => o.labelKey));
@@ -73,6 +73,19 @@ describe('Каталог Академии', () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  it('инструкции всех 12 уроков компактны, теория вынесена отдельно', () => {
+    for (const lesson of lessons) {
+      expect(String(lookup(lesson.descriptionKey)).length, lesson.id).toBeLessThanOrEqual(120);
+      for (const step of lesson.steps) {
+        expect(String(lookup(step.textKey)).length, `${lesson.id}:${step.id}`).toBeLessThanOrEqual(220);
+        if (step.detailsKey !== undefined) {
+          expect(step.detailsKey).not.toBe(step.textKey);
+          expect(String(lookup(step.detailsKey)).length).toBeGreaterThan(0);
+        }
+      }
+    }
   });
 
   it('викторины содержат правильный ответ', () => {

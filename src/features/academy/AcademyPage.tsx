@@ -52,7 +52,7 @@ function LessonCard({ lesson }: { lesson: LessonDefinition }) {
       aria-disabled={!available}
       data-testid={`lesson-card-${lesson.id}`}
       className={cn(
-        'glass block rounded-2xl p-4 transition-all',
+        'glass block rounded-xl p-3 transition-all',
         available ? 'hover:border-cyan-400/40 hover:shadow-[0_0_24px_rgba(34,211,238,0.12)]' : 'opacity-50',
         isNext && 'border-cyan-400/50 shadow-[0_0_28px_rgba(34,211,238,0.16)]',
       )}
@@ -61,9 +61,9 @@ function LessonCard({ lesson }: { lesson: LessonDefinition }) {
         <span aria-hidden>
           {state?.status === 'completed' ? '✅' : !available ? '🔒' : isNext ? '🎯' : state?.status === 'in-progress' ? '🧩' : '·'}
         </span>
-        <span className="truncate text-sm font-bold">{t(lesson.titleKey)}</span>
+        <span className="text-sm font-bold">{t(lesson.titleKey)}</span>
       </div>
-      <div className="mb-3 line-clamp-2 text-xs text-muted">{t(lesson.descriptionKey)}</div>
+      <div className="mb-2 line-clamp-2 text-xs text-muted">{t(lesson.descriptionKey)}</div>
       <div className="mb-2 h-1 overflow-hidden rounded bg-line/60">
         <div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400" style={{ width: `${percent}%` }} />
       </div>
@@ -72,7 +72,7 @@ function LessonCard({ lesson }: { lesson: LessonDefinition }) {
         <span>· {t(`academy.difficulty.${lesson.difficulty}`)}</span>
         <span className="ml-auto">
           {state?.status === 'completed'
-            ? t('academy.done')
+            ? `${t('academy.done')} · ${percent}%`
             : !available
               ? t('academy.locked')
               : state?.status === 'in-progress'
@@ -96,9 +96,9 @@ export function AcademyPage() {
 
   return (
     <div className="aurora min-h-screen bg-abyss text-ink">
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <div className="mb-8">
-          <div className="mb-4 flex items-center gap-2">
+      <main className="mx-auto max-w-5xl px-4 py-5">
+        <div className="mb-5">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <button className="btn-ghost !py-1.5 text-xs" onClick={() => navigate('/dashboard')}>
               ← {t('academy.backToDashboard')}
             </button>
@@ -111,8 +111,8 @@ export function AcademyPage() {
           </div>
           <h1 className="text-gradient mb-1 text-3xl font-black tracking-tight">{t('academy.title')}</h1>
           <p className="mb-4 text-sm text-muted">{t('academy.subtitle')}</p>
-          <div className="glass flex items-center gap-4 rounded-2xl px-4 py-3">
-            <div className="h-2 flex-1 overflow-hidden rounded bg-line/60">
+          <div className="glass flex flex-wrap items-center gap-3 rounded-xl px-4 py-3">
+            <div className="h-1.5 min-w-24 flex-1 overflow-hidden rounded bg-line/60">
               <div className="h-full bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400" style={{ width: `${total}%` }} />
             </div>
             <span className="whitespace-nowrap text-xs text-muted">
@@ -130,7 +130,7 @@ export function AcademyPage() {
           </div>
         </div>
 
-        <div className="glass mb-6 rounded-2xl p-3">
+        <div className="glass mb-4 rounded-xl p-2">
           <input
             type="search"
             value={query}
@@ -154,20 +154,20 @@ export function AcademyPage() {
           <div className="glass rounded-2xl p-8 text-center text-sm text-muted">{t('academy.emptyCatalog')}</div>
         )}
 
-        <div className={cn('space-y-8', query.trim().length > 0 && 'hidden')}>
+        <div className={cn('grid items-start gap-4 md:grid-cols-2', query.trim().length > 0 && 'hidden')}>
           {LEVELS.map((level) => {
             const levelLessons = lessons.filter((l) => l.level === level);
             if (levelLessons.length === 0) return null;
             return (
               <section key={level}>
-                <div className="mb-3 flex items-center gap-3">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted">
+                <div className="mb-2 flex items-center gap-2">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
                     {t(`academy.levels.${level}`)}
                   </h2>
                   <span className="text-[10px] text-muted/70">{levelPercent(progress, lessons, level)}%</span>
                   <div className="h-px flex-1 bg-line/60" />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2">
                   {levelLessons.map((lesson) => (
                     <LessonCard key={lesson.id} lesson={lesson} />
                   ))}

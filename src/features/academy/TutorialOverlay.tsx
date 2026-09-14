@@ -17,6 +17,8 @@ import type { LessonStep } from '@/academy/types';
 import { useAcademyStore } from '@/store/academy-store';
 import { useTutorialStore } from '@/store/tutorial-store';
 
+import { LessonStepContent } from './LessonStepContent';
+
 const AUTO_HINT_MS = 25_000;
 
 interface Rect {
@@ -60,6 +62,7 @@ export function TutorialOverlay() {
 
   const step: LessonStep | null = lesson !== null ? (lesson.steps[stepIndex] ?? null) : null;
   const [rect, setRect] = useState<Rect | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const [wrongAnswer, setWrongAnswer] = useState(false);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -113,15 +116,16 @@ export function TutorialOverlay() {
 
   useEffect(() => {
     setWrongAnswer(false);
-  }, [stepIndex]);
+    setCollapsed(false);
+  }, [stepIndex, lesson?.id]);
 
   if (lesson === null) return null;
 
   // Карточка «Урок завершён».
   if (finished) {
     return (
-      <div className="fixed right-4 top-16 z-[70] w-[340px] max-w-[calc(100vw-2rem)]" role="dialog" aria-label={t('academy.overlay.finishedTitle')} data-testid="tutorial-finished">
-        <div className="glass-strong tutorial-anim rounded-2xl border border-emerald-400/40 p-5 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
+      <div className="fixed right-4 top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain" role="dialog" aria-label={t('academy.overlay.finishedTitle')} data-testid="tutorial-finished">
+        <div className="glass-strong tutorial-anim rounded-xl border border-emerald-400/40 p-3 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
           <div className="mb-2 text-2xl">🎉</div>
           <div className="mb-1 text-sm font-bold">{t('academy.overlay.finishedTitle')}</div>
           <p className="mb-4 text-xs text-muted">{t('academy.overlay.finishedText', { title: t(lesson.titleKey) })}</p>
@@ -183,19 +187,26 @@ export function TutorialOverlay() {
 
       {/* Карточка шага. */}
       <div
-        className="fixed right-4 top-16 z-[70] w-[340px] max-w-[calc(100vw-2rem)]"
+        className={`fixed top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain ${target === 'inspector' ? 'left-4 sm:left-[304px]' : 'right-4'}`}
         role="dialog"
         aria-label={t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
         data-testid="tutorial-card"
         data-step-id={step.id}
         data-step-kind={step.kind}
       >
-        <div className="glass-strong tutorial-anim rounded-2xl border border-cyan-400/30 p-4 shadow-[0_0_32px_rgba(34,211,238,0.15)]">
+        <div className="glass-strong tutorial-anim rounded-xl border border-cyan-400/30 p-3 shadow-[0_0_32px_rgba(34,211,238,0.15)]">
           <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted">
-            <span>🎓 {t(lesson.titleKey)}</span>
-            <span className="ml-auto" data-testid="tutorial-step-index">
+            <span className="min-w-0 flex-1 truncate" title={t(lesson.titleKey)}>🎓 {t(lesson.titleKey)}</span>
+            <span className="shrink-0" data-testid="tutorial-step-index">
               {t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
             </span>
+            <button className="shrink-0 rounded px-1.5 py-1 text-sm hover:bg-cyan-400/10"
+              data-testid="tutorial-collapse" aria-expanded={!collapsed} aria-controls="tutorial-step-body"
+              aria-label={t(collapsed ? 'academy.overlay.expand' : 'academy.overlay.collapse')}
+              title={t(collapsed ? 'academy.overlay.expand' : 'academy.overlay.collapse')}
+              onClick={() => setCollapsed((value) => !value)}>
+              {collapsed ? '+' : '−'}
+            </button>
           </div>
           <div className="mb-1 h-1 overflow-hidden rounded bg-line/60">
             <div
@@ -204,78 +215,78 @@ export function TutorialOverlay() {
             />
           </div>
 
-          <div aria-live="polite">
-            <div className="mb-1 mt-2 text-sm font-bold">{t(step.titleKey)}</div>
-            <p className="text-xs leading-relaxed text-muted">{t(step.textKey)}</p>
-          </div>
+          <div className="mb-1 mt-2 text-sm font-bold" aria-live="polite">{t(step.titleKey)}</div>
+          <div id="tutorial-step-body" hidden={collapsed}>
+            <LessonStepContent step={step} />
 
-          {step.kind === 'quiz' && (
-            <div className="mt-3 space-y-1.5">
-              <p className="text-xs font-medium">{t(step.questionKey)}</p>
-              {step.options.map((option) => (
+            {step.kind === 'quiz' && (
+              <div className="mt-3 space-y-1.5">
+                <p className="text-xs font-medium">{t(step.questionKey)}</p>
+                {step.options.map((option) => (
+                  <button
+                    key={option.id}
+                    data-testid={`tutorial-quiz-${option.id}`}
+                    className="btn-ghost w-full justify-start !py-1.5 text-left text-xs"
+                    onClick={() => handleQuiz(option.id)}
+                  >
+                    {t(option.labelKey)}
+                  </button>
+                ))}
+                {wrongAnswer && <p className="text-xs text-red-300" data-testid="tutorial-quiz-wrong">{t('academy.overlay.wrong')}</p>}
+              </div>
+            )}
+
+            {needsAcknowledge && (
+              <button
+                data-testid="tutorial-ack"
+                className="btn-primary mt-3 w-full justify-center !py-1.5 text-xs"
+                onClick={acknowledge}
+              >
+                {t('academy.overlay.ack')}
+              </button>
+            )}
+
+            {!needsAcknowledge && step.kind !== 'quiz' && (
+              <p className="mt-3 text-[10px] text-muted/70">{t('academy.overlay.autoCheck')}</p>
+            )}
+
+            {step.hintKey !== undefined && (
+              <div className="mt-2">
+                {!hintVisible ? (
+                  <button className="text-[11px] text-cyan-300 underline-offset-2 hover:underline" onClick={showHint}>
+                    💡 {t('academy.overlay.hint')}
+                  </button>
+                ) : (
+                  <p className="rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-1.5 text-[11px] text-cyan-100">
+                    💡 {t(step.hintKey)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              {!needsAcknowledge && step.kind !== 'quiz' ? (
                 <button
-                  key={option.id}
-                  data-testid={`tutorial-quiz-${option.id}`}
-                  className="btn-ghost w-full justify-start !py-1.5 text-left text-xs"
-                  onClick={() => handleQuiz(option.id)}
+                  data-testid="tutorial-recheck"
+                  className="text-[10px] text-cyan-300/80 underline-offset-2 hover:underline"
+                  title={t('academy.overlay.recheckHint')}
+                  onClick={recheck}
                 >
-                  {t(option.labelKey)}
-                </button>
-              ))}
-              {wrongAnswer && <p className="text-xs text-red-300" data-testid="tutorial-quiz-wrong">{t('academy.overlay.wrong')}</p>}
-            </div>
-          )}
-
-          {needsAcknowledge && (
-            <button
-              data-testid="tutorial-ack"
-              className="btn-primary mt-3 w-full justify-center !py-1.5 text-xs"
-              onClick={acknowledge}
-            >
-              {t('academy.overlay.ack')}
-            </button>
-          )}
-
-          {!needsAcknowledge && step.kind !== 'quiz' && (
-            <p className="mt-3 text-[10px] text-muted/70">{t('academy.overlay.autoCheck')}</p>
-          )}
-
-          {step.hintKey !== undefined && (
-            <div className="mt-2">
-              {!hintVisible ? (
-                <button className="text-[11px] text-cyan-300 underline-offset-2 hover:underline" onClick={showHint}>
-                  💡 {t('academy.overlay.hint')}
+                  ✓ {t('academy.overlay.recheck')}
                 </button>
               ) : (
-                <p className="rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-1.5 text-[11px] text-cyan-100">
-                  💡 {t(step.hintKey)}
-                </p>
+                <span />
               )}
-            </div>
-          )}
-
-          <div className="mt-3 flex items-center justify-between gap-2">
-            {!needsAcknowledge && step.kind !== 'quiz' ? (
               <button
-                data-testid="tutorial-recheck"
-                className="text-[10px] text-cyan-300/80 underline-offset-2 hover:underline"
-                title={t('academy.overlay.recheckHint')}
-                onClick={recheck}
+                className="text-[10px] text-muted/60 hover:text-muted"
+                data-testid="tutorial-exit"
+                onClick={() => {
+                  if (window.confirm(t('academy.overlay.exitConfirm'))) stop();
+                }}
               >
-                ✓ {t('academy.overlay.recheck')}
+                {t('academy.overlay.exit')}
               </button>
-            ) : (
-              <span />
-            )}
-            <button
-              className="text-[10px] text-muted/60 hover:text-muted"
-              data-testid="tutorial-exit"
-              onClick={() => {
-                if (window.confirm(t('academy.overlay.exitConfirm'))) stop();
-              }}
-            >
-              {t('academy.overlay.exit')}
-            </button>
+            </div>
           </div>
 
           {academyDebug && (

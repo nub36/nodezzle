@@ -29,12 +29,14 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('intro-what') + '.steps.about.title',
         textKey: K('intro-what') + '.steps.about.text',
+        detailsKey: K('intro-what') + '.steps.about.details',
       },
       {
         id: 'how',
         kind: 'information',
         titleKey: K('intro-what') + '.steps.how.title',
         textKey: K('intro-what') + '.steps.how.text',
+        detailsKey: K('intro-what') + '.steps.how.details',
       },
       {
         id: 'quiz-input',
@@ -112,6 +114,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('intro-canvas') + '.steps.inspector.title',
         textKey: K('intro-canvas') + '.steps.inspector.text',
+        detailsKey: K('intro-canvas') + '.steps.inspector.details',
         target: 'inspector',
       },
     ],
@@ -135,6 +138,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('basics-ports') + '.steps.aboutPorts.title',
         textKey: K('basics-ports') + '.steps.aboutPorts.text',
+        detailsKey: K('basics-ports') + '.steps.aboutPorts.details',
       },
       {
         id: 'add-sender',
@@ -157,6 +161,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('basics-ports') + '.steps.shapes.title',
         textKey: K('basics-ports') + '.steps.shapes.text',
+        detailsKey: K('basics-ports') + '.steps.shapes.details',
       },
       {
         id: 'quiz-error',
@@ -190,6 +195,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         blockId: 'telegram.message_received',
         titleKey: K('basics-chain') + '.steps.addTrigger.title',
         textKey: K('basics-chain') + '.steps.addTrigger.text',
+        detailsKey: K('basics-chain') + '.steps.addTrigger.details',
         hintKey: K('basics-chain') + '.steps.addTrigger.hint',
         target: 'library',
       },
@@ -352,6 +358,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('data-converters') + '.steps.about.title',
         textKey: K('data-converters') + '.steps.about.text',
+        detailsKey: K('data-converters') + '.steps.about.details',
       },
       {
         id: 'add-text',
@@ -437,6 +444,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('telegram-first-bot') + '.steps.about.title',
         textKey: K('telegram-first-bot') + '.steps.about.text',
+        detailsKey: K('telegram-first-bot') + '.steps.about.details',
       },
       {
         id: 'add-trigger',
@@ -605,6 +613,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('web-first-page') + '.steps.about.title',
         textKey: K('web-first-page') + '.steps.about.text',
+        detailsKey: K('web-first-page') + '.steps.about.details',
       },
       {
         id: 'add-page',
@@ -672,6 +681,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('models-first-model') + '.steps.about.title',
         textKey: K('models-first-model') + '.steps.about.text',
+        detailsKey: K('models-first-model') + '.steps.about.details',
       },
       {
         id: 'add-text',
@@ -791,6 +801,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('debug-why-not-working') + '.steps.portsTab.title',
         textKey: K('debug-why-not-working') + '.steps.portsTab.text',
+        detailsKey: K('debug-why-not-working') + '.steps.portsTab.details',
         target: 'debug',
       },
       {
@@ -816,8 +827,8 @@ export const baseCourse: readonly LessonDefinition[] = [
   },
 
   // ---------- Уровень 8. Черновик, LIVE и публикация ----------
-  // Честно: переключатель режимов на холсте визуальный, серверные
-  // версии — в развитии; урок объясняет понятия и показывает факт.
+  // Переключатель режимов на холсте визуальный; серверная публикация
+  // через API уже реализована. Урок не требует действий с рабочим проектом.
   {
     id: 'publish-versions',
     level: 8,
@@ -841,6 +852,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'information',
         titleKey: K('publish-versions') + '.steps.modes.title',
         textKey: K('publish-versions') + '.steps.modes.text',
+        detailsKey: K('publish-versions') + '.steps.modes.details',
       },
       {
         id: 'preview',

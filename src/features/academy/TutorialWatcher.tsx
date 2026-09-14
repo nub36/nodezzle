@@ -78,6 +78,17 @@ export function TutorialWatcher() {
     useTutorialStore.getState().setDebugOpen(debugOpen);
   }, [debugOpen]);
 
+  // Вставка автоматически выделяет новую деталь. При входе в учебный
+  // шаг «Выберите» снимаем это выделение ОДИН раз, до проверки снимка:
+  // пользователь должен сам кликнуть по детали, а не пропустить практику.
+  // Только песочница текущего урока; документ и рабочие проекты не меняются.
+  useEffect(() => {
+    if (!active || !lesson?.sandbox || project?.meta.tutorial?.lessonId !== lesson.id) return;
+    if (lesson.steps[stepIndex]?.kind === 'select-block') {
+      useProjectStore.getState().selectNode(null);
+    }
+  }, [active, lesson, stepIndex, project?.id]);
+
   // Проверка текущего шага при любом изменении состояния.
   // Нормализованные события моста выводятся самим стором внутри
   // `evaluate` (единственный источник истины — сторы продукта).

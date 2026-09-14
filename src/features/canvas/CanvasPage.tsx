@@ -595,6 +595,7 @@ function FlowCanvas() {
           setCtxMenu(null);
         }}
         fitView
+        fitViewOptions={{ maxZoom: 1 }}
         minZoom={0.15}
         maxZoom={2.2}
         deleteKeyCode={['Backspace', 'Delete']}

@@ -2,6 +2,8 @@
  * Страница урока: описание, шаги, запуск в учебном проекте, сброс.
  */
 
+import { blockRegistry } from '@/core/registry/block-registry';
+import { LessonStepContent } from './LessonStepContent';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -93,12 +95,12 @@ export function LessonPage() {
 
   return (
     <div className="aurora min-h-screen bg-abyss text-ink">
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <Link to="/academy" className="btn-ghost mb-6 inline-block !py-1.5 text-xs">
+      <main className="mx-auto max-w-3xl px-4 py-5">
+        <Link to="/academy" className="btn-ghost mb-4 inline-block !py-1.5 text-xs">
           ← {t('academy.lesson.back')}
         </Link>
 
-        <div className="glass mb-6 rounded-2xl p-6">
+        <div className="glass mb-4 rounded-xl p-4">
           <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-muted">
             <span className="rounded-full border border-line px-2 py-0.5">{t(`academy.levels.${lesson.level}`)}</span>
             <span className="rounded-full border border-line px-2 py-0.5">⏱ {t('academy.minutes', { count: lesson.estimatedMinutes })}</span>
@@ -114,57 +116,6 @@ export function LessonPage() {
           )}
         </div>
 
-        <section className="glass mb-6 rounded-2xl p-6">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-muted">{t('academy.lesson.steps')}</h2>
-          <ol className="space-y-2">
-            {lesson.steps.map((step, index) => {
-              const isCurrent = index === stepIndex && state?.status === 'in-progress';
-              const isDone = state?.status === 'completed' || index < stepIndex;
-              return (
-                <li
-                  key={step.id}
-                  className={
-                    'flex items-start gap-3 rounded-xl border px-3 py-2 text-sm ' +
-                    (isDone
-                      ? 'border-emerald-400/20 text-muted'
-                      : isCurrent
-                        ? 'border-cyan-400/40 bg-cyan-400/5'
-                        : 'border-line/60')
-                  }
-                >
-                  <span aria-hidden className="mt-0.5">{isDone ? '✅' : STEP_ICONS[step.kind]}</span>
-                  <div className="min-w-0">
-                    <div className="font-medium">{t(step.titleKey)}</div>
-                    <div className="text-xs text-muted">
-                      {t(`academy.stepKinds.${step.kind}`)}
-                      {isCurrent ? ` · ${t('academy.inProgress')}` : ''}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-
-        {lesson.relatedBlockIds !== undefined && lesson.relatedBlockIds.length > 0 && (
-          <section className="glass mb-6 rounded-2xl p-6">
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">
-              {t('academy.lesson.relatedBlocks')}
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {lesson.relatedBlockIds.map((blockId) => (
-                <Link
-                  key={blockId}
-                  to={`/academy/reference?block=${encodeURIComponent(blockId)}`}
-                  className="rounded-lg border border-line px-2.5 py-1 font-mono text-xs text-muted transition-colors hover:border-cyan-400/40 hover:text-ink"
-                >
-                  {blockId}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
         <div className="flex flex-wrap items-center gap-3">
           <button className="btn-primary text-sm" data-testid="lesson-start" disabled={busy} onClick={() => void handleStart()}>
             {started && state?.status !== 'completed' ? t('academy.lesson.continueLesson') : t('academy.lesson.start')}
@@ -175,7 +126,64 @@ export function LessonPage() {
             </button>
           )}
         </div>
-        <p className="mt-3 text-xs text-muted/70">{t('academy.lesson.sandboxHint')}</p>
+        <p className="mb-4 mt-2 text-xs text-muted/70">{t(lesson.sandbox ? 'academy.lesson.sandboxHint' : 'academy.lesson.readingHint')}</p>
+
+        <section className="glass mb-4 rounded-xl p-4">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-muted">{t('academy.lesson.steps')}</h2>
+          <ol className="space-y-1.5">
+            {lesson.steps.map((step, index) => {
+              const isCurrent = index === stepIndex && state?.status === 'in-progress';
+              const isDone = state?.status === 'completed' || index < stepIndex;
+              return (
+                <li
+                  key={step.id}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className={
+                    'rounded-lg border text-sm ' +
+                    (isDone
+                      ? 'border-emerald-400/20 text-muted'
+                      : isCurrent
+                        ? 'border-cyan-400/40 bg-cyan-400/5'
+                        : 'border-line/60')
+                  }
+                >
+                  <details open={isCurrent || undefined} data-testid={`lesson-outline-${step.id}`}>
+                    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 focus-visible:outline-cyan-300">
+                      <span className="w-5 shrink-0 text-xs tabular-nums text-muted" aria-hidden>{isDone ? '✓' : index + 1}</span>
+                      <span className="min-w-0 flex-1 font-medium">{t(step.titleKey)}</span>
+                      <span className="shrink-0 text-xs text-muted" title={t(`academy.stepKinds.${step.kind}`)}>
+                        {STEP_ICONS[step.kind]}
+                      </span>
+                      <span className="text-muted" aria-hidden>⌄</span>
+                    </summary>
+                    <div className="border-t border-line/50 px-3 py-2.5">
+                      <LessonStepContent step={step} />
+                    </div>
+                  </details>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        {lesson.relatedBlockIds !== undefined && lesson.relatedBlockIds.length > 0 && (
+          <section className="glass mb-4 rounded-xl p-4">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">
+              {t('academy.lesson.relatedBlocks')}
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {lesson.relatedBlockIds.map((blockId) => (
+                <Link
+                  key={blockId}
+                  to={`/academy/reference?block=${encodeURIComponent(blockId)}`}
+                  className="rounded-lg border border-line px-2.5 py-1 text-xs text-muted transition-colors hover:border-cyan-400/40 hover:text-ink"
+                >
+                  {t(blockRegistry.get(blockId)?.labelKey ?? blockId)}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

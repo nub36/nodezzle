@@ -33,6 +33,8 @@ interface StepBase {
   id: string;
   titleKey: string;
   textKey: string;
+  /** Теория по запросу; основная инструкция остаётся короткой. */
+  detailsKey?: string;
   /** Дополнительная подсказка (показывается по кнопке/бездействию). */
   hintKey?: string;
   target?: TutorialTarget;

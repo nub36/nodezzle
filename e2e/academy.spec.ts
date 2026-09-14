@@ -26,7 +26,15 @@ test.describe('Академия: критический путь обучени�
   test.beforeEach(async ({ page }) => {
     // Чистое состояние обучения и проекта на каждый тест.
     await page.addInitScript(() => {
+      // Инициализируем один раз: повторная очистка при F5 уничтожала
+      // именно тот прогресс, восстановление которого проверяет тест.
+      if (sessionStorage.getItem('academy-e2e-initialized')) return;
       localStorage.clear();
+      localStorage.setItem('nodezzle-academy-v1', JSON.stringify({
+        lessons: { 'intro-what': { status: 'completed', stepIndex: 4, startedAt: 1, completedAt: 2 } },
+        onboarding: { done: true, choice: 'explore' },
+      }));
+      sessionStorage.setItem('academy-e2e-initialized', '1');
     });
   });
 
@@ -57,6 +65,10 @@ test.describe('Академия: критический путь обучени�
 
     // Шаг 5/5 — «Инспектор» (информация).
     await expect(page.getByTestId('tutorial-card')).toHaveAttribute('data-step-id', 'inspector');
+    // Карточка урока не перекрывает инспектор, который просит изучить.
+    const tutorialBox = await page.getByTestId('tutorial-card').boundingBox();
+    const inspectorBox = await page.locator('[data-tutorial="inspector"]').boundingBox();
+    expect(tutorialBox!.x + tutorialBox!.width).toBeLessThanOrEqual(inspectorBox!.x);
     await page.getByTestId('tutorial-ack').click();
 
     // Урок завершён, прогресс виден.

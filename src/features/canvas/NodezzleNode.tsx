@@ -132,7 +132,8 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
         view.academy && 'port-academy',
         connectSuccess && (flashPortId === 'all' || flashPortId === port.id) && 'port-connect-success',
       ),
-      title: view.tooltip,
+      title: view.tooltip ?? `${t(port.labelKey)} · ${t(`portTypes.${port.type}`)}`,
+      'aria-label': `${t(port.labelKey)} · ${t(`portTypes.${port.type}`)}`,
       'data-port-id': port.id,
       'data-port-direction': direction,
       'data-node-id': id,
@@ -173,7 +174,7 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
       data-connection-state={connectSuccess ? 'connect-success' : isDragSource ? 'drag-source' : undefined}
     >
       {/* Заголовок */}
-      <div className="flex items-center gap-2 border-b border-line/70 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 border-b border-line/70 px-2.5 py-2">
         <span className="text-sm" aria-hidden="true">
           {def.ui?.icon ?? '🧩'}
         </span>
@@ -181,46 +182,38 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
           {title}
         </span>
         {def.trigger === true && (
-          <span className="rounded-full bg-fuchsia-400/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-300">
-            {t('canvas.node.trigger')}
+          <span className="shrink-0 text-xs text-fuchsia-300" title={t('canvas.node.trigger')} aria-label={t('canvas.node.trigger')}>
+            ⚡
           </span>
         )}
       </div>
 
-      <div className="px-2 py-1.5">
-        {/* Входы (INPUT) */}
-        {def.inputs.map((p) => (
-          <div key={p.id} className="port-row port-row--input">
-            <Handle id={p.id} type="target" position={Position.Left} {...handleProps(p, 'input')}
-              style={{ ['--port-color' as string]: portColor(p.type) }}
-            />
-            <span className="port-label">
-              {t(p.labelKey)}{' '}
-              <span className="port-type">
-                <span className="port-glyph" style={{ color: portColor(p.type) }}>
-                  {portGlyph(p.type)}
-                </span>{' '}
-                {t(`portTypes.${p.type}`)}
-              </span>
-            </span>
-          </div>
-        ))}
-
-        {/* Выходы (OUTPUT) */}
-        {def.outputs.map((p) => (
-          <div key={p.id} className="port-row port-row--output justify-end text-right">
-            <span className="port-label">
-              {t(p.labelKey)}{' '}
-              <span className="port-type">
-                <span className="port-glyph" style={{ color: portColor(p.type) }}>
-                  {portGlyph(p.type)}
-                </span>{' '}
-                {t(`portTypes.${p.type}`)}
-              </span>
-            </span>
-            <Handle id={p.id} type="source" position={Position.Right} {...handleProps(p, 'output')}
-              style={{ ['--port-color' as string]: portColor(p.type) }}
-            />
+      <div className="node-ports">
+        {(['input', 'output'] as const)
+          .filter((direction) => (direction === 'input' ? def.inputs : def.outputs).length > 0)
+          .map((direction) => (
+            <div key={direction} className={cn('min-w-0',
+              (direction === 'input' ? def.outputs.length === 0 : def.inputs.length === 0) && 'col-span-2',
+            )}>
+              {(direction === 'input' ? def.inputs : def.outputs).map((p) => (
+                <div key={p.id} className={cn('port-row', `port-row--${direction}`)}>
+                  <Handle
+                    id={p.id}
+                    type={direction === 'input' ? 'target' : 'source'}
+                    position={direction === 'input' ? Position.Left : Position.Right}
+                    {...handleProps(p, direction)}
+                    style={{ ['--port-color' as string]: portColor(p.type) }}
+                  />
+                  <span className="port-label" title={`${t(p.labelKey)} · ${t(`portTypes.${p.type}`)}`}>
+                    {t(p.labelKey)}
+                  </span>
+                  <span className="port-glyph shrink-0" style={{ color: portColor(p.type) }}
+                    title={t(`portTypes.${p.type}`)} aria-label={t(`portTypes.${p.type}`)}>
+                    {portGlyph(p.type)}
+                  </span>
+                </div>
+      
+          ))}
           </div>
         ))}
       </div>
