@@ -4,9 +4,27 @@
  */
 
 import type { AcademySnapshot } from '@/academy/types';
+import { blockRegistry } from '@/core/registry/block-registry';
 import { useExecutionStore } from '@/store/execution-store';
 import { useProjectStore } from '@/store/project-store';
 import { useTutorialStore } from '@/store/tutorial-store';
+
+/**
+ * Фактический источник запуска: если на холсте триггеры только одного
+ * направления, рантайм использует его независимо от настроек симулятора
+ * (та же логика, что в `buildTriggerPayload`).
+ */
+export function effectiveRunSource(
+  payloadSource: 'telegram' | 'web',
+  nodes: Array<{ blockId: string }>,
+): 'telegram' | 'web' {
+  const categories = nodes.map((n) => blockRegistry.get(n.blockId)?.category);
+  const hasTelegram = categories.some((c) => typeof c === 'string' && c.startsWith('telegram'));
+  const hasWeb = categories.some((c) => typeof c === 'string' && c.startsWith('web'));
+  if (hasTelegram && !hasWeb) return 'telegram';
+  if (hasWeb && !hasTelegram) return 'web';
+  return payloadSource;
+}
 
 export function buildAcademySnapshot(): AcademySnapshot {
   const project = useProjectStore.getState();

@@ -3,13 +3,15 @@
  * и далее; движок и интерфейс не хардкодят уроки — только читают каталог.
  */
 
+import '@/blocks'; // наполнение реестра: каталог обязан быть самодостаточным
 import { blockRegistry } from '@/core/registry/block-registry';
 import type { LessonDefinition } from './types';
 import { validateCatalog } from './validate';
+import { baseCourse } from './lessons/base-course';
 
 /** Уроки в порядке прохождения (уровень, затем порядок внутри уровня). */
 export const lessons: readonly LessonDefinition[] = [
-  // 5.11D: базовый курс «NODEZZLE с нуля»
+  ...baseCourse, // 5.11D: базовый курс «NODEZZLE с нуля»
 ];
 
 export function getLesson(id: string): LessonDefinition | undefined {

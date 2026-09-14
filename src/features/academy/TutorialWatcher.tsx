@@ -14,7 +14,7 @@ import { useProjectStore } from '@/store/project-store';
 import { useTutorialStore } from '@/store/tutorial-store';
 import { useAcademyStore } from '@/store/academy-store';
 import { useUiStore } from '@/store/ui-store';
-import { buildAcademySnapshot } from './snapshot';
+import { buildAcademySnapshot, effectiveRunSource } from './snapshot';
 
 export function TutorialWatcher() {
   const [searchParams] = useSearchParams();
@@ -56,10 +56,12 @@ export function TutorialWatcher() {
   useEffect(() => {
     if (prevStatus.current === 'running' && runStatus !== 'running') {
       const payload = useExecutionStore.getState().payload;
+      const canvasNodes = useProjectStore.getState().nodes.map((n) => ({ blockId: n.data.blockId }));
+      const source = effectiveRunSource(payload.source, canvasNodes);
       useTutorialStore.getState().recordRun(
         runStatus,
-        payload.source,
-        payload.source === 'telegram' ? payload.text : payload.webJson,
+        source,
+        source === 'telegram' ? payload.text : payload.webJson,
       );
     }
     prevStatus.current = runStatus;
