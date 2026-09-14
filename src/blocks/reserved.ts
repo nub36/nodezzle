@@ -12,6 +12,8 @@ import { dport, eport } from './shared';
 export const reservedBlocks: BlockDefinition[] = [
   {
     id: 'memory.variable',
+    status: 'planned',
+    keywords: ['память', 'переменная', 'значение', 'хранение'],
     labelKey: 'blocks.memory.variable.label',
     descriptionKey: 'blocks.memory.variable.description',
     category: 'memory',
@@ -24,6 +26,8 @@ export const reservedBlocks: BlockDefinition[] = [
   },
   {
     id: 'memory.shared',
+    status: 'planned',
+    keywords: ['память', 'общее хранилище', 'ключ', 'доступ'],
     labelKey: 'blocks.memory.shared.label',
     descriptionKey: 'blocks.memory.shared.description',
     category: 'memory',
@@ -36,6 +40,8 @@ export const reservedBlocks: BlockDefinition[] = [
   },
   {
     id: 'error.handle',
+    status: 'planned',
+    keywords: ['ошибка', 'обработка', 'перехват', 'восстановление'],
     labelKey: 'blocks.error.handle.label',
     descriptionKey: 'blocks.error.handle.description',
     category: 'flow',
@@ -47,6 +53,8 @@ export const reservedBlocks: BlockDefinition[] = [
   },
   {
     id: 'event.send',
+    status: 'planned',
+    keywords: ['событие', 'отправить', 'сообщение', 'шина'],
     labelKey: 'blocks.event.send.label',
     descriptionKey: 'blocks.event.send.description',
     category: 'flow',
@@ -59,6 +67,8 @@ export const reservedBlocks: BlockDefinition[] = [
   },
   {
     id: 'event.receive',
+    status: 'planned',
+    keywords: ['событие', 'получить', 'слушать', 'шина'],
     labelKey: 'blocks.event.receive.label',
     descriptionKey: 'blocks.event.receive.description',
     category: 'flow',
@@ -73,6 +83,8 @@ export const reservedBlocks: BlockDefinition[] = [
   },
   {
     id: 'http.request',
+    status: 'planned',
+    keywords: ['интернет', 'запрос', 'апи', 'сеть'],
     labelKey: 'blocks.http.request.label',
     descriptionKey: 'blocks.http.request.description',
     category: 'http',
@@ -85,6 +97,8 @@ export const reservedBlocks: BlockDefinition[] = [
   },
   {
     id: 'ai.text',
+    status: 'planned',
+    keywords: ['ии', 'нейросеть', 'текст', 'генерация', 'промпт'],
     labelKey: 'blocks.ai.text.label',
     descriptionKey: 'blocks.ai.text.description',
     category: 'ai',

@@ -3,7 +3,7 @@
  *
  * Фундаментальные инварианты библиотеки: уникальность, порты, типы,
  * статусы, сложность, русские названия, поиск и быстрая вставка.
- * Полный подсчёт «16 категорий × 10+» добавляется финальным аудитом (часть H).
+ * Финальный аудит Этапа 4 (часть H): порог «16 категорий × 10+».
  */
 
 import '../blocks'; // регистрация всех блоков приложения
@@ -98,6 +98,28 @@ describe('Каталог блоков — фундаментальные инв�
     expect(matchesQuery(gate, 'заслонка', texts(gate))).toBe(true);
     const compare = blockRegistry.get('logic.compare')!;
     expect(matchesQuery(compare, 'срав', texts(compare))).toBe(true);
+  });
+
+  it('итог Этапа 4: 16 обязательных категорий по 10+ определений, всего 160+', () => {
+    const REQUIRED = [
+      'core', 'logic', 'data', 'flow',
+      'telegram_events', 'telegram_actions', 'web_ui', 'web_events',
+      'models', 'memory', 'http', 'datetime',
+      'media', 'security', 'debug', 'converters',
+    ];
+    const byCategory = new Map<string, number>();
+    for (const b of all) byCategory.set(b.category, (byCategory.get(b.category) ?? 0) + 1);
+    for (const cat of REQUIRED) {
+      const n = byCategory.get(cat) ?? 0;
+      expect(n, `категория ${cat}: нужно 10+, есть ${n}`).toBeGreaterThanOrEqual(10);
+    }
+    expect(all.length).toBeGreaterThanOrEqual(160);
+    // У каждой детали библиотеки есть русское имя и ключевые слова
+    // (включая скрытые — они попадут в палитру при реализации).
+    for (const b of all) {
+      expect(ruBlocks[b.id]?.label, `нет названия: ${b.id}`).toBeTruthy();
+      expect((b.keywords ?? []).length, `нет ключевых слов: ${b.id}`).toBeGreaterThan(0);
+    }
   });
 
   it('быстрая вставка видит новые блоки через общий реестр и систему типов', () => {
