@@ -40,19 +40,89 @@ import {
 } from './library-utils';
 import { QuickInsertMenu, QuickInsertStarter } from './QuickInsert';
 import { CanvasContextMenu, type ContextMenuItem } from './ContextMenu';
-import { useUiStore } from '@/store/ui-store';
+import { useUiStore, type EffectsMode } from '@/store/ui-store';
+import { useConnectionFxStore } from '@/store/connection-fx-store';
 import { InspectorPanel } from './InspectorPanel';
 import { Toolbar } from './Toolbar';
 import { CreateModelDialog } from './CreateModelDialog';
 import { GroupFrames } from './GroupFrames';
 import { DebugPanel } from './DebugPanel';
 import { blockRegistry } from '@/core/registry/block-registry';
-import { isCompatible } from '@/core/type-system/compatibility';
+import { checkCompatibility, isCompatible } from '@/core/type-system/compatibility';
 import { CATEGORY_COLORS } from './categoryColors';
 import type { CanvasNodeData } from '@/core/project/serialize';
 import type { DragPortInfo } from '@/store/project-store';
 
 const nodeTypes = { nodezzle: NodezzleNode };
+
+
+/**
+ * Эффективный режим эффектов: при системной настройке
+ * `prefers-reduced-motion` полный режим понижается до уменьшенного.
+ */
+function useEffectiveEffectsMode(): EffectsMode {
+  const mode = useUiStore((s) => s.effectsMode);
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setReduced(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  return mode === 'full' && reduced ? 'reduced' : mode;
+}
+
+/**
+ * Состояние «готов к подключению» во время перетаскивания соединения.
+ * Во время жеста перетаскивания браузер не шлёт обычные события
+ * наведения на порты, поэтому цель ищем через `elementFromPoint`.
+ * Обновление стора происходит ТОЛЬКО при смене цели — перерисовок на
+ * каждое движение мыши нет.
+ */
+function useConnectionHover(dragPort: ReturnType<typeof useProjectStore.getState>['dragPort']): void {
+  useEffect(() => {
+    if (dragPort === null) {
+      useConnectionFxStore.getState().clearHoverPort();
+      return;
+    }
+    const onMove = (e: PointerEvent) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const handle = el instanceof Element
+        ? el.closest('.nzz-handle[data-port-id][data-node-id]')
+        : null;
+      const fx = useConnectionFxStore.getState();
+      if (handle === null) {
+        fx.clearHoverPort();
+        return;
+      }
+      const nodeId = handle.getAttribute('data-node-id') ?? '';
+      const portId = handle.getAttribute('data-port-id') ?? '';
+      if (nodeId === dragPort.nodeId) {
+        fx.clearHoverPort();
+        return;
+      }
+      const node = useProjectStore.getState().nodes.find((n) => n.id === nodeId);
+      const def = node ? blockRegistry.get(node.data.blockId) : undefined;
+      const port = def === undefined
+        ? undefined
+        : (dragPort.direction === 'output' ? def.inputs : def.outputs).find((pp) => pp.id === portId);
+      if (port === undefined) {
+        fx.clearHoverPort();
+        return;
+      }
+      const sourceSide = { id: dragPort.portId, labelKey: '', kind: dragPort.kind, type: dragPort.type };
+      const ok = dragPort.direction === 'output'
+        ? checkCompatibility(sourceSide, port).allowed
+        : checkCompatibility(port, sourceSide).allowed;
+      if (ok) fx.setHoverPort({ nodeId, portId });
+      else fx.clearHoverPort();
+    };
+    document.addEventListener('pointermove', onMove, { passive: true });
+    return () => document.removeEventListener('pointermove', onMove);
+  }, [dragPort]);
+}
 
 export function CanvasPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -141,8 +211,11 @@ function FlowCanvas() {
   const ungroupGroup = useProjectStore((s) => s.ungroupGroup);
 
   const flowEdges = useExecutionStore((s) => s.flowEdges);
-  const effectsEnabled = useUiStore((s) => s.effectsEnabled);
+  const effectsMode = useEffectiveEffectsMode();
   const schemaQuery = useUiStore((s) => s.schemaQuery);
+  const dragPort = useProjectStore((s) => s.dragPort);
+  const connectFx = useConnectionFxStore((s) => s.success);
+  useConnectionHover(dragPort);
 
   // Рёбра: цвет типа порта + анимация «текущих» данных во время выполнения.
   // Переключатель эффектов (тулбар) отключает анимацию.
@@ -150,10 +223,15 @@ function FlowCanvas() {
     (list: Edge[]): Edge[] =>
       list.map((e) => ({
         ...e,
-        animated: effectsEnabled && flowEdges.includes(e.id),
+        // Анимация «текущих данных» — только состояние ВЫПОЛНЕНИЯ и
+        // только в полном режиме эффектов (уменьшенный — без движения).
+        animated: effectsMode === 'full' && flowEdges.includes(e.id),
+        // Одноразовый импульс по только что созданному соединению —
+        // подтверждение соединения (не путать с выполнением).
+        className: connectFx !== null && e.id === connectFx.edgeId ? 'nzz-edge-pulse' : undefined,
         style: { stroke: (e.data as { color?: string })?.color ?? '#475569', strokeWidth: 1.8 },
       })),
-    [flowEdges, effectsEnabled],
+    [flowEdges, effectsMode, connectFx],
   );
 
   // Поиск по схеме (тулбар): неподходящие узлы приглушаются.
@@ -294,6 +372,7 @@ function FlowCanvas() {
     (event: MouseEvent | TouchEvent) => {
       const port = useProjectStore.getState().dragPort;
       setDragPort(null);
+      useConnectionFxStore.getState().clearHoverPort();
       const fired = connectFired.current;
       connectFired.current = false;
       if (fired || !port || !wrapperRef.current) return;
@@ -466,6 +545,7 @@ function FlowCanvas() {
       ref={wrapperRef}
       className="grid-bg relative flex-1 overflow-hidden"
       data-tutorial="canvas"
+      data-effects={effectsMode}
       onDrop={onDrop}
       onDragOver={onDragOver}
     >

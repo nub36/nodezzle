@@ -16,6 +16,7 @@ import {
 } from '@xyflow/react';
 import i18n from 'i18next';
 import { create } from 'zustand';
+import { useConnectionFxStore } from './connection-fx-store';
 import { projectStorage } from '@/core/project/storage';
 import { canvasToFlow, flowToCanvas, type CanvasNodeData } from '@/core/project/serialize';
 import type { CanvasGroup, NodezzleProject, ProjectKind, ProjectSummary } from '@/core/project/schema';
@@ -502,6 +503,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         data: { color },
       };
       set({ edges: [...edges, edge] });
+      // Визуальное подтверждение соединения (эфемерный эффект — не
+      // попадает в данные проекта; состояние выполнения отдельно).
+      useConnectionFxStore.getState().markConnectSuccess({
+        edgeId: edge.id,
+        sourceNodeId: connection.source,
+        targetNodeId: connection.target,
+      });
       commit(before);
     },
 

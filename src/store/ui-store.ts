@@ -20,6 +20,17 @@ export type LibraryTab = 'basic' | 'all' | 'favorites' | 'recent' | 'myPieces' |
 /** Режим работы со схемой (Этап 2, подэтап B). */
 export type CanvasMode = 'draft' | 'live';
 
+/**
+ * Режим визуальных эффектов (соединения, выполнение):
+ *  - `full` — полные: свечение, пульс, небольшой масштаб;
+ *  - `reduced` — уменьшенные: короткая смена цвета/контура без движения;
+ *  - `off` — только статическая индикация совместимости портов.
+ */
+export type EffectsMode = 'full' | 'reduced' | 'off';
+
+/** Порядок переключения эффектов кнопкой тулбара. */
+export const EFFECTS_CYCLE: readonly EffectsMode[] = ['full', 'reduced', 'off'];
+
 /** Сколько недавних деталей храним. */
 export const RECENT_LIMIT = 10;
 
@@ -27,8 +38,8 @@ interface UiState {
   libraryTab: LibraryTab;
   libraryQuery: string;
   canvasMode: CanvasMode;
-  /** Визуальные эффекты выполнения (частицы по соединениям). */
-  effectsEnabled: boolean;
+  /** Режим визуальных эффектов: полный / уменьшенный / выключен. */
+  effectsMode: EffectsMode;
   /** Поиск по схеме (состояние сессии, не сохраняется). */
   schemaQuery: string;
   /** Режим фокуса: приглушить всё, кроме выбранной детали и её связей. */
@@ -46,6 +57,7 @@ interface UiState {
   setLibraryQuery: (query: string) => void;
   setCanvasMode: (mode: CanvasMode) => void;
   toggleEffects: () => void;
+  setEffectsMode: (mode: EffectsMode) => void;
   setSchemaQuery: (query: string) => void;
   toggleFocusMode: () => void;
   setDebugOpen: (open: boolean) => void;
@@ -86,7 +98,7 @@ export const useUiStore = create<UiState>()(
       libraryTab: 'basic',
       libraryQuery: '',
       canvasMode: 'draft',
-      effectsEnabled: true,
+      effectsMode: 'full',
       schemaQuery: '',
       focusMode: false,
       debugOpen: true,
@@ -98,7 +110,12 @@ export const useUiStore = create<UiState>()(
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setLibraryQuery: (query) => set({ libraryQuery: query }),
       setCanvasMode: (mode) => set({ canvasMode: mode }),
-      toggleEffects: () => set((state) => ({ effectsEnabled: !state.effectsEnabled })),
+      toggleEffects: () =>
+        set((state) => {
+          const i = EFFECTS_CYCLE.indexOf(state.effectsMode);
+          return { effectsMode: EFFECTS_CYCLE[(i + 1) % EFFECTS_CYCLE.length] };
+        }),
+      setEffectsMode: (mode) => set({ effectsMode: mode }),
       setSchemaQuery: (query) => set({ schemaQuery: query }),
       toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
 
@@ -124,11 +141,21 @@ export const useUiStore = create<UiState>()(
     {
       name: 'nodezzle-ui-v1',
       storage: createJSONStorage(resolveStorage),
+      version: 2,
+      // Старое поле `effectsEnabled` (до 0.5.28) → режим эффектов.
+      migrate: (persisted, version) => {
+        const p = persisted as Record<string, unknown>;
+        if (version < 2) {
+          p.effectsMode = p.effectsEnabled === false ? 'off' : 'full';
+          delete p.effectsEnabled;
+        }
+        return p as never;
+      },
       // Поисковая строка — состояние сессии, не сохраняем.
       partialize: (state) => ({
         libraryTab: state.libraryTab,
         canvasMode: state.canvasMode,
-        effectsEnabled: state.effectsEnabled,
+        effectsMode: state.effectsMode,
         focusMode: state.focusMode,
         favorites: state.favorites,
         recent: state.recent,

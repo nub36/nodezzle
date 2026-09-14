@@ -47,7 +47,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
 
   const canvasMode = useUiStore((s) => s.canvasMode);
   const setCanvasMode = useUiStore((s) => s.setCanvasMode);
-  const effectsEnabled = useUiStore((s) => s.effectsEnabled);
+  const effectsMode = useUiStore((s) => s.effectsMode);
   const toggleEffects = useUiStore((s) => s.toggleEffects);
   const focusMode = useUiStore((s) => s.focusMode);
   const toggleFocusMode = useUiStore((s) => s.toggleFocusMode);
@@ -178,13 +178,18 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         </button>
       </div>
 
-      {/* Эффекты выполнения */}
+      {/* Режим визуальных эффектов: полные / уменьшенные / выключены */}
       <button
-        className={cn('btn-ghost !px-2.5 !py-1.5 text-xs', effectsEnabled && '!border-cyan-400/40 !text-cyan-200')}
+        className={cn(
+          'btn-ghost !px-2.5 !py-1.5 text-xs',
+          effectsMode !== 'off' && '!border-cyan-400/40 !text-cyan-200',
+        )}
         onClick={toggleEffects}
-        title={t('canvas.toolbar.effects')}
+        title={t(`canvas.toolbar.effects.${effectsMode}`)}
+        data-testid="effects-mode"
+        data-effects-mode={effectsMode}
       >
-        ✨
+        {effectsMode === 'full' ? '✨' : effectsMode === 'reduced' ? '🌗' : '○'}
       </button>
 
       {/* Режим фокуса */}

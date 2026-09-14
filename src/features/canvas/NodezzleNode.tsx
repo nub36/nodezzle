@@ -2,23 +2,48 @@
  * Кастомный узел Canvas: рендерится из Block Definition.
  *
  * - порты (INPUT/OUTPUT) — из дефиниции, с типами и цветами;
- * - подсветка совместимых портов во время перетаскивания соединения
- *   (УМНЫЕ СОЕДИНЕНИЯ);
+ * - визуальный жизненный цикл соединения (0.5.28):
+ *   активный исходный порт → совместимые/несовместимые цели →
+ *   «готов к подключению» при наведении → короткая вспышка успеха;
+ * - подсветка портов, которые требует текущий шаг урока Академии
+ *   (шаг «соединить»);
  * - визуальные состояния живого выполнения: RUNNING (неоновый пульс),
  *   SUCCESS (мягкий зелёный), ERROR (красный), SKIPPED (приглушён).
+ *   Выполнение и подтверждение соединения — РАЗНЫЕ состояния и
+ *   разные сторы (execution-store и connection-fx-store).
  */
 
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 import { blockRegistry } from '@/core/registry/block-registry';
-import { checkCompatibility, portColor, portGlyph } from '@/core/type-system/compatibility';
+import { portColor, portGlyph } from '@/core/type-system/compatibility';
 import type { PortDefinition } from '@/core/types/ports';
 import type { CanvasNodeData } from '@/core/project/serialize';
 import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
+import { useConnectionFxStore } from '@/store/connection-fx-store';
+import { useTutorialStore } from '@/store/tutorial-store';
+import type { ConnectStep } from '@/academy/types';
 import { cn, translateError } from '@/lib/utils';
+import {
+  getPortVisualState,
+  incompatibleTooltip,
+  isSourcePortActive,
+  type PortVisualState,
+} from './port-state';
 
-type PortVisualState = 'neutral' | 'compatible' | 'incompatible';
+/** Порт, который подсвечивает текущий шаг Академии «соединить». */
+function isAcademyTargetPort(
+  step: ConnectStep,
+  blockId: string,
+  portId: string,
+  direction: 'input' | 'output',
+): boolean {
+  if (direction === 'output') {
+    return step.fromBlockId === blockId && (step.fromPortId === undefined || step.fromPortId === portId);
+  }
+  return step.toBlockId === blockId && (step.toPortId === undefined || step.toPortId === portId);
+}
 
 export function NodezzleNode({ id, data, selected }: NodeProps) {
   const { t } = useTranslation();
@@ -27,6 +52,19 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
   const status = useExecutionStore((s) => s.nodeStates[id]);
   const runInfo = useExecutionStore((s) => s.nodeInfo[id]);
   const dragPort = useProjectStore((s) => s.dragPort);
+  // Селекторы возвращают примитивы: узел перерисовывается только когда
+  // эффект касается ИМЕННО его (без глобальных перерисовок холста).
+  const connectSuccess = useConnectionFxStore(
+    (s) => s.success !== null && (s.success.sourceNodeId === id || s.success.targetNodeId === id),
+  );
+  const readyPortId = useConnectionFxStore((s) =>
+    s.hoverPort !== null && s.hoverPort.nodeId === id ? s.hoverPort.portId : null,
+  );
+  const academyConnect = useTutorialStore((s) => {
+    if (s.lesson === null || !s.active || s.finished) return null;
+    const step = s.lesson.steps[s.stepIndex];
+    return step !== undefined && step.kind === 'connect' ? step : null;
+  });
 
   // Стикер-заметка (Этап 2, подэтап F): особый рендер, в выполнении не участвует.
   if (nodeData.blockId === 'note.sticky') {
@@ -51,28 +89,64 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
     );
   }
 
-  const portState = (port: PortDefinition, direction: 'input' | 'output'): PortVisualState => {
-    if (!dragPort || dragPort.nodeId === id) return 'neutral';
-    let allowed: boolean;
-    if (dragPort.direction === 'output') {
-      if (direction !== 'input') return 'neutral';
-      allowed = checkCompatibility(
-        { id: dragPort.portId, labelKey: '', kind: dragPort.kind, type: dragPort.type },
-        port,
-      ).allowed;
-    } else {
-      if (direction !== 'output') return 'neutral';
-      allowed = checkCompatibility(port, {
-        id: dragPort.portId,
-        labelKey: '',
-        kind: dragPort.kind,
-        type: dragPort.type,
-      }).allowed;
+  const isDragSource = dragPort !== null && dragPort.nodeId === id;
+
+  /** Всё визуальное состояние одного порта. */
+  const portView = (port: PortDefinition, direction: 'input' | 'output') => {
+    const state: PortVisualState = getPortVisualState(dragPort, id, port, direction);
+    const active = isSourcePortActive(dragPort, id, port.id);
+    const ready = readyPortId === port.id;
+    const academy = academyConnect !== null
+      && isAcademyTargetPort(academyConnect, nodeData.blockId, port.id, direction);
+    let tooltip: string | undefined;
+    if (state === 'incompatible' && dragPort !== null) {
+      const { fromType, toType } = incompatibleTooltip(dragPort, port);
+      tooltip = t('canvas.port.incompatible', {
+        from: t(`portTypes.${fromType}`),
+        to: t(`portTypes.${toType}`),
+      });
     }
-    return allowed ? 'compatible' : 'incompatible';
+    return { state, active, ready, academy, tooltip };
+  };
+
+  const handleProps = (port: PortDefinition, direction: 'input' | 'output') => {
+    const view = portView(port, direction);
+    const candidate = dragPort !== null && !view.active && direction === (dragPort.direction === 'output' ? 'input' : 'output');
+    return {
+      className: cn(
+        'nzz-handle',
+        port.kind === 'event' && 'nzz-handle--event',
+        port.kind === 'error' && 'nzz-handle--error',
+        view.state === 'compatible' && 'port-compatible',
+        view.state === 'incompatible' && 'port-incompatible',
+        view.active && 'port-active',
+        view.ready && 'port-ready',
+        view.academy && 'port-academy',
+        connectSuccess && 'port-connect-success',
+      ),
+      title: view.tooltip,
+      'data-port-id': port.id,
+      'data-port-direction': direction,
+      'data-node-id': id,
+      'data-port-active': view.active ? 'true' : undefined,
+      'data-port-compatible': candidate
+        ? view.state === 'compatible' ? 'true' : 'false'
+        : undefined,
+      'data-port-ready': view.ready ? 'true' : undefined,
+      onPointerEnter: () => {
+        if (view.state === 'compatible') {
+          useConnectionFxStore.getState().setHoverPort({ nodeId: id, portId: port.id });
+        }
+      },
+      onPointerLeave: () => {
+        if (readyPortId === port.id) useConnectionFxStore.getState().clearHoverPort();
+      },
+    };
   };
 
   const title = nodeData.label || t(def.labelKey);
+  const academyNode = academyConnect !== null
+    && (academyConnect.fromBlockId === nodeData.blockId || academyConnect.toBlockId === nodeData.blockId);
 
   return (
     <div
@@ -83,9 +157,12 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
         status === 'success' && 'status-success',
         status === 'error' && 'status-error',
         status === 'skipped' && 'status-skipped',
+        connectSuccess && 'node-connect-success',
+        academyNode && 'node-academy-target',
       )}
       data-testid={`canvas-node-${nodeData.blockId}`}
       data-node-id={id}
+      data-connection-state={connectSuccess ? 'connect-success' : isDragSource ? 'drag-source' : undefined}
     >
       {/* Заголовок */}
       <div className="flex items-center gap-2 border-b border-line/70 px-3 py-2.5">
@@ -104,66 +181,40 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
 
       <div className="px-2 py-1.5">
         {/* Входы (INPUT) */}
-        {def.inputs.map((p) => {
-          const state = portState(p, 'input');
-          return (
-            <div key={p.id} className="port-row port-row--input">
-              <Handle
-                id={p.id}
-                type="target"
-                position={Position.Left}
-                className={cn(
-                  'nzz-handle',
-                  p.kind === 'event' && 'nzz-handle--event',
-                  p.kind === 'error' && 'nzz-handle--error',
-                  state === 'compatible' && 'port-compatible',
-                  state === 'incompatible' && 'port-incompatible',
-                )}
-                style={{ ['--port-color' as string]: portColor(p.type) }}
-              />
-              <span className="port-label">
-                {t(p.labelKey)}{' '}
-                <span className="port-type">
-                  <span className="port-glyph" style={{ color: portColor(p.type) }}>
-                    {portGlyph(p.type)}
-                  </span>{' '}
-                  {t(`portTypes.${p.type}`)}
-                </span>
+        {def.inputs.map((p) => (
+          <div key={p.id} className="port-row port-row--input">
+            <Handle id={p.id} type="target" position={Position.Left} {...handleProps(p, 'input')}
+              style={{ ['--port-color' as string]: portColor(p.type) }}
+            />
+            <span className="port-label">
+              {t(p.labelKey)}{' '}
+              <span className="port-type">
+                <span className="port-glyph" style={{ color: portColor(p.type) }}>
+                  {portGlyph(p.type)}
+                </span>{' '}
+                {t(`portTypes.${p.type}`)}
               </span>
-            </div>
-          );
-        })}
+            </span>
+          </div>
+        ))}
 
         {/* Выходы (OUTPUT) */}
-        {def.outputs.map((p) => {
-          const state = portState(p, 'output');
-          return (
-            <div key={p.id} className="port-row port-row--output justify-end text-right">
-              <span className="port-label">
-                {t(p.labelKey)}{' '}
-                <span className="port-type">
-                  <span className="port-glyph" style={{ color: portColor(p.type) }}>
-                    {portGlyph(p.type)}
-                  </span>{' '}
-                  {t(`portTypes.${p.type}`)}
-                </span>
+        {def.outputs.map((p) => (
+          <div key={p.id} className="port-row port-row--output justify-end text-right">
+            <span className="port-label">
+              {t(p.labelKey)}{' '}
+              <span className="port-type">
+                <span className="port-glyph" style={{ color: portColor(p.type) }}>
+                  {portGlyph(p.type)}
+                </span>{' '}
+                {t(`portTypes.${p.type}`)}
               </span>
-              <Handle
-                id={p.id}
-                type="source"
-                position={Position.Right}
-                className={cn(
-                  'nzz-handle',
-                  p.kind === 'event' && 'nzz-handle--event',
-                  p.kind === 'error' && 'nzz-handle--error',
-                  state === 'compatible' && 'port-compatible',
-                  state === 'incompatible' && 'port-incompatible',
-                )}
-                style={{ ['--port-color' as string]: portColor(p.type) }}
-              />
-            </div>
-          );
-        })}
+            </span>
+            <Handle id={p.id} type="source" position={Position.Right} {...handleProps(p, 'output')}
+              style={{ ['--port-color' as string]: portColor(p.type) }}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Статус / ошибка выполнения */}

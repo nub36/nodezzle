@@ -299,6 +299,154 @@ select.input-dark {
   opacity: 0.28;
 }
 
+/* ============================================================
+   Визуальный жизненный цикл соединения (0.5.28)
+   1) активный исходный порт → 2) совместимые/несовместимые цели
+   → 3) «готов к подключению» → 4) вспышка успеха + импульс линии.
+   Управление режимами: [data-effects] на обёртке холста
+   (полные / уменьшенные / выключены).
+   ============================================================ */
+
+/* 1. Исходный порт активируется, когда из него тянут соединение. */
+.nzz-handle.port-active {
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.35), 0 0 12px rgba(34, 211, 238, 0.7);
+  transform: scale(1.18);
+}
+.nzz-handle--event.port-active {
+  transform: rotate(45deg) scale(1.12);
+}
+
+/* 2. READY TO CONNECT: курсор над совместимым портом. */
+.nzz-handle.port-ready {
+  border-color: #34d399;
+  box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.4), 0 0 18px rgba(52, 211, 153, 0.9);
+  transform: scale(1.35);
+}
+.nzz-handle--event.port-ready {
+  transform: rotate(45deg) scale(1.25);
+}
+
+/* 3. Академия: порты, которые требует текущий шаг «соединить». */
+.nzz-handle.port-academy {
+  animation: port-academy-pulse 1.6s ease-in-out infinite;
+}
+.nodezzle-node.node-academy-target {
+  border-color: rgba(251, 191, 36, 0.5);
+}
+@keyframes port-academy-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3), 0 0 8px rgba(251, 191, 36, 0.5); }
+  50% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.5), 0 0 14px rgba(251, 191, 36, 0.8); }
+}
+
+/* 4. CONNECT_SUCCESS: короткая вспышка (~650 мс), без постоянного свечения. */
+.nzz-handle.port-connect-success {
+  animation: port-connect-flash 0.6s ease-out;
+}
+.nodezzle-node.node-connect-success {
+  animation: node-connect-flash 0.6s ease-out;
+}
+@keyframes port-connect-flash {
+  0% { box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.85), 0 0 16px rgba(52, 211, 153, 0.95); transform: scale(1.3); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0), 0 0 0 rgba(52, 211, 153, 0); transform: scale(1); }
+}
+@keyframes node-connect-flash {
+  0% { box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.5), 0 0 26px rgba(52, 211, 153, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0), 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+/* 5. Одноразовый импульс по новой линии (подтверждение соединения;
+      НЕ анимация выполнения — она идёт через .animated у рёбер). */
+.nzz-edge-pulse .react-flow__edge-path {
+  stroke-dasharray: 14 46;
+  animation: edge-connect-pulse 0.65s linear 1;
+}
+@keyframes edge-connect-pulse {
+  0% { stroke-dashoffset: 120; stroke-width: 3.2; }
+  100% { stroke-dashoffset: 0; stroke-width: 1.8; }
+}
+
+/* --- УМЕНЬШЕННЫЕ эффекты: только цвет/контур, без движения --- */
+[data-effects='reduced'] .nzz-handle.port-compatible,
+[data-effects='reduced'] .nzz-handle.port-active,
+[data-effects='reduced'] .nzz-handle.port-ready {
+  transform: none;
+}
+[data-effects='reduced'] .nzz-handle.port-ready {
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.55);
+}
+[data-effects='reduced'] .nzz-handle.port-academy {
+  animation: none;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.45);
+}
+[data-effects='reduced'] .nzz-handle.port-connect-success,
+[data-effects='reduced'] .nodezzle-node.node-connect-success {
+  animation: none;
+}
+[data-effects='reduced'] .nzz-handle.port-connect-success {
+  border-color: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.5);
+}
+[data-effects='reduced'] .nodezzle-node.node-connect-success {
+  border-color: rgba(52, 211, 153, 0.75);
+}
+[data-effects='reduced'] .nzz-edge-pulse .react-flow__edge-path {
+  animation: none;
+  stroke-dasharray: none;
+  stroke-width: 2.6;
+}
+[data-effects='reduced'] .nodezzle-node.status-running {
+  animation: none;
+}
+
+/* --- ЭФФЕКТЫ ВЫКЛЮЧЕНЫ: только статическая индикация --- */
+[data-effects='off'] .nzz-handle.port-compatible {
+  transform: none;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.5);
+}
+[data-effects='off'] .nzz-handle.port-active {
+  transform: none;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.65);
+}
+[data-effects='off'] .nzz-handle.port-ready {
+  transform: none;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.75);
+}
+[data-effects='off'] .nzz-handle.port-incompatible {
+  opacity: 0.45;
+}
+[data-effects='off'] .nzz-handle.port-academy {
+  animation: none;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.6);
+}
+[data-effects='off'] .nzz-handle.port-connect-success,
+[data-effects='off'] .nodezzle-node.node-connect-success {
+  animation: none;
+}
+[data-effects='off'] .nodezzle-node.node-connect-success {
+  border-color: rgba(52, 211, 153, 0.6);
+}
+[data-effects='off'] .nzz-edge-pulse .react-flow__edge-path {
+  animation: none;
+  stroke-dasharray: none;
+}
+[data-effects='off'] .nodezzle-node.status-running {
+  animation: none;
+}
+
+/* Системная настройка «меньше движения» гасит анимации и в полном режиме
+   (дополнительно к понижению режима в коде). */
+@media (prefers-reduced-motion: reduce) {
+  .nzz-handle.port-active,
+  .nzz-handle.port-ready,
+  .nzz-handle.port-academy,
+  .nzz-handle.port-connect-success,
+  .nodezzle-node.node-connect-success,
+  .nzz-edge-pulse .react-flow__edge-path,
+  .nodezzle-node.status-running {
+    animation: none;
+  }
+}
+
 .port-row {
   display: flex;
   align-items: center;

@@ -10,7 +10,7 @@ function resetStore() {
     libraryTab: 'basic',
     libraryQuery: '',
     canvasMode: 'draft',
-    effectsEnabled: true,
+    effectsMode: 'full',
     schemaQuery: '',
     focusMode: false,
     favorites: [],
@@ -71,7 +71,7 @@ describe('UI-store: библиотека деталей', () => {
     expect(persisted).toHaveProperty('favorites');
     expect(persisted).toHaveProperty('recent');
     expect(persisted).toHaveProperty('canvasMode');
-    expect(persisted).toHaveProperty('effectsEnabled');
+    expect(persisted).toHaveProperty('effectsMode');
     expect(useUiStore.persist.getOptions().name).toBe('nodezzle-ui-v1');
   });
 
@@ -83,12 +83,28 @@ describe('UI-store: библиотека деталей', () => {
     expect(useUiStore.getState().canvasMode).toBe('draft');
   });
 
-  it('визуальные эффекты включаются и выключаются', () => {
-    expect(useUiStore.getState().effectsEnabled).toBe(true);
+  it('визуальные эффекты: три режима и циклическое переключение', () => {
+    expect(useUiStore.getState().effectsMode).toBe('full');
     useUiStore.getState().toggleEffects();
-    expect(useUiStore.getState().effectsEnabled).toBe(false);
+    expect(useUiStore.getState().effectsMode).toBe('reduced');
     useUiStore.getState().toggleEffects();
-    expect(useUiStore.getState().effectsEnabled).toBe(true);
+    expect(useUiStore.getState().effectsMode).toBe('off');
+    useUiStore.getState().toggleEffects();
+    expect(useUiStore.getState().effectsMode).toBe('full');
+    useUiStore.getState().setEffectsMode('reduced');
+    expect(useUiStore.getState().effectsMode).toBe('reduced');
+  });
+
+  it('миграция настроек: старое поле effectsEnabled превращается в режим', () => {
+    const migrate = useUiStore.persist.getOptions().migrate as (
+      p: Record<string, unknown>,
+      v: number,
+    ) => Record<string, unknown>;
+    const migrated = migrate({ effectsEnabled: false, libraryTab: 'basic' }, 1);
+    expect(migrated.effectsMode).toBe('off');
+    expect(migrated).not.toHaveProperty('effectsEnabled');
+    const migratedOn = migrate({ effectsEnabled: true }, 1);
+    expect(migratedOn.effectsMode).toBe('full');
   });
 
   it('поиск по схеме хранится в сторе', () => {
