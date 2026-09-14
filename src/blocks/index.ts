@@ -29,6 +29,8 @@ import { modelExtendedBlocks } from './models/extended';
 import { memoryBlocks } from './memory/blocks';
 import { datetimeExtendedBlocks } from './datetime/extended';
 import { httpBlocks } from './http/blocks';
+import { mediaBlocks } from './media/blocks';
+import { securityBlocks } from './security/blocks';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -51,6 +53,8 @@ const ALL_BLOCKS = [
   ...datetimeBlocks,
   ...datetimeExtendedBlocks,
   ...httpBlocks,
+  ...mediaBlocks,
+  ...securityBlocks,
   ...reservedBlocks,
   ...noteBlocks,
 ];

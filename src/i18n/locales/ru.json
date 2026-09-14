@@ -460,7 +460,18 @@
       "headers": "Заголовки",
       "status": "Статус",
       "base": "Основание",
-      "params": "Параметры"
+      "params": "Параметры",
+      "width": "Ширина",
+      "height": "Высота",
+      "info": "Сведения",
+      "hash": "Хеш",
+      "id": "Идентификатор",
+      "token": "Токен",
+      "name": "Имя",
+      "names": "Имена",
+      "secret": "Секрет",
+      "event": "Событие",
+      "image": "Изображение"
     },
     "core.text": {
       "label": "Текст",
@@ -1019,6 +1030,86 @@
     "http.build_url": {
       "label": "Собрать адрес",
       "description": "Собирает адрес из основания и параметров запроса"
+    },
+    "media.image_upload": {
+      "label": "Загрузить картинку",
+      "description": "Принимает файл изображения и выдаёт его как картинку"
+    },
+    "media.image_resize": {
+      "label": "Изменить размер картинки",
+      "description": "Масштабирует картинку до нужной ширины и высоты"
+    },
+    "media.image_info": {
+      "label": "Свойства картинки",
+      "description": "Ширина, высота и формат картинки"
+    },
+    "media.file_info": {
+      "label": "Свойства файла",
+      "description": "Имя, размер и тип файла"
+    },
+    "media.file_read_text": {
+      "label": "Прочитать файл как текст",
+      "description": "Читает текстовое содержимое файла"
+    },
+    "media.file_to_base64": {
+      "label": "Файл в Base64",
+      "description": "Кодирует файл в текстовую строку Base64"
+    },
+    "media.base64_to_file": {
+      "label": "Base64 в файл",
+      "description": "Восстанавливает файл из строки Base64"
+    },
+    "media.audio_info": {
+      "label": "Свойства аудио",
+      "description": "Длительность и формат звукового файла"
+    },
+    "media.video_info": {
+      "label": "Свойства видео",
+      "description": "Длительность и разрешение видеофайла"
+    },
+    "media.url_download": {
+      "label": "Скачать по адресу",
+      "description": "Скачивает файл по ссылке"
+    },
+    "security.mask": {
+      "label": "Маскировать",
+      "description": "Заменяет начало значения звёздочками, оставляя хвост"
+    },
+    "security.hash": {
+      "label": "Хеш-сумма",
+      "description": "Вычисляет короткую контрольную сумму текста (не шифрование)"
+    },
+    "security.generate_id": {
+      "label": "Случайный ИД",
+      "description": "Создаёт случайный идентификатор заданной длины"
+    },
+    "security.token_generate": {
+      "label": "Случайный токен",
+      "description": "Создаёт случайный токен заданной длины"
+    },
+    "security.validate_email": {
+      "label": "Проверить почту",
+      "description": "Проверяет, похож ли текст на адрес электронной почты"
+    },
+    "security.sanitize_html": {
+      "label": "Очистить от разметки",
+      "description": "Убирает HTML-теги из текста"
+    },
+    "security.secret_get": {
+      "label": "Получить секрет",
+      "description": "Читает сохранённый секрет по имени (серверное хранилище)"
+    },
+    "security.secret_list": {
+      "label": "Список секретов",
+      "description": "Имена сохранённых секретов без их значений"
+    },
+    "security.rate_limit": {
+      "label": "Ограничитель частоты",
+      "description": "Пропускает не больше заданного числа запусков в минуту"
+    },
+    "security.audit_log": {
+      "label": "Журнал аудита",
+      "description": "Записывает событие в журнал безопасности"
     }
   }
 }
