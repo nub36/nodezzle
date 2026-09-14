@@ -25,6 +25,8 @@ import { flowControlBlocks } from './flow/control';
 import { telegramExtendedBlocks } from './telegram/extended';
 import { webUiBlocks } from './web/ui';
 import { webEventBlocks } from './web/events';
+import { modelExtendedBlocks } from './models/extended';
+import { memoryBlocks } from './memory/blocks';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -41,6 +43,8 @@ const ALL_BLOCKS = [
   ...webUiBlocks,
   ...webEventBlocks,
   ...modelBlocks,
+  ...modelExtendedBlocks,
+  ...memoryBlocks,
   ...debugBlocks,
   ...datetimeBlocks,
   ...reservedBlocks,
