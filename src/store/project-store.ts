@@ -23,6 +23,7 @@ import { blockRegistry } from '@/core/registry/block-registry';
 import { portColor } from '@/core/type-system/compatibility';
 import type { PortKind, PortType } from '@/core/types/ports';
 import { uid } from '@/lib/id';
+import { useUiStore } from '@/store/ui-store';
 import { createDemoProject, DEMO_PROJECT_ID } from '@/demo/seed';
 import type { NodezzleFlowNode } from '@/core/project/serialize';
 
@@ -83,7 +84,7 @@ interface ProjectState {
   deleteProject: (id: string) => Promise<void>;
 
   renameProject: (name: string) => void;
-  addNode: (blockId: string, position: { x: number; y: number }) => void;
+  addNode: (blockId: string, position: { x: number; y: number }, configOverrides?: Record<string, unknown>) => void;
   duplicateSelection: () => void;
   copySelection: () => void;
   pasteAt: (position: { x: number; y: number }) => void;
@@ -210,11 +211,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       scheduleSave();
     },
 
-    addNode: (blockId, position) => {
+    addNode: (blockId, position, configOverrides) => {
       const { project, nodes } = get();
       const def = blockRegistry.get(blockId);
       if (!project || !def) return;
-      const config = clone(def.defaults ?? {});
+      const config = { ...clone(def.defaults ?? {}), ...clone(configOverrides ?? {}) };
       // Удобство: единственный проект-модель подставляется в «Вызов модели».
       if (blockId === 'models.call' && !config.modelId && project.models.length === 1) {
         config.modelId = project.models[0].id;
@@ -232,6 +233,8 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         selectedNodeId: node.id,
       });
       commit(before);
+      // Библиотека: записываем деталь в «Недавние» (сохраняется в браузере).
+      useUiStore.getState().recordRecent(blockId);
     },
 
     duplicateSelection: () => {

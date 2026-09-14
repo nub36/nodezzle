@@ -47,6 +47,12 @@ export interface BlockUiMeta {
   color?: string;
 }
 
+/**
+ * Сложность детали для пользователя (поле из Этапа 4 — «Библиотека блоков»):
+ * «Базовые» попадают в режим «Основные» библиотеки, «Продвинутые» — только в «Все».
+ */
+export type BlockDifficulty = 'basic' | 'advanced';
+
 export interface BlockDefinition {
   /** Уникальный технический идентификатор: `<category>.<name>`. */
   id: string;
@@ -82,4 +88,11 @@ export interface BlockDefinition {
   /** Обработчик выполнения (runtime handler). */
   runtime?: NodeHandler;
   ui?: BlockUiMeta;
+  /**
+   * Ключевые слова для поиска в библиотеке (рус/англ, пользователю не показываются).
+   * Поле из Этапа 4 — «Библиотека блоков» (см. docs/agent-plan/04-BLOCK-LIBRARY.md).
+   */
+  keywords?: string[];
+  /** Сложность детали: 'basic' — режим «Основные», 'advanced' — только «Все». */
+  difficulty?: BlockDifficulty;
 }

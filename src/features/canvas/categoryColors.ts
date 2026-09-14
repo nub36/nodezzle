@@ -1,4 +1,4 @@
-/** Акцентные цвета категорий деталей (minimap, метки). */
+/** Акцентные цвета и иконки категорий деталей (библиотека, minimap, метки). */
 
 import type { BlockCategory } from '@/core/types/blocks';
 
@@ -17,4 +17,22 @@ export const CATEGORY_COLORS: Record<BlockCategory, string> = {
   security: '#f87171',
   debug: '#94a3b8',
   ai: '#e879f9',
+};
+
+/** Иконки категорий для библиотеки деталей (Этап 2, подэтап A). */
+export const CATEGORY_ICONS: Record<BlockCategory, string> = {
+  core: '🧩',
+  logic: '⑂',
+  data: '🔄',
+  flow: '⏱️',
+  telegram: '✈️',
+  web: '🌐',
+  models: '📦',
+  memory: '🗄️',
+  http: '🔗',
+  datetime: '🕑',
+  media: '🖼️',
+  security: '🛡️',
+  debug: '🐞',
+  ai: '✨',
 };

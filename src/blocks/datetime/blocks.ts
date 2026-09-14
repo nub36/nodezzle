@@ -8,6 +8,7 @@ export const datetimeBlocks: BlockDefinition[] = [
     id: 'datetime.now',
     labelKey: 'blocks.datetime.now.label',
     descriptionKey: 'blocks.datetime.now.description',
+    keywords: ['время', 'дата', 'сейчас', 'текущее'],
     category: 'datetime',
     inputs: [],
     outputs: [dport('value', 'blocks.ports.value', 'date')],

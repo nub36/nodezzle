@@ -16,6 +16,7 @@ export const modelBlocks: BlockDefinition[] = [
     id: 'models.call',
     labelKey: 'blocks.models.call.label',
     descriptionKey: 'blocks.models.call.description',
+    keywords: ['модель', 'вызов', 'подсхема', 'подпрограмма'],
     category: 'models',
     inputs: [dport('payload', 'blocks.ports.payload', 'object')],
     outputs: [dport('result', 'blocks.ports.result', 'object'), eport()],

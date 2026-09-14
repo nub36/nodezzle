@@ -3,7 +3,7 @@
  *
  * Композиция:
  *   Toolbar (название, undo/redo, autosave, статус, Запустить/Стоп)
- *   FlowCanvas (React Flow) + NodePalette (слева) + ConfigPanel (справа)
+ *   FlowCanvas (React Flow) + BlockLibrary (слева) + ConfigPanel (справа)
  *   DebugPanel (снизу: Симулятор, Чат, Журнал, История)
  *
  * Клавиатура: Ctrl+Z / Ctrl+Shift+Z (undo/redo), Ctrl+D (дублировать),
@@ -29,7 +29,8 @@ import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
 import { NodezzleNode } from './NodezzleNode';
-import { NodePalette, DND_MIME } from './NodePalette';
+import { BlockLibrary } from './BlockLibrary';
+import { DND_MIME, decodeDnd, type DndPayload } from './library-utils';
 import { ConfigPanel } from './ConfigPanel';
 import { Toolbar } from './Toolbar';
 import { DebugPanel } from './DebugPanel';
@@ -161,15 +162,15 @@ function FlowCanvas() {
     [setDragPort],
   );
 
-  // --- Drag & Drop из палитры ---
+  // --- Drag & Drop из библиотеки деталей ---
   const onDrop = useCallback(
     (event: ReactDragEvent) => {
       event.preventDefault();
-      const blockId = event.dataTransfer.getData(DND_MIME);
-      if (!blockId || !wrapperRef.current) return;
+      const payload = decodeDnd(event.dataTransfer.getData(DND_MIME));
+      if (!payload || !wrapperRef.current) return;
       const rect = wrapperRef.current.getBoundingClientRect();
       const position = screenToFlowPosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
-      addNode(blockId, position);
+      addNode(payload.blockId, position, payload.config);
     },
     [addNode, screenToFlowPosition],
   );
@@ -179,15 +180,16 @@ function FlowCanvas() {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  const onAddAtCenter = useCallback(
-    (blockId: string) => {
+  // Вставка из библиотеки по клику — в центр видимой области.
+  const onInsertAtCenter = useCallback(
+    (payload: DndPayload) => {
       if (!wrapperRef.current) return;
       const rect = wrapperRef.current.getBoundingClientRect();
       const position = screenToFlowPosition({
         x: rect.width / 2 - 110,
         y: rect.height / 2 - 80,
       });
-      addNode(blockId, position);
+      addNode(payload.blockId, position, payload.config);
     },
     [addNode, screenToFlowPosition],
   );
@@ -276,9 +278,9 @@ function FlowCanvas() {
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
 
-      {/* Палитра деталей */}
+      {/* Библиотека деталей (вкладки, поиск, избранное, недавние, модели) */}
       <div className="pointer-events-none absolute bottom-3 left-3 top-3 z-10">
-        <NodePalette onAddAtCenter={onAddAtCenter} />
+        <BlockLibrary onInsert={onInsertAtCenter} />
       </div>
 
       {/* Инспектор выбранной детали */}

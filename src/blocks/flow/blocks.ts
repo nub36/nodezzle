@@ -9,6 +9,7 @@ export const flowBlocks: BlockDefinition[] = [
     id: 'flow.delay',
     labelKey: 'blocks.flow.delay.label',
     descriptionKey: 'blocks.flow.delay.description',
+    keywords: ['задержка', 'пауза', 'ожидание', 'таймер', 'сон'],
     category: 'flow',
     inputs: [dport('value', 'blocks.ports.value', 'any')],
     outputs: [dport('value', 'blocks.ports.value', 'any')],
