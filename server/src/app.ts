@@ -12,7 +12,11 @@ import { Router } from './router.ts';
 import type { Db } from './db.ts';
 import { createAuthStore } from './auth/store.ts';
 import { createRateLimiter } from './security/rate-limit.ts';
+import { createWorkspaceStore } from './workspaces/store.ts';
+import { createProjectStore } from './projects/store.ts';
 import { registerAuthRoutes } from './routes/auth.ts';
+import { registerWorkspaceRoutes } from './routes/workspaces.ts';
+import { registerProjectRoutes } from './routes/projects.ts';
 
 /** Лимит попыток входа/регистрации с одного адреса. */
 const AUTH_LIMIT_PER_WINDOW = 20;
@@ -43,11 +47,17 @@ export function createApp(deps: AppDeps): App {
     });
   });
 
-  registerAuthRoutes(router, {
+  const workspaces = createWorkspaceStore(deps.db);
+  const projects = createProjectStore(deps.db);
+  const authDeps = {
     config: deps.config,
     store: createAuthStore(deps.db),
     authLimiter: createRateLimiter(AUTH_LIMIT_PER_WINDOW, AUTH_WINDOW_MS),
-  });
+    workspaces,
+  };
+  registerAuthRoutes(router, authDeps);
+  registerWorkspaceRoutes(router, { ...authDeps, workspaces });
+  registerProjectRoutes(router, { ...authDeps, workspaces, projects });
 
   const handle = (req: IncomingMessage, res: ServerResponse): void => {
     const url = new URL(req.url ?? '/', 'http://localhost');

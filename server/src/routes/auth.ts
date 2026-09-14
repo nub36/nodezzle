@@ -11,6 +11,7 @@ import { badRequest, conflict, tooManyRequests, unauthorized } from '../errors.t
 import { readJsonBody, sendJson } from '../http.ts';
 import type { RouteContext, Router } from '../router.ts';
 import type { AuthStore, UserRecord } from '../auth/store.ts';
+import type { WorkspaceStore } from '../workspaces/store.ts';
 import { hashPassword, verifyPassword } from '../security/passwords.ts';
 import {
   clearSessionCookie,
@@ -27,6 +28,8 @@ export interface AuthDeps {
   store: AuthStore;
   /** Ограничитель частоты входа/регистрации (по адресу клиента). */
   authLimiter: RateLimiter;
+  /** Если передан — при регистрации создаётся рабочее пространство по умолчанию. */
+  workspaces?: WorkspaceStore;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -82,6 +85,8 @@ export function registerAuthRoutes(router: Router, deps: AuthDeps): void {
     if (deps.store.getUserByEmail(email)) throw conflict('Пользователь с таким адресом уже зарегистрирован');
     const passwordHash = await hashPassword(password);
     const user = deps.store.createUser(email, name, passwordHash);
+    // Новому пользователю сразу создаём личное рабочее пространство.
+    if (deps.workspaces) deps.workspaces.create(user.id, 'Мои проекты');
     issueSession(res, deps, user.id);
     sendJson(res, 201, { user: { id: user.id, email: user.email, name: user.name } });
   });
