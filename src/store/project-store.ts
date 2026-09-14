@@ -79,6 +79,12 @@ interface ProjectState {
   openModel: (modelId: string) => void;
   closeModel: () => void;
   createProject: (kind: ProjectKind) => Promise<NodezzleProject>;
+  /** Учебный проект-песочница Академии (подэтап 5.11). */
+  createSandboxProject: (lessonId: string, name: string) => Promise<NodezzleProject>;
+  /** Очистить холст открытого учебного проекта («Начать урок заново»). */
+  resetSandboxCanvas: () => void;
+  /** Сделать учебный проект обычным (убрать признак песочницы). */
+  detachSandbox: (projectId: string) => Promise<void>;
   seedDemo: () => Promise<NodezzleProject>;
   listProjects: () => Promise<ProjectSummary[]>;
   deleteProject: (id: string) => Promise<void>;
@@ -301,6 +307,40 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       };
       await projectStorage.save(project);
       return project;
+    },
+
+    createSandboxProject: async (lessonId, name) => {
+      const now = Date.now();
+      const project: NodezzleProject = {
+        formatVersion: 1,
+        id: uid(),
+        name,
+        kind: 'empty',
+        canvas: { id: uid(), name: i18n.t('dashboard.defaultCanvasName'), nodes: [], edges: [] },
+        models: [],
+        variables: [],
+        meta: { createdAt: now, updatedAt: now, tutorial: { lessonId } },
+      };
+      await projectStorage.save(project);
+      return project;
+    },
+
+    resetSandboxCanvas: () => {
+      const { project } = get();
+      if (!project || project.meta.tutorial === undefined) return;
+      const before = snapshotOf(get().nodes, get().edges);
+      set({ nodes: [], edges: [], selectedNodeId: null, groups: [] });
+      commit(before);
+      scheduleSave();
+    },
+
+    detachSandbox: async (projectId) => {
+      const project = await projectStorage.get(projectId);
+      if (!project || project.meta.tutorial === undefined) return;
+      await projectStorage.save({
+        ...project,
+        meta: { ...project.meta, updatedAt: Date.now(), tutorial: undefined },
+      });
     },
 
     seedDemo: async () => {

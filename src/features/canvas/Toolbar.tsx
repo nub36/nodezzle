@@ -79,6 +79,9 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
       <Link to="/dashboard" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('common.back')}>
         ←
       </Link>
+      <Link to="/academy" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('academy.toolbarHelp')}>
+        ?
+      </Link>
 
       <input
         className="input-dark max-w-[200px] !border-transparent !bg-transparent !px-2 text-sm font-semibold hover:!border-line focus:!border-cyan-400/50"

@@ -36,7 +36,13 @@ export class LocalStorageAdapter implements ProjectStorage {
       if (!key || !key.startsWith(PREFIX)) continue;
       const project = await this.get(key.slice(PREFIX.length));
       if (project) {
-        items.push({ id: project.id, name: project.name, kind: project.kind, updatedAt: project.meta.updatedAt });
+        items.push({
+          id: project.id,
+          name: project.name,
+          kind: project.kind,
+          updatedAt: project.meta.updatedAt,
+          ...(project.meta.tutorial !== undefined ? { tutorial: project.meta.tutorial } : {}),
+        });
       }
     }
     return items.sort((a, b) => b.updatedAt - a.updatedAt);

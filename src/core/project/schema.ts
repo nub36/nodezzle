@@ -123,6 +123,11 @@ export const nodezzleProjectSchema = z.object({
   meta: z.object({
     createdAt: z.number(),
     updatedAt: z.number(),
+    /**
+     * Учебный проект-песочница Академии (подэтап 5.11): необязательное
+     * поле — старые проекты остаются валидными без миграции.
+     */
+    tutorial: z.object({ lessonId: z.string().min(1) }).optional(),
   }),
 });
 export type NodezzleProject = z.infer<typeof nodezzleProjectSchema>;
@@ -133,6 +138,8 @@ export interface ProjectSummary {
   name: string;
   kind: ProjectKind;
   updatedAt: number;
+  /** Заполнено для учебных проектов-песочниц Академии. */
+  tutorial?: { lessonId: string };
 }
 
 /** Безопасная валидация произвольного JSON (возвращает null при несовпадении). */
