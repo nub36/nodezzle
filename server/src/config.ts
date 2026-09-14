@@ -25,6 +25,8 @@ export interface ServerConfig {
   maxBodyBytes: number;
   /** Секрет подписи сессий. В продакшне обязателен. */
   sessionSecret: string;
+  /** Ключ шифрования секретов (64 hex-символа); если не задан, выводится из секрета сессий. */
+  vaultKeyHex?: string;
   /** Время жизни сессии, дней. */
   sessionTtlDays: number;
 }
@@ -112,5 +114,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     maxBodyBytes: parseMaxBody(env.NODEZZLE_MAX_BODY_BYTES, 256 * 1024),
     sessionSecret: resolveSessionSecret(env, nodeEnv),
     sessionTtlDays: parseSessionTtlDays(env.NODEZZLE_SESSION_TTL_DAYS, 30),
+    vaultKeyHex: env.NODEZZLE_VAULT_KEY?.trim() || undefined,
   };
 }
