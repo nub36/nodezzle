@@ -35,3 +35,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# --- Сервер: локальная база данных ---
+server/data/

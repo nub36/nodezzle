@@ -34,6 +34,10 @@
 
 ## Этап 2 — Реальный Telegram-транспорт
 
+> Серверный фундамент для этого этапа строится в Этапе 5 агент-плана
+> ([06-BACKEND-PRODUCT.md](agent-plan/06-BACKEND-PRODUCT.md)): каркас API
+> и БД уже созданы (подэтап 5.1).
+
 - [ ] Backend NODEZZLE (API): webhook Bot API → `executeCanvas` → отправка через Bot API
 - [ ] ProjectStorage → API-адаптер (серверное хранилище, бэкапы)
 - [ ] Статусы бота (online/offline), журнал отправки в реальном времени
