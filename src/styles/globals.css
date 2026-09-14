@@ -601,3 +601,18 @@ select.input-dark {
 .nzz-note textarea::placeholder {
   color: rgba(253, 230, 138, 0.4);
 }
+
+/* --- Академия: оверлей урока (подэтап 5.11) --- */
+.tutorial-anim {
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease,
+    opacity 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-anim {
+    transition: none;
+  }
+}

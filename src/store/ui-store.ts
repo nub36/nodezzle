@@ -33,6 +33,8 @@ interface UiState {
   schemaQuery: string;
   /** Режим фокуса: приглушить всё, кроме выбранной детали и её связей. */
   focusMode: boolean;
+  /** Открыта ли панель отладки (нужна Академии, подэтап 5.11). */
+  debugOpen: boolean;
   /** Избранные блоки (порядок добавления). */
   favorites: string[];
   /** Недавние блоки: от новых к старым, без дублей. */
@@ -46,6 +48,7 @@ interface UiState {
   toggleEffects: () => void;
   setSchemaQuery: (query: string) => void;
   toggleFocusMode: () => void;
+  setDebugOpen: (open: boolean) => void;
   toggleFavorite: (blockId: string) => void;
   recordRecent: (blockId: string) => void;
   toggleCategory: (category: string) => void;
@@ -86,10 +89,12 @@ export const useUiStore = create<UiState>()(
       effectsEnabled: true,
       schemaQuery: '',
       focusMode: false,
+      debugOpen: true,
       favorites: [],
       recent: [],
       collapsedCategories: [],
 
+      setDebugOpen: (open) => set({ debugOpen: open }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setLibraryQuery: (query) => set({ libraryQuery: query }),
       setCanvasMode: (mode) => set({ canvasMode: mode }),

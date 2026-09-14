@@ -46,6 +46,8 @@ import { Toolbar } from './Toolbar';
 import { CreateModelDialog } from './CreateModelDialog';
 import { GroupFrames } from './GroupFrames';
 import { DebugPanel } from './DebugPanel';
+import { TutorialWatcher } from '@/features/academy/TutorialWatcher';
+import { TutorialOverlay } from '@/features/academy/TutorialOverlay';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { isCompatible } from '@/core/type-system/compatibility';
 import { CATEGORY_COLORS } from './categoryColors';
@@ -65,7 +67,8 @@ export function CanvasPage() {
 
 function CanvasInner({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const [debugOpen, setDebugOpen] = useState(true);
+  const debugOpen = useUiStore((s) => s.debugOpen);
+  const setDebugOpen = useUiStore((s) => s.setDebugOpen);
   const loading = useProjectStore((s) => s.loading);
   const project = useProjectStore((s) => s.project);
   const loadById = useProjectStore((s) => s.loadById);
@@ -99,9 +102,11 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-screen flex-col bg-abyss">
-      <Toolbar onToggleDebug={() => setDebugOpen((v) => !v)} />
+      <Toolbar onToggleDebug={() => setDebugOpen(!debugOpen)} />
       <FlowCanvas />
       <DebugPanel open={debugOpen} projectId={projectId} />
+      <TutorialWatcher />
+      <TutorialOverlay />
     </div>
   );
 }
@@ -464,6 +469,7 @@ function FlowCanvas() {
     <div
       ref={wrapperRef}
       className="grid-bg relative flex-1 overflow-hidden"
+      data-tutorial="canvas"
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
@@ -541,7 +547,11 @@ function FlowCanvas() {
       </div>
 
       {/* Контекстный инспектор: деталь / соединение / холст (Этап 2, подэтап E) */}
-      <div className="pointer-events-none absolute right-3 top-3 z-10" style={{ bottom: 12 }}>
+      <div
+        className="pointer-events-none absolute right-3 top-3 z-10"
+        style={{ bottom: 12 }}
+        data-tutorial="inspector"
+      >
         <InspectorPanel />
       </div>
 

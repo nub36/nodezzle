@@ -50,7 +50,10 @@ interface ExecutionState {
   history: ExecutionHistoryRecord[];
   payload: SimulatorPayload;
   cancelRef: { cancelled: boolean } | null;
+  /** Активная вкладка панели отладки (нужна в т.ч. Академии, подэтап 5.11). */
+  panelTab: 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history';
 
+  setPanelTab: (tab: 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history') => void;
   setPayload: (patch: Partial<SimulatorPayload>) => void;
   run: () => Promise<void>;
   /** Запуск схемы веб-событием из превью страницы (Этап 2, подэтап I ч. 2). */
@@ -165,6 +168,9 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
   flowEdges: [],
   history: [],
   payload: { ...DEFAULT_PAYLOAD },
+  panelTab: 'simulator',
+
+  setPanelTab: (tab) => set({ panelTab: tab }),
   cancelRef: null,
 
   setPayload: (patch) => set((s) => ({ payload: { ...s.payload, ...patch } })),

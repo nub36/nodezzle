@@ -5,7 +5,7 @@
  * Архитектурно заложены также BREAKPOINT и детальнее DEBUG UI — ROADMAP.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useExecutionStore } from '@/store/execution-store';
 import { formatTimeRu, safeStringify, translateError } from '@/lib/utils';
@@ -21,7 +21,9 @@ type Tab = 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history';
 
 export function DebugPanel({ open, projectId }: { open: boolean; projectId: string }) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('simulator');
+  // Вкладка живёт в сторе исполнения: её может переключать Академия.
+  const tab = useExecutionStore((s) => s.panelTab);
+  const setTab = useExecutionStore((s) => s.setPanelTab);
 
   const running = useExecutionStore((s) => s.running);
   const run = useExecutionStore((s) => s.run);
@@ -42,11 +44,12 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
   ];
 
   return (
-    <div className="glass-strong z-20 border-t border-line/70">
+    <div className="glass-strong z-20 border-t border-line/70" data-tutorial="debug">
       <div className="flex items-center gap-1 px-4 pt-2">
         {tabs.map((tb) => (
           <button
             key={tb.id}
+            data-tutorial={tb.id === 'simulator' || tb.id === 'chat' || tb.id === 'history' ? `tab-${tb.id}` : undefined}
             onClick={() => setTab(tb.id)}
             className={cn(
               'rounded-t-lg px-3 py-1.5 text-xs font-semibold transition-colors',
@@ -68,7 +71,7 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
             ⏹ {t('common.stop')}
           </button>
         ) : (
-          <button className="btn-primary !px-3 !py-1 !text-xs" onClick={() => void run()}>
+          <button className="btn-primary !px-3 !py-1 !text-xs" data-tutorial="run" onClick={() => void run()}>
             ▶ {t('common.run')}
           </button>
         )}
