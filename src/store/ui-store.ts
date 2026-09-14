@@ -31,6 +31,8 @@ interface UiState {
   effectsEnabled: boolean;
   /** Поиск по схеме (состояние сессии, не сохраняется). */
   schemaQuery: string;
+  /** Режим фокуса: приглушить всё, кроме выбранной детали и её связей. */
+  focusMode: boolean;
   /** Избранные блоки (порядок добавления). */
   favorites: string[];
   /** Недавние блоки: от новых к старым, без дублей. */
@@ -43,6 +45,7 @@ interface UiState {
   setCanvasMode: (mode: CanvasMode) => void;
   toggleEffects: () => void;
   setSchemaQuery: (query: string) => void;
+  toggleFocusMode: () => void;
   toggleFavorite: (blockId: string) => void;
   recordRecent: (blockId: string) => void;
   toggleCategory: (category: string) => void;
@@ -82,6 +85,7 @@ export const useUiStore = create<UiState>()(
       canvasMode: 'draft',
       effectsEnabled: true,
       schemaQuery: '',
+      focusMode: false,
       favorites: [],
       recent: [],
       collapsedCategories: [],
@@ -91,6 +95,7 @@ export const useUiStore = create<UiState>()(
       setCanvasMode: (mode) => set({ canvasMode: mode }),
       toggleEffects: () => set((state) => ({ effectsEnabled: !state.effectsEnabled })),
       setSchemaQuery: (query) => set({ schemaQuery: query }),
+      toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
 
       toggleFavorite: (blockId) =>
         set((state) => ({
@@ -119,6 +124,7 @@ export const useUiStore = create<UiState>()(
         libraryTab: state.libraryTab,
         canvasMode: state.canvasMode,
         effectsEnabled: state.effectsEnabled,
+        focusMode: state.focusMode,
         favorites: state.favorites,
         recent: state.recent,
         collapsedCategories: state.collapsedCategories,

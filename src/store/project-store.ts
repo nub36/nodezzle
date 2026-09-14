@@ -100,6 +100,14 @@ interface ProjectState {
   selectEdge: (edgeId: string | null) => void;
   /** Удаление соединения (с попаданием в историю undo/redo). */
   deleteEdge: (edgeId: string) => void;
+  /** Удаление выбранных узлов и их соединений (с историей). */
+  deleteSelection: () => void;
+  /** Вставка стикера-заметки на холст (Этап 2, подэтап F). */
+  addNote: (position: { x: number; y: number }) => void;
+  /** Текст заметки (для стикеров). */
+  setNoteText: (nodeId: string, text: string) => void;
+  /** Отключить узел: удалить все подходя к нему соединения. */
+  disconnectNode: (nodeId: string) => void;
   setNodeConfig: (nodeId: string, key: string, value: unknown) => void;
   setNodeLabel: (nodeId: string, label: string) => void;
   undo: () => void;
@@ -385,6 +393,59 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         selectedNodeId: null,
         edges: state.edges.map((e) => ({ ...e, selected: e.id === edgeId })),
       })),
+
+    deleteSelection: () => {
+      const { nodes, edges } = get();
+      const selected = nodes.filter((n) => n.selected);
+      if (selected.length === 0) return;
+      const ids = new Set(selected.map((n) => n.id));
+      const before = snapshotOf(nodes, edges);
+      set({
+        nodes: nodes.filter((n) => !ids.has(n.id)),
+        edges: edges.filter((e) => !ids.has(e.source) && !ids.has(e.target)),
+        selectedNodeId: null,
+      });
+      commit(before);
+    },
+
+    addNote: (position) => {
+      const { project, nodes } = get();
+      if (!project) return;
+      const before = snapshotOf(nodes, get().edges);
+      const node: NodezzleFlowNode = {
+        id: uid(),
+        type: 'nodezzle',
+        position,
+        data: { blockId: 'note.sticky', config: { text: '' } },
+        selected: true,
+      };
+      set({
+        nodes: [...nodes.map((n) => ({ ...n, selected: false })), node],
+        selectedNodeId: node.id,
+      });
+      commit(before);
+    },
+
+    setNoteText: (nodeId, text) => {
+      const { nodes, edges } = get();
+      const before = snapshotOf(nodes, edges);
+      set({
+        nodes: nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const data = n.data as CanvasNodeData;
+          return { ...n, data: { ...data, config: { ...(data.config ?? {}), text } } };
+        }),
+      });
+      commit(before);
+    },
+
+    disconnectNode: (nodeId) => {
+      const { nodes, edges } = get();
+      if (!edges.some((e) => e.source === nodeId || e.target === nodeId)) return;
+      const before = snapshotOf(nodes, edges);
+      set({ edges: edges.filter((e) => e.source !== nodeId && e.target !== nodeId) });
+      commit(before);
+    },
 
     deleteEdge: (edgeId) => {
       const { nodes, edges } = get();

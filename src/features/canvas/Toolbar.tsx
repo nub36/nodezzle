@@ -47,6 +47,8 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
   const setCanvasMode = useUiStore((s) => s.setCanvasMode);
   const effectsEnabled = useUiStore((s) => s.effectsEnabled);
   const toggleEffects = useUiStore((s) => s.toggleEffects);
+  const focusMode = useUiStore((s) => s.focusMode);
+  const toggleFocusMode = useUiStore((s) => s.toggleFocusMode);
   const schemaQuery = useUiStore((s) => s.schemaQuery);
   const setSchemaQuery = useUiStore((s) => s.setSchemaQuery);
 
@@ -150,6 +152,15 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         title={t('canvas.toolbar.effects')}
       >
         ✨
+      </button>
+
+      {/* Режим фокуса */}
+      <button
+        className={cn('btn-ghost !px-2.5 !py-1.5 text-xs', focusMode && '!border-amber-400/50 !text-amber-200')}
+        onClick={toggleFocusMode}
+        title={t('canvas.toolbar.focus')}
+      >
+        🎯
       </button>
 
       <div className="flex-1" />

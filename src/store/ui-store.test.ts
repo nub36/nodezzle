@@ -12,6 +12,7 @@ function resetStore() {
     canvasMode: 'draft',
     effectsEnabled: true,
     schemaQuery: '',
+    focusMode: false,
     favorites: [],
     recent: [],
     collapsedCategories: [],
@@ -93,5 +94,15 @@ describe('UI-store: библиотека деталей', () => {
   it('поиск по схеме хранится в сторе', () => {
     useUiStore.getState().setSchemaQuery('приветствие');
     expect(useUiStore.getState().schemaQuery).toBe('приветствие');
+  });
+
+  it('режим фокуса включается, выключается и сохраняется', () => {
+    expect(useUiStore.getState().focusMode).toBe(false);
+    useUiStore.getState().toggleFocusMode();
+    expect(useUiStore.getState().focusMode).toBe(true);
+    const persisted = useUiStore.persist.getOptions().partialize?.(useUiStore.getState()) as Record<string, unknown>;
+    expect(persisted).toHaveProperty('focusMode', true);
+    useUiStore.getState().toggleFocusMode();
+    expect(useUiStore.getState().focusMode).toBe(false);
   });
 });

@@ -39,6 +39,7 @@ import {
   type QuickInsertCandidate,
 } from './library-utils';
 import { QuickInsertMenu, QuickInsertStarter } from './QuickInsert';
+import { CanvasContextMenu, type ContextMenuItem } from './ContextMenu';
 import { useUiStore } from '@/store/ui-store';
 import { InspectorPanel } from './InspectorPanel';
 import { Toolbar } from './Toolbar';
@@ -119,10 +120,14 @@ function FlowCanvas() {
   const addNode = useProjectStore((s) => s.addNode);
   const selectNode = useProjectStore((s) => s.selectNode);
   const selectEdge = useProjectStore((s) => s.selectEdge);
-  const undo = useProjectStore((s) => s.undo);
-  const redo = useProjectStore((s) => s.redo);
+  const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const duplicateSelection = useProjectStore((s) => s.duplicateSelection);
   const copySelection = useProjectStore((s) => s.copySelection);
+  const deleteSelection = useProjectStore((s) => s.deleteSelection);
+  const disconnectNode = useProjectStore((s) => s.disconnectNode);
+  const addNote = useProjectStore((s) => s.addNote);
+  const undo = useProjectStore((s) => s.undo);
+  const redo = useProjectStore((s) => s.redo);
   const pasteAt = useProjectStore((s) => s.pasteAt);
 
   const flowEdges = useExecutionStore((s) => s.flowEdges);
@@ -146,6 +151,96 @@ function FlowCanvas() {
   // отпущено на пустом месте (без подключения к другому порту).
   const [quickInsert, setQuickInsert] = useState<{ x: number; y: number; port: DragPortInfo } | null>(null);
   const connectFired = useRef(false);
+
+  // --- Контекстное меню (Этап 2, подэтап F) ---
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string | null } | null>(null);
+
+  const ctxItems = useMemo<ContextMenuItem[]>(() => {
+    if (!ctxMenu) return [];
+    const noteAt = () => addNote(screenToFlowPosition({ x: ctxMenu.x, y: ctxMenu.y }));
+    if (!ctxMenu.nodeId) {
+      return [{ label: t('canvas.context.addNote'), icon: '📝', onClick: noteAt }];
+    }
+    const nodeId = ctxMenu.nodeId;
+    const downEdge = edges.find((e) => e.source === nodeId);
+    const upEdge = edges.find((e) => e.target === nodeId);
+    return [
+      {
+        label: t('canvas.context.duplicate'),
+        icon: '⧉',
+        onClick: () => {
+          selectNode(nodeId);
+          duplicateSelection();
+        },
+      },
+      {
+        label: t('canvas.context.copy'),
+        icon: '📋',
+        onClick: () => {
+          selectNode(nodeId);
+          copySelection();
+        },
+      },
+      {
+        label: t('canvas.context.disconnect'),
+        icon: '⚡',
+        disabled: !downEdge && !upEdge,
+        onClick: () => disconnectNode(nodeId),
+      },
+      {
+        label: t('canvas.context.followDown'),
+        icon: '→',
+        disabled: !downEdge,
+        onClick: () => downEdge && selectNode(downEdge.target),
+      },
+      {
+        label: t('canvas.context.followUp'),
+        icon: '←',
+        disabled: !upEdge,
+        onClick: () => upEdge && selectNode(upEdge.source),
+      },
+      { divider: true, label: '', onClick: () => undefined },
+      { label: t('canvas.context.addNote'), icon: '📝', onClick: noteAt },
+      {
+        label: t('canvas.context.delete'),
+        icon: '🗑',
+        danger: true,
+        onClick: () => {
+          selectNode(nodeId);
+          deleteSelection();
+        },
+      },
+    ];
+  }, [ctxMenu, edges, t, addNote, selectNode, duplicateSelection, copySelection, disconnectNode, deleteSelection, screenToFlowPosition]);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: { id: string }) => {
+      event.preventDefault();
+      if (!wrapperRef.current) return;
+      selectNode(node.id);
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setCtxMenu({
+        x: Math.min(event.clientX - rect.left, Math.max(rect.width - 230, 8)),
+        y: Math.min(event.clientY - rect.top, Math.max(rect.height - 260, 8)),
+        nodeId: node.id,
+      });
+    },
+    [selectNode],
+  );
+
+  const onPaneContextMenu = useCallback(
+    (event: MouseEvent | React.MouseEvent) => {
+      event.preventDefault();
+      if (!wrapperRef.current) return;
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setCtxMenu({
+        x: Math.min(event.clientX - rect.left, Math.max(rect.width - 230, 8)),
+        y: Math.min(event.clientY - rect.top, Math.max(rect.height - 100, 8)),
+        nodeId: null,
+      });
+    },
+    [],
+  );
 
   const quickCandidates = useMemo(
     () => (quickInsert ? quickInsertCandidates(blockRegistry.available(), quickInsert.port) : []),
@@ -199,18 +294,31 @@ function FlowCanvas() {
     [quickInsert, addNode, handleConnect, screenToFlowPosition],
   );
 
+  const focusMode = useUiStore((s) => s.focusMode);
   const displayNodes = useMemo(() => {
     const q = schemaQuery.trim();
-    if (q === '') return nodes;
-    return nodes.map((n) =>
-      nodeMatchesQuery(n, q, (blockId) => {
-        const def = blockRegistry.get(blockId);
-        return def ? t(def.labelKey) : '';
-      })
-        ? n
-        : { ...n, style: { ...n.style, opacity: 0.3 } },
-    );
-  }, [nodes, schemaQuery, t]);
+    if (q !== '') {
+      return nodes.map((n) =>
+        nodeMatchesQuery(n, q, (blockId) => {
+          const def = blockRegistry.get(blockId);
+          return def ? t(def.labelKey) : '';
+        })
+          ? n
+          : { ...n, style: { ...n.style, opacity: 0.3 } },
+      );
+    }
+    // Режим фокуса (Этап 2, подэтап F): приглушается всё, кроме выбранной
+    // детали и её непосредственных связей.
+    if (focusMode && selectedNodeId) {
+      const keep = new Set<string>([selectedNodeId]);
+      for (const e of edges) {
+        if (e.source === selectedNodeId) keep.add(e.target);
+        if (e.target === selectedNodeId) keep.add(e.source);
+      }
+      return nodes.map((n) => (keep.has(n.id) ? n : { ...n, style: { ...n.style, opacity: 0.22 } }));
+    }
+    return nodes;
+  }, [nodes, edges, schemaQuery, focusMode, selectedNodeId, t]);
 
   // Умные соединения: запрещаем несовместимые типы INPUT/OUTPUT.
   const isValidConnection = useCallback((conn: Connection | Edge) => {
@@ -339,9 +447,12 @@ function FlowCanvas() {
         onNodeDragStop={handleDragStop}
         onNodeClick={(_e, n) => selectNode(n.id)}
         onEdgeClick={(_e, edge) => selectEdge(edge.id)}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneContextMenu={onPaneContextMenu}
         onPaneClick={() => {
           selectNode(null);
           setQuickInsert(null);
+          setCtxMenu(null);
         }}
         fitView
         minZoom={0.15}
@@ -381,6 +492,11 @@ function FlowCanvas() {
         <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
           <QuickInsertStarter onInsert={onInsertAtCenter} />
         </div>
+      )}
+
+      {/* Контекстное меню (Этап 2, подэтап F) */}
+      {ctxMenu && (
+        <CanvasContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxItems} onClose={() => setCtxMenu(null)} />
       )}
 
       {/* Быстрая вставка от порта (только совместимые детали) */}

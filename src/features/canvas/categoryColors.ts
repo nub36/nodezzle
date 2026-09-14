@@ -17,6 +17,7 @@ export const CATEGORY_COLORS: Record<BlockCategory, string> = {
   security: '#f87171',
   debug: '#94a3b8',
   ai: '#e879f9',
+  notes: '#fbbf24',
 };
 
 /** Иконки категорий для библиотеки деталей (Этап 2, подэтап A). */
@@ -35,4 +36,5 @@ export const CATEGORY_ICONS: Record<BlockCategory, string> = {
   security: '🛡️',
   debug: '🐞',
   ai: '✨',
+  notes: '📝',
 };

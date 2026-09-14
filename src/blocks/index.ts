@@ -17,6 +17,7 @@ import { modelBlocks } from './models/blocks';
 import { debugBlocks } from './debug/blocks';
 import { datetimeBlocks } from './datetime/blocks';
 import { reservedBlocks } from './reserved';
+import { noteBlocks } from './note/blocks';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -29,6 +30,7 @@ const ALL_BLOCKS = [
   ...debugBlocks,
   ...datetimeBlocks,
   ...reservedBlocks,
+  ...noteBlocks,
 ];
 
 // register() бросает на дубликаты id — проверяем реестр,

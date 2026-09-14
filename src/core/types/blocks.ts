@@ -36,6 +36,7 @@ export const BLOCK_CATEGORIES = [
   'security',
   'debug',
   'ai',
+  'notes',
 ] as const;
 
 export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];

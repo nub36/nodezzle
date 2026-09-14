@@ -28,6 +28,21 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
   const runInfo = useExecutionStore((s) => s.nodeInfo[id]);
   const dragPort = useProjectStore((s) => s.dragPort);
 
+  // Стикер-заметка (Этап 2, подэтап F): особый рендер, в выполнении не участвует.
+  if (nodeData.blockId === 'note.sticky') {
+    return (
+      <div className={cn('nzz-note', selected && 'selected')}>
+        <textarea
+          className="nodrag nowheel"
+          rows={4}
+          placeholder={t('canvas.note.placeholder')}
+          value={String(nodeData.config?.text ?? '')}
+          onChange={(e) => useProjectStore.getState().setNoteText(id, e.target.value)}
+        />
+      </div>
+    );
+  }
+
   if (!def) {
     return (
       <div className="nodezzle-node status-error p-3 text-xs text-red-300">
