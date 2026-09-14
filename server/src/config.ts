@@ -27,6 +27,10 @@ export interface ServerConfig {
   sessionSecret: string;
   /** Ключ шифрования секретов (64 hex-символа); если не задан, выводится из секрета сессий. */
   vaultKeyHex?: string;
+  /** Таймаут одного исполнения на сервере, мс (по умолчанию 10 000). */
+  execTimeoutMs?: number;
+  /** Параллельные исполнения на сервере (по умолчанию 2). */
+  execMaxParallel?: number;
   /** Время жизни сессии, дней. */
   sessionTtlDays: number;
 }
@@ -115,5 +119,26 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     sessionSecret: resolveSessionSecret(env, nodeEnv),
     sessionTtlDays: parseSessionTtlDays(env.NODEZZLE_SESSION_TTL_DAYS, 30),
     vaultKeyHex: env.NODEZZLE_VAULT_KEY?.trim() || undefined,
+    execTimeoutMs: parseExecTimeout(env.NODEZZLE_EXEC_TIMEOUT_MS),
+    execMaxParallel: parseExecParallel(env.NODEZZLE_EXEC_PARALLEL),
   };
+}
+
+
+function parseExecTimeout(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === '') return 10_000;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 100 || value > 300_000) {
+    throw new ConfigError('NODEZZLE_EXEC_TIMEOUT_MS: ожидается целое число от 100 до 300000');
+  }
+  return value;
+}
+
+function parseExecParallel(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === '') return 2;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 8) {
+    throw new ConfigError('NODEZZLE_EXEC_PARALLEL: ожидается целое число от 1 до 8');
+  }
+  return value;
 }

@@ -10,6 +10,8 @@ import { blockRegistry } from '@/blocks';
 import { effectiveStatus } from '@/core/registry/block-registry';
 import type { NodezzleProject, CanvasNode } from '@/core/project/schema';
 
+const MAX_MODEL_DEPTH = 5;
+
 export interface ValidationIssue {
   /** Стабильный машинный код проблемы. */
   code: string;
@@ -121,6 +123,9 @@ export function validateForPublish(project: NodezzleProject): ValidationIssue[] 
     issues.push({ code: 'CYCLE', message: 'В схеме обнаружен цикл — исполнение зациклится' });
   }
 
+  // Глубина вложенности моделей («модель вызывает модель») — статически.
+  issues.push(...checkModelDepth(project));
+
   // Точка входа: хотя бы один узел без входящих рёбер.
   const targets = new Set(edges.map((e) => e.target));
   if (!nodes.some((n) => !targets.has(n.id))) {
@@ -154,4 +159,45 @@ function hasCycle(nodes: CanvasNode[], edges: Array<{ source: string; target: st
     if (visit(node.id)) return true;
   }
   return false;
+}
+
+
+/** Глубина цепочки вызовов моделей; циклический вызов — тоже ошибка. */
+function checkModelDepth(project: NodezzleProject): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const calls = new Map<string, Set<string>>();
+  for (const model of project.models) {
+    const targets = new Set<string>();
+    for (const node of model.canvas.nodes) {
+      const modelId = node.config.modelId;
+      if (node.blockId === 'models.call' && typeof modelId === 'string' && modelId !== '') {
+        targets.add(modelId);
+      }
+    }
+    calls.set(model.id, targets);
+  }
+
+  const depthOf = (id: string, chain: Set<string>): number => {
+    if (chain.has(id)) return Number.POSITIVE_INFINITY; // цикл
+    const next = calls.get(id);
+    if (!next || next.size === 0) return 1;
+    let max = 1;
+    for (const child of next) {
+      max = Math.max(max, 1 + depthOf(child, new Set([...chain, id])));
+    }
+    return max;
+  };
+
+  for (const model of project.models) {
+    const depth = depthOf(model.id, new Set());
+    if (!Number.isFinite(depth)) {
+      issues.push({ code: 'MODEL_CYCLE', message: `Модель «${model.name}» участвует в цикле вызовов моделей` });
+    } else if (depth > MAX_MODEL_DEPTH) {
+      issues.push({
+        code: 'MODEL_DEPTH_EXCEEDED',
+        message: `Вложенность моделей «${model.name}» равна ${depth} (максимум ${MAX_MODEL_DEPTH})`,
+      });
+    }
+  }
+  return issues;
 }

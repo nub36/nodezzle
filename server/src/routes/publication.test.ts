@@ -152,6 +152,51 @@ describe('Валидация публикации (чистая функция)'
     const codes = validateForPublish(doc([{ id: 'r', blockId: 'test.required' }], [])).map((i) => i.code);
     expect(codes).toContain('REQUIRED_INPUT_EMPTY');
   });
+
+  it('слишком глубокая вложенность моделей отклоняется', () => {
+    const models = [] as NodezzleProject['models'];
+    for (let i = 1; i <= 6; i += 1) {
+      models.push({
+        id: `m${i}`,
+        name: `Модель ${i}`,
+        version: 1,
+        contract: { inputs: [], outputs: [] },
+        canvas: {
+          id: `m${i}:canvas`,
+          name: `Модель ${i}`,
+          nodes: i < 6
+            ? [{ id: 'call', blockId: 'models.call', position: { x: 0, y: 0 }, config: { modelId: `m${i + 1}` } }]
+            : [],
+          edges: [],
+        },
+        updatedAt: 1_700_000_000_000,
+      });
+    }
+    const project = doc([{ id: 'x', blockId: 'core.text' }], []);
+    project.models = models;
+    const codes = validateForPublish(project).map((i) => i.code);
+    expect(codes).toContain('MODEL_DEPTH_EXCEEDED');
+  });
+
+  it('циклический вызов моделей отклоняется', () => {
+    const mk = (id: string, target: string) => ({
+      id,
+      name: id,
+      version: 1,
+      contract: { inputs: [], outputs: [] },
+      canvas: {
+        id: `${id}:canvas`,
+        name: id,
+        nodes: [{ id: 'call', blockId: 'models.call', position: { x: 0, y: 0 }, config: { modelId: target } }],
+        edges: [],
+      },
+      updatedAt: 1_700_000_000_000,
+    });
+    const project = doc([{ id: 'x', blockId: 'core.text' }], []);
+    project.models = [mk('ma', 'mb'), mk('mb', 'ma')];
+    const codes = validateForPublish(project).map((i) => i.code);
+    expect(codes).toContain('MODEL_CYCLE');
+  });
 });
 
 describe('Публикация через АПИ', () => {

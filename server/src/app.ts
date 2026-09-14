@@ -20,6 +20,7 @@ import { registerAuthRoutes } from './routes/auth.ts';
 import { registerWorkspaceRoutes } from './routes/workspaces.ts';
 import { registerProjectRoutes } from './routes/projects.ts';
 import { registerSecretRoutes } from './routes/secrets.ts';
+import { registerExecutionRoutes } from './routes/execution.ts';
 
 /** Лимит попыток входа/регистрации с одного адреса. */
 const AUTH_LIMIT_PER_WINDOW = 20;
@@ -64,6 +65,16 @@ export function createApp(deps: AppDeps): App {
   registerWorkspaceRoutes(router, { ...authDeps, workspaces });
   registerProjectRoutes(router, { ...authDeps, workspaces, projects, versions });
   registerSecretRoutes(router, { ...authDeps, workspaces, secrets });
+  registerExecutionRoutes(router, {
+    ...authDeps,
+    workspaces,
+    projects,
+    versions,
+    limits: {
+      timeoutMs: deps.config.execTimeoutMs ?? 10_000,
+      maxParallel: deps.config.execMaxParallel ?? 2,
+    },
+  });
 
   const handle = (req: IncomingMessage, res: ServerResponse): void => {
     const url = new URL(req.url ?? '/', 'http://localhost');
