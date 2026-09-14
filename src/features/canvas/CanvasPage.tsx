@@ -101,7 +101,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
     <div className="flex h-screen flex-col bg-abyss">
       <Toolbar onToggleDebug={() => setDebugOpen((v) => !v)} />
       <FlowCanvas />
-      <DebugPanel open={debugOpen} />
+      <DebugPanel open={debugOpen} projectId={projectId} />
     </div>
   );
 }

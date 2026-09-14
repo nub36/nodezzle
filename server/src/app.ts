@@ -24,6 +24,7 @@ import { registerExecutionRoutes } from './routes/execution.ts';
 import { createTelegramBotStore } from './telegram/bots.ts';
 import { createExecutionStore, createStepStore } from './execution/journal.ts';
 import { createAuditStore } from './audit/store.ts';
+import { registerHistoryRoutes } from './routes/history.ts';
 import { registerTelegramBotRoutes } from './routes/telegram-bots.ts';
 import { registerWebhookRoutes } from './routes/webhook.ts';
 import type { RateLimiter } from './security/rate-limit.ts';
@@ -92,6 +93,7 @@ export function createApp(deps: AppDeps): App {
   registerProjectRoutes(router, { ...authDeps, workspaces, projects, versions });
   registerSecretRoutes(router, { ...authDeps, workspaces, secrets });
   registerTelegramBotRoutes(router, { ...authDeps, workspaces, projects, secrets, bots });
+  registerHistoryRoutes(router, { ...authDeps, workspaces, projects, executions, steps, audit });
   registerWebhookManageRoutes(router, {
     ...authDeps,
     workspaces,

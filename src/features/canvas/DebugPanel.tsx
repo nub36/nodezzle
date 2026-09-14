@@ -13,12 +13,13 @@ import { cn } from '@/lib/utils';
 import type { LogEntry } from '@/core/types/runtime';
 import { PhonePreview } from './PhonePreview';
 import { WebPreview } from './WebPreview';
+import { ExecutionHistory } from '@/features/history/ExecutionHistory';
 import { useProjectStore } from '@/store/project-store';
 import { blockRegistry } from '@/core/registry/block-registry';
 
 type Tab = 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history';
 
-export function DebugPanel({ open }: { open: boolean }) {
+export function DebugPanel({ open, projectId }: { open: boolean; projectId: string }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('simulator');
 
@@ -83,7 +84,7 @@ export function DebugPanel({ open }: { open: boolean }) {
         {tab === 'web' && <WebPreview />}
         {tab === 'ports' && <PortsTab />}
         {tab === 'log' && <LogTab />}
-        {tab === 'history' && <HistoryTab />}
+        {tab === 'history' && <HistoryTab projectId={projectId} />}
       </div>
     </div>
   );
@@ -320,16 +321,21 @@ function LogTab() {
 
 /* ---------------- История выполнения ---------------- */
 
-function HistoryTab() {
+function HistoryTab({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const history = useExecutionStore((s) => s.history);
 
-  if (history.length === 0) {
-    return <div className="pt-4 text-xs text-muted/70">{t('execution.panel.history.empty')}</div>;
-  }
-
   return (
     <div className="space-y-1.5 pt-2">
+      {/* Серверная история исполнения (журналы АПИ/Телеграма) */}
+      <ExecutionHistory projectId={projectId} />
+      {/* Локальная история симулятора этого браузера */}
+      <div className="pt-2 text-[10px] font-bold uppercase tracking-wide text-muted/70">
+        {t('execution.panel.history.localTitle')}
+      </div>
+      {history.length === 0 && (
+        <div className="text-xs text-muted/70">{t('execution.panel.history.empty')}</div>
+      )}
       {history.map((h) => (
         <div key={h.id} className="flex items-center gap-3 rounded-lg border border-line/50 bg-abyss/40 px-3 py-2 text-[11px]">
           <span className="font-mono text-[10px] text-muted/70">{formatTimeRu(h.at)}</span>

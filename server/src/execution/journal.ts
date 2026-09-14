@@ -99,11 +99,17 @@ export interface ExecutionStore {
     outcome: { status: ExecutionStatus; errorCode?: string | null; durationMs?: number },
   ): void;
   get(id: string): ExecutionRecord | null;
+  /** Новые → старые; фильтр по статусу необязателен. */
+  listForProject(
+    projectId: string,
+    options: { status?: ExecutionStatus; limit: number; offset: number },
+  ): ExecutionRecord[];
 }
 
 export interface StepStore {
   /** Возвращает `false`, если достигнут лимит шагов исполнения. */
   add(executionId: string, step: Omit<StepRecord, 'id' | 'executionId' | 'sequence'>): boolean;
+  count(executionId: string): number;
   list(executionId: string): StepRecord[];
 }
 
@@ -151,6 +157,12 @@ export function createExecutionStore(db: Db): ExecutionStore {
     'UPDATE executions SET status = ?, error_code = ?, finished_at = ?, duration_ms = ? WHERE id = ?',
   );
   const getStmt = db.prepare('SELECT * FROM executions WHERE id = ?');
+  const listStmt = db.prepare(
+    'SELECT * FROM executions WHERE project_id = ? ORDER BY created_at DESC, id LIMIT ? OFFSET ?',
+  );
+  const listStatusStmt = db.prepare(
+    'SELECT * FROM executions WHERE project_id = ? AND status = ? ORDER BY created_at DESC, id LIMIT ? OFFSET ?',
+  );
 
   return {
     start(input) {
@@ -184,6 +196,14 @@ export function createExecutionStore(db: Db): ExecutionStore {
       const row = getStmt.get(id) as unknown as ExecutionRow | undefined;
       return row ? executionFromRow(row) : null;
     },
+    listForProject(projectId, options) {
+      const rows = (
+        options.status !== undefined
+          ? listStatusStmt.all(projectId, options.status, options.limit, options.offset)
+          : listStmt.all(projectId, options.limit, options.offset)
+      ) as unknown as ExecutionRow[];
+      return rows.map(executionFromRow);
+    },
   };
 }
 
@@ -216,6 +236,10 @@ export function createStepStore(db: Db): StepStore {
         step.outputSummary,
       );
       return true;
+    },
+    count(executionId) {
+      const row = countStmt.get(executionId) as unknown as { n: number };
+      return row.n;
     },
     list(executionId) {
       const rows = listStmt.all(executionId) as unknown as StepRow[];

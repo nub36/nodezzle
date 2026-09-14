@@ -47,6 +47,46 @@ export interface BotSummary {
   updatedAt: string;
 }
 
+/** Исполнение проекта из журналов сервера. */
+export interface ExecutionSummary {
+  id: string;
+  projectId: string;
+  status: string;
+  source: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  durationMs: number | null;
+  errorCode: string | null;
+  stepCount: number;
+}
+
+/** Шаг исполнения из журналов сервера (сводки без секретов). */
+export interface ExecutionStepSummary {
+  executionId: string;
+  sequence: number;
+  nodeId: string;
+  blockType: string;
+  status: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  durationMs: number | null;
+  errorCode: string | null;
+  inputSummary: string | null;
+  outputSummary: string | null;
+}
+
+/** Запись журнала действий. */
+export interface AuditEntry {
+  id: number;
+  workspaceId: string;
+  actorUserId: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 export interface ServerApi {
   register(email: string, password: string, name: string): Promise<void>;
   login(email: string, password: string): Promise<void>;
@@ -57,6 +97,10 @@ export interface ServerApi {
   createBot(workspaceId: string, secretId: string, projectId: string | null): Promise<BotSummary>;
   replaceBotSecret(workspaceId: string, botId: string, secretId: string): Promise<BotSummary>;
   deleteBot(workspaceId: string, botId: string): Promise<void>;
+  executions(projectId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<ExecutionSummary[]>;
+  execution(executionId: string): Promise<ExecutionSummary>;
+  executionSteps(executionId: string): Promise<ExecutionStepSummary[]>;
+  audit(workspaceId: string, options?: { action?: string; targetType?: string; limit?: number; offset?: number }): Promise<AuditEntry[]>;
 }
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -126,6 +170,39 @@ export function createServerApi(fetchImpl: FetchLike = fetch): ServerApi {
     },
     async deleteBot(workspaceId, botId) {
       await call('DELETE', `/api/workspaces/${workspaceId}/telegram-bots/${botId}`);
+    },
+    async executions(projectId, options = {}) {
+      const params = new URLSearchParams();
+      if (options.status !== undefined) params.set('status', options.status);
+      if (options.limit !== undefined) params.set('limit', String(options.limit));
+      if (options.offset !== undefined) params.set('offset', String(options.offset));
+      const query = params.toString();
+      const payload = await call<{ executions: ExecutionSummary[] }>(
+        'GET',
+        `/api/projects/${projectId}/executions${query !== '' ? `?${query}` : ''}`,
+      );
+      return payload.executions;
+    },
+    async execution(executionId) {
+      const payload = await call<{ execution: ExecutionSummary }>('GET', `/api/executions/${executionId}`);
+      return payload.execution;
+    },
+    async executionSteps(executionId) {
+      const payload = await call<{ steps: ExecutionStepSummary[] }>('GET', `/api/executions/${executionId}/steps`);
+      return payload.steps;
+    },
+    async audit(workspaceId, options = {}) {
+      const params = new URLSearchParams();
+      if (options.action !== undefined) params.set('action', options.action);
+      if (options.targetType !== undefined) params.set('targetType', options.targetType);
+      if (options.limit !== undefined) params.set('limit', String(options.limit));
+      if (options.offset !== undefined) params.set('offset', String(options.offset));
+      const query = params.toString();
+      const payload = await call<{ entries: AuditEntry[] }>(
+        'GET',
+        `/api/workspaces/${workspaceId}/audit${query !== '' ? `?${query}` : ''}`,
+      );
+      return payload.entries;
     },
   };
 }

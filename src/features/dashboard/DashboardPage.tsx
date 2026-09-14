@@ -10,6 +10,7 @@ import type { ProjectKind, ProjectSummary } from '@/core/project/schema';
 import { useProjectStore } from '@/store/project-store';
 import { formatDateRu } from '@/lib/utils';
 import { TelegramBotPanel } from '@/features/telegram/TelegramBotPanel';
+import { AuditLogSection } from '@/features/history/AuditLog';
 
 const KIND_ICONS: Record<ProjectKind, string> = {
   telegram: '🤖',
@@ -162,6 +163,9 @@ export function DashboardPage() {
 
         {/* Подключение Telegram-бота (токен — только через сервер) */}
         <TelegramBotPanel />
+
+        {/* Журнал действий пространства (только чтение) */}
+        <AuditLogSection />
       </main>
     </div>
   );

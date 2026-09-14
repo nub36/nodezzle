@@ -101,4 +101,40 @@ describe('createServerApi', () => {
       'DELETE /api/workspaces/w1/telegram-bots/b2',
     ]);
   });
+
+  it('история исполнений: фильтры и пагинация уходят в строку запроса', async () => {
+    const { fetchImpl, recorded } = mockServer((req) => {
+      if (req.path.endsWith('/steps')) return { status: 200, body: { steps: [{ sequence: 1, nodeId: 'n1' }] } };
+      if (req.path.startsWith('/api/executions/')) return { status: 200, body: { execution: { id: 'e1' } } };
+      return { status: 200, body: { executions: [{ id: 'e1', status: 'success' }] } };
+    });
+    const api = createServerApi(fetchImpl);
+
+    const list = await api.executions('p1', { status: 'error', limit: 50, offset: 25 });
+    expect(list).toHaveLength(1);
+    expect(recorded[0].path).toBe('/api/projects/p1/executions?status=error&limit=50&offset=25');
+
+    const run = await api.execution('e1');
+    expect(run.id).toBe('e1');
+    expect(recorded[1].path).toBe('/api/executions/e1');
+
+    const steps = await api.executionSteps('e1');
+    expect(steps[0].sequence).toBe(1);
+    expect(recorded[2].path).toBe('/api/executions/e1/steps');
+  });
+
+  it('журнал действий: фильтр по группе и пагинация', async () => {
+    const { fetchImpl, recorded } = mockServer(() => ({
+      status: 200,
+      body: { entries: [{ id: '1', action: 'project.publish' }] },
+    }));
+    const api = createServerApi(fetchImpl);
+
+    const entries = await api.audit('w1', { action: 'project.', limit: 10, offset: 0 });
+    expect(entries).toHaveLength(1);
+    expect(recorded[0].path).toBe('/api/workspaces/w1/audit?action=project.&limit=10&offset=0');
+
+    await api.audit('w1');
+    expect(recorded[1].path).toBe('/api/workspaces/w1/audit');
+  });
 });

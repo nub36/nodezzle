@@ -519,6 +519,8 @@ select.input-dark {
 .status-error .status-dot { background: #f87171; }
 .status-stopped .status-dot { background: #fbbf24; }
 .status-waiting .status-dot { background: #a78bfa; }
+.status-queued .status-dot { background: #94a3b8; }
+.status-timeout .status-dot { background: #fb923c; }
 
 @keyframes dot-blink {
   0%, 100% { opacity: 1; }

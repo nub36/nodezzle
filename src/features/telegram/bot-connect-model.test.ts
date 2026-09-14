@@ -46,6 +46,12 @@ function fakeApi() {
       const idx = bots.findIndex((b) => b.id === botId);
       if (idx >= 0) bots.splice(idx, 1);
     },
+    executions: async () => [],
+    execution: async () => {
+      throw new Error('не используется в этом тесте');
+    },
+    executionSteps: async () => [],
+    audit: async () => [],
   };
   return { api, secrets, bots, sentSecretValues };
 }
