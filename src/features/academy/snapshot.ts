@@ -49,6 +49,7 @@ export function buildAcademySnapshot(): AcademySnapshot {
       project.selectedNodeId !== null
         ? project.nodes.find((n) => n.id === project.selectedNodeId)?.data.blockId ?? null
         : null,
+    selectedNodeId: project.selectedNodeId,
     lastRun:
       lastRecord !== undefined
         ? { status: lastRecord.status, at: lastRecord.at, source: tutorial.lastRunSource ?? undefined }

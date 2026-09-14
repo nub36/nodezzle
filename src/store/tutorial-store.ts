@@ -7,8 +7,18 @@
 import { create } from 'zustand';
 import { evaluateStep } from '@/academy/completion';
 import { getLesson } from '@/academy/catalog';
+import { diffSnapshots, type TutorialEvent } from '@/academy/events';
 import type { AcademySnapshot, LessonDefinition } from '@/academy/types';
 import { useAcademyStore } from './academy-store';
+
+/** Размер журнала событий (диагностика «почему шаг не засчитался»). */
+const EVENT_LOG_SIZE = 30;
+
+/**
+ * Completion Bridge: предыдущий снимок для вывода событий.
+ * Живёт вне zustand-состояния, чтобы не вызывать лишних перерисовок.
+ */
+let bridgePrev: AcademySnapshot | null = null;
 
 interface TutorialState {
   lesson: LessonDefinition | null;
@@ -22,6 +32,13 @@ interface TutorialState {
   /** Источник и текст последнего запуска (для шагов симулятора). */
   lastRunSource: string | null;
   lastSimulatorText: string | null;
+  /** Момент, когда текущий шаг стал активным (шаги «запустить» требуют нового действия). */
+  stepStartedAt: number;
+  /** Completion Bridge: последние нормализованные события. */
+  lastEvent: TutorialEvent | null;
+  recentEvents: TutorialEvent[];
+  /** Счётчик ручных перепроверок («Проверить шаг»). */
+  recheckTick: number;
 
   start: (lessonId: string, fromStep?: number) => void;
   stop: () => void;
@@ -33,6 +50,10 @@ interface TutorialState {
   hideHint: () => void;
   setDebugOpen: (open: boolean) => void;
   recordRun: (status: string, source: string, simulatorText: string) => void;
+  /** Записать событие моста (вызывает наблюдатель). */
+  recordEvent: (event: TutorialEvent) => void;
+  /** Ручная перепроверка текущего шага (фолбэк, не замена автопроверки). */
+  recheck: () => void;
   /** Проверить текущий шаг по снимку состояния. */
   evaluate: (snapshot: AcademySnapshot) => void;
 }
@@ -46,6 +67,10 @@ export const useTutorialStore = create<TutorialState>()((set, get) => ({
   debugOpen: false,
   lastRunSource: null,
   lastSimulatorText: null,
+  stepStartedAt: 0,
+  lastEvent: null,
+  recentEvents: [],
+  recheckTick: 0,
 
   start: (lessonId, fromStep = 0) => {
     const lesson = getLesson(lessonId);
@@ -57,12 +82,16 @@ export const useTutorialStore = create<TutorialState>()((set, get) => ({
       active: true,
       finished: false,
       hintVisible: false,
+      stepStartedAt: Date.now(),
+      lastEvent: null,
+      recentEvents: [],
     });
+    bridgePrev = null;
   },
 
   stop: () => set({ active: false, hintVisible: false }),
 
-  exit: () => set({ lesson: null, active: false, finished: false, hintVisible: false }),
+  exit: () => set({ lesson: null, active: false, finished: false, hintVisible: false, debugOpen: false }),
 
   acknowledge: () => {
     const { lesson, stepIndex, active } = get();
@@ -89,8 +118,16 @@ export const useTutorialStore = create<TutorialState>()((set, get) => ({
   recordRun: (_status, source, simulatorText) =>
     set({ lastRunSource: source, lastSimulatorText: simulatorText }),
 
+  recordEvent: (event) =>
+    set((s) => ({
+      lastEvent: event,
+      recentEvents: [...s.recentEvents, event].slice(-EVENT_LOG_SIZE),
+    })),
+
+  recheck: () => set((s) => ({ recheckTick: s.recheckTick + 1 })),
+
   evaluate: (base) => {
-    const { lesson, stepIndex, active, lastRunSource, lastSimulatorText } = get();
+    const { lesson, stepIndex, active, lastRunSource, lastSimulatorText, stepStartedAt } = get();
     if (lesson === null || !active) return;
     const step = lesson.steps[stepIndex];
     if (step === undefined) return;
@@ -101,14 +138,29 @@ export const useTutorialStore = create<TutorialState>()((set, get) => ({
     if (base.lastRun !== undefined && base.lastRun !== null && base.lastRun.source === undefined && lastRunSource !== null) {
       snapshot.lastRun = { ...base.lastRun, source: lastRunSource };
     }
-    if (!evaluateStep(step, snapshot)) return;
+
+    // Мост событий: нормализованные события выводятся из полного снимка
+    // состояния (кнопки «Понятно»/викторина передают минимальный снимок —
+    // его диф не считаем, чтобы не порождать шум).
+    if (base.nodes.length > 0 || base.edges.length > 0) {
+      // До первого снимка считаем холст пустым: детали, уже стоящие на
+      // схеме к моменту старта шага, тоже видны как события.
+      const events = diffSnapshots(bridgePrev ?? { nodes: [], edges: [] }, snapshot);
+      bridgePrev = snapshot;
+      for (const event of events) {
+        get().recordEvent({ ...event, stepId: step.id });
+      }
+    }
+
+    if (!evaluateStep(step, snapshot, stepStartedAt)) return;
 
     const nextIndex = stepIndex + 1;
     useAcademyStore.getState().advance(lesson, nextIndex);
     if (nextIndex >= lesson.steps.length) {
       set({ stepIndex: lesson.steps.length, active: false, finished: true, hintVisible: false });
     } else {
-      set({ stepIndex: nextIndex, hintVisible: false });
+      // Новый шаг: его «момент старта» отсчитывается заново.
+      set({ stepIndex: nextIndex, hintVisible: false, stepStartedAt: Date.now() });
     }
   },
 }));

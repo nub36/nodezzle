@@ -30,10 +30,12 @@ function hasConnection(snapshot: AcademySnapshot, step: {
     const from = blockIdOfNode(snapshot, edge.sourceNodeId);
     const to = blockIdOfNode(snapshot, edge.targetNodeId);
     if (from !== step.fromBlockId || to !== step.toBlockId) return false;
-    if (step.fromPortId !== undefined && edge.sourcePortId !== undefined && edge.sourcePortId !== step.fromPortId) {
+    // Если урок требует конкретный порт — совпадение обязательно:
+    // соединение «не тем портом» шаг не завершает.
+    if (step.fromPortId !== undefined && edge.sourcePortId !== step.fromPortId) {
       return false;
     }
-    if (step.toPortId !== undefined && edge.targetPortId !== undefined && edge.targetPortId !== step.toPortId) {
+    if (step.toPortId !== undefined && edge.targetPortId !== step.toPortId) {
       return false;
     }
     return true;
@@ -45,8 +47,11 @@ function hasConnection(snapshot: AcademySnapshot, step: {
  * пользователя (прочитать, ответить), результат зависит от данных снимка
  * (ответ викторины, маршрут) — «Далее» нажимает интерфейс только после
  * положительного результата.
+ *
+ * `stepStartedAt` — момент, когда шаг стал текущим: шаги «запустить»
+ * требуют НОВОГО запуска, а не сделанного до появления шага.
  */
-export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot): boolean {
+export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot, stepStartedAt = 0): boolean {
   switch (step.kind) {
     case 'information':
       // Чтение нельзя проверить автоматически: засчитывает интерфейс,
@@ -70,12 +75,14 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot): boole
     case 'run': {
       const run = snapshot.lastRun;
       if (run === undefined || run === null) return false;
+      if (run.at < stepStartedAt) return false; // старый запуск не в счёт
       if (step.require === 'finished') return FINISHED_STATUSES.has(run.status);
       return run.status === 'success';
     }
     case 'send-simulator-message': {
       const run = snapshot.lastRun;
       if (run === undefined || run === null) return false;
+      if (run.at < stepStartedAt) return false; // старый запуск не в счёт
       if (run.status !== 'success') return false;
       if (run.source !== step.source) return false;
       if (step.textContains !== undefined) {
@@ -85,9 +92,9 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot): boole
       return true;
     }
     case 'select-block':
-      return snapshot.selectedBlockId !== undefined && snapshot.selectedBlockId !== null
-        ? snapshot.nodes.some((n) => n.id === snapshot.selectedBlockId && n.blockId === step.blockId)
-        : false;
+      // snapshot.selectedBlockId — это ТИП детали (напр. 'core.text'),
+      // а не экземпляр узла на холсте: сверяем тип с требуемым.
+      return snapshot.selectedBlockId === step.blockId;
     case 'create-model':
       return nodeBlockIds(snapshot).has('models.call');
     case 'open-debug':

@@ -8,9 +8,13 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { lessons } from '@/academy/catalog';
+import { describeEvent } from '@/academy/events';
+import { nextLesson } from '@/academy/progress';
 import type { LessonStep } from '@/academy/types';
+import { useAcademyStore } from '@/store/academy-store';
 import { useTutorialStore } from '@/store/tutorial-store';
 
 const AUTO_HINT_MS = 25_000;
@@ -44,6 +48,15 @@ export function TutorialOverlay() {
   const answerQuiz = useTutorialStore((s) => s.answerQuiz);
   const exit = useTutorialStore((s) => s.exit);
   const stop = useTutorialStore((s) => s.stop);
+  const recheck = useTutorialStore((s) => s.recheck);
+  const lastEvent = useTutorialStore((s) => s.lastEvent);
+  const progress = useAcademyStore((s) => s.progress);
+  const [searchParams] = useSearchParams();
+  const academyDebug = searchParams.get('academyDebug') === '1';
+
+  // «Следующий урок» на экране завершения.
+  const next = nextLesson(progress, lessons);
+  const nextLessonId = lesson !== null && next !== null && next.id !== lesson.id ? next.id : null;
 
   const step: LessonStep | null = lesson !== null ? (lesson.steps[stepIndex] ?? null) : null;
   const [rect, setRect] = useState<Rect | null>(null);
@@ -112,13 +125,35 @@ export function TutorialOverlay() {
           <div className="mb-2 text-2xl">🎉</div>
           <div className="mb-1 text-sm font-bold">{t('academy.overlay.finishedTitle')}</div>
           <p className="mb-4 text-xs text-muted">{t('academy.overlay.finishedText', { title: t(lesson.titleKey) })}</p>
-          <div className="flex gap-2">
-            <button className="btn-primary flex-1 justify-center !py-1.5 text-xs" onClick={() => navigate('/academy')}>
-              {t('academy.overlay.toAcademy')}
-            </button>
-            <button className="btn-ghost !py-1.5 text-xs" onClick={exit}>
-              {t('academy.overlay.stay')}
-            </button>
+          <div className="flex flex-col gap-2">
+            {nextLessonId !== null && (
+              <button
+                data-testid="tutorial-next-lesson"
+                className="btn-primary justify-center !py-1.5 text-xs"
+                onClick={() => navigate(`/academy/lesson/${nextLessonId}`)}
+              >
+                {t('academy.overlay.nextLesson')} →
+              </button>
+            )}
+            <div className="flex gap-2">
+              <button
+                data-testid="tutorial-to-academy"
+                className="btn-ghost flex-1 justify-center !py-1.5 text-xs"
+                onClick={() => navigate('/academy')}
+              >
+                {t('academy.overlay.toAcademy')}
+              </button>
+              <button data-testid="tutorial-stay" className="btn-ghost !py-1.5 text-xs" onClick={exit}>
+                {t('academy.overlay.stay')}
+              </button>
+              <button
+                data-testid="tutorial-restart"
+                className="btn-ghost !py-1.5 text-xs"
+                onClick={() => navigate(`/academy/lesson/${lesson.id}`)}
+              >
+                ↺
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -151,11 +186,16 @@ export function TutorialOverlay() {
         className="fixed right-4 top-16 z-[70] w-[340px] max-w-[calc(100vw-2rem)]"
         role="dialog"
         aria-label={t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
+        data-testid="tutorial-card"
+        data-step-id={step.id}
+        data-step-kind={step.kind}
       >
         <div className="glass-strong tutorial-anim rounded-2xl border border-cyan-400/30 p-4 shadow-[0_0_32px_rgba(34,211,238,0.15)]">
           <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted">
             <span>🎓 {t(lesson.titleKey)}</span>
-            <span className="ml-auto">{t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}</span>
+            <span className="ml-auto" data-testid="tutorial-step-index">
+              {t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
+            </span>
           </div>
           <div className="mb-1 h-1 overflow-hidden rounded bg-line/60">
             <div
@@ -175,18 +215,23 @@ export function TutorialOverlay() {
               {step.options.map((option) => (
                 <button
                   key={option.id}
+                  data-testid={`tutorial-quiz-${option.id}`}
                   className="btn-ghost w-full justify-start !py-1.5 text-left text-xs"
                   onClick={() => handleQuiz(option.id)}
                 >
                   {t(option.labelKey)}
                 </button>
               ))}
-              {wrongAnswer && <p className="text-xs text-red-300">{t('academy.overlay.wrong')}</p>}
+              {wrongAnswer && <p className="text-xs text-red-300" data-testid="tutorial-quiz-wrong">{t('academy.overlay.wrong')}</p>}
             </div>
           )}
 
           {needsAcknowledge && (
-            <button className="btn-primary mt-3 w-full justify-center !py-1.5 text-xs" onClick={acknowledge}>
+            <button
+              data-testid="tutorial-ack"
+              className="btn-primary mt-3 w-full justify-center !py-1.5 text-xs"
+              onClick={acknowledge}
+            >
               {t('academy.overlay.ack')}
             </button>
           )}
@@ -209,14 +254,36 @@ export function TutorialOverlay() {
             </div>
           )}
 
-          <button
-            className="mt-3 text-[10px] text-muted/60 hover:text-muted"
-            onClick={() => {
-              if (window.confirm(t('academy.overlay.exitConfirm'))) stop();
-            }}
-          >
-            {t('academy.overlay.exit')}
-          </button>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            {!needsAcknowledge && step.kind !== 'quiz' ? (
+              <button
+                data-testid="tutorial-recheck"
+                className="text-[10px] text-cyan-300/80 underline-offset-2 hover:underline"
+                title={t('academy.overlay.recheckHint')}
+                onClick={recheck}
+              >
+                ✓ {t('academy.overlay.recheck')}
+              </button>
+            ) : (
+              <span />
+            )}
+            <button
+              className="text-[10px] text-muted/60 hover:text-muted"
+              data-testid="tutorial-exit"
+              onClick={() => {
+                if (window.confirm(t('academy.overlay.exitConfirm'))) stop();
+              }}
+            >
+              {t('academy.overlay.exit')}
+            </button>
+          </div>
+
+          {academyDebug && (
+            <div className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/5 px-2 py-1.5 font-mono text-[9px] leading-relaxed text-amber-200" data-testid="tutorial-debug">
+              <div>lesson: {lesson.id} · step: {step.id} · kind: {step.kind}</div>
+              <div>event: {lastEvent !== null ? describeEvent(lastEvent) : '—'}</div>
+            </div>
+          )}
         </div>
       </div>
     </>

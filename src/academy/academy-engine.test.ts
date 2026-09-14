@@ -171,7 +171,10 @@ describe('проверка шагов по снимку состояния', () 
       { id: 'n1', blockId: 'debug.log' },
       { id: 'n2', blockId: 'models.call' },
     ];
-    expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: 'n1' })).toBe(true);
+    // select-block сверяет ТИП выбранной детали, а не экземпляр узла:
+    // выбран «Лог» — шаг выполнен; выбрана другая деталь — нет.
+    expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: 'debug.log', selectedNodeId: 'n1' })).toBe(true);
+    expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: 'models.call', selectedNodeId: 'n2' })).toBe(false);
     expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: null })).toBe(false);
     expect(evaluateStep(step({ kind: 'create-model' }), { ...base, nodes })).toBe(true);
     expect(evaluateStep(step({ kind: 'open-debug' }), { ...base, debugOpen: true })).toBe(true);

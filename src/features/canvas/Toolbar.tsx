@@ -216,6 +216,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
       <button
         className={cn(running ? 'btn-ghost !border-red-400/50 !text-red-300' : 'btn-primary !py-2 !text-sm')}
         data-tutorial="run"
+        data-testid="run-button"
         onClick={() => (running ? stop() : void run())}
       >
         {running ? '⏹ ' + t('common.stop') : '▶ ' + t('common.run')}

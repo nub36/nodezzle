@@ -45,6 +45,7 @@ function BlockRow({ def, onInsert }: { def: BlockDefinition; onInsert: (payload:
   return (
     <div
       className="palette-item group"
+      data-testid={`library-item-${def.id}`}
       draggable
       title={def.descriptionKey ? t(def.descriptionKey) : def.id}
       onDragStart={(e) => {

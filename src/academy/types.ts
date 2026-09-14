@@ -181,7 +181,10 @@ export interface SnapshotEdge {
 export interface AcademySnapshot {
   nodes: SnapshotNode[];
   edges: SnapshotEdge[];
+  /** ТИП выбранной детали (идентификатор определения, напр. 'core.text'). */
   selectedBlockId?: string | null;
+  /** Экземпляр выбранного узла на холсте (для событий/диагностики). */
+  selectedNodeId?: string | null;
   /** Последнее завершённое выполнение (если было). */
   lastRun?: { status: string; source?: string; at: number } | null;
   /** Сколько сообщений бот отправил в outbox за текущую сессию. */

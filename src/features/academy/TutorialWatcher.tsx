@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { getLesson } from '@/academy/catalog';
 import { useExecutionStore } from '@/store/execution-store';
 import { useProjectStore } from '@/store/project-store';
@@ -19,6 +19,7 @@ import { buildAcademySnapshot, effectiveRunSource } from './snapshot';
 export function TutorialWatcher() {
   const [searchParams] = useSearchParams();
   const lessonParam = searchParams.get('lesson');
+  const location = useLocation();
 
   const lesson = lessonParam !== null ? getLesson(lessonParam) : undefined;
   const project = useProjectStore((s) => s.project);
@@ -31,6 +32,7 @@ export function TutorialWatcher() {
 
   const active = useTutorialStore((s) => s.active);
   const stepIndex = useTutorialStore((s) => s.stepIndex);
+  const recheckTick = useTutorialStore((s) => s.recheckTick);
   const startedFor = useRef<string | null>(null);
 
   // Запуск урока: уроки с песочницей — только в учебном проекте урока;
@@ -77,10 +79,12 @@ export function TutorialWatcher() {
   }, [debugOpen]);
 
   // Проверка текущего шага при любом изменении состояния.
+  // Нормализованные события моста выводятся самим стором внутри
+  // `evaluate` (единственный источник истины — сторы продукта).
   useEffect(() => {
     if (!active) return;
     useTutorialStore.getState().evaluate(buildAcademySnapshot());
-  }, [active, nodes, edges, selectedNodeId, historyLength, debugOpen, stepIndex]);
+  }, [active, nodes, edges, selectedNodeId, historyLength, debugOpen, stepIndex, recheckTick, location]);
 
   // Шаги про панель отладки/симлятор/чат/историю: открываем и включаем вкладку.
   const stepTarget = active && lesson !== undefined ? lesson.steps[stepIndex]?.target : undefined;

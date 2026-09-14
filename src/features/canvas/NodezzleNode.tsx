@@ -84,6 +84,8 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
         status === 'error' && 'status-error',
         status === 'skipped' && 'status-skipped',
       )}
+      data-testid={`canvas-node-${nodeData.blockId}`}
+      data-node-id={id}
     >
       {/* Заголовок */}
       <div className="flex items-center gap-2 border-b border-line/70 px-3 py-2.5">

@@ -50,6 +50,7 @@ function LessonCard({ lesson }: { lesson: LessonDefinition }) {
     <Link
       to={available ? `/academy/lesson/${lesson.id}` : '#'}
       aria-disabled={!available}
+      data-testid={`lesson-card-${lesson.id}`}
       className={cn(
         'glass block rounded-2xl p-4 transition-all',
         available ? 'hover:border-cyan-400/40 hover:shadow-[0_0_24px_rgba(34,211,238,0.12)]' : 'opacity-50',
