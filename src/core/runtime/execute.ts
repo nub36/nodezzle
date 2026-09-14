@@ -243,7 +243,8 @@ export async function executeCanvas(
   for (const n of doc.nodes) {
     const def = defOf(n.id);
     if (def.trigger !== true && def.entry !== true) continue;
-    if (def.matches && !def.matches(payload, n.config ?? {})) {
+    if ((payload.targetNodeId !== undefined && payload.targetNodeId !== n.id) ||
+        (def.matches && !def.matches(payload, n.config ?? {}))) {
       state0(n.id, 'skipped');
       continue;
     }
@@ -288,7 +289,7 @@ export async function executeCanvas(
   };
 
   // --- Bootstrap: кто начинает схему ---
-  if (hasAnyEntry) {
+  if (hasAnyEntry || payload.targetNodeId !== undefined) {
     if (matchedIds.size === 0) {
       pushLog('warn', 'ERR_NO_TRIGGER');
       return finish('waiting', 'ERR_NO_TRIGGER');

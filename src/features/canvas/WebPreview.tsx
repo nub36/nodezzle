@@ -15,29 +15,35 @@ import { blockRegistry } from '@/core/registry/block-registry';
 import { useExecutionStore } from '@/store/execution-store';
 import { useProjectStore } from '@/store/project-store';
 import { cn } from '@/lib/utils';
-import { tryParseJson } from '@/lib/utils';
+import { parseWebFormJson } from './web-form-json';
 import { collectWebElements } from './web-preview-utils';
 
 export function WebPreview() {
   const { t } = useTranslation();
   const nodes = useProjectStore((s) => s.nodes);
   const project = useProjectStore((s) => s.project);
+  const activeModelId = useProjectStore((s) => s.activeModelId);
   const fireWebTrigger = useExecutionStore((s) => s.fireWebTrigger);
   const running = useExecutionStore((s) => s.running);
   const status = useExecutionStore((s) => s.status);
 
   const elements = collectWebElements(nodes, (id) => blockRegistry.get(id), (key) => t(key));
   const [formDrafts, setFormDrafts] = useState<Record<string, string>>({});
-  const pageFired = useRef(false);
+  const pageFired = useRef<string | null>(null);
+  const context = `${project?.id ?? ''}:${activeModelId ?? ''}`;
 
-  // Загрузка страницы: событие `web.page` при открытии превью (один раз).
+  useEffect(() => { setFormDrafts({}); }, [context]);
+
+  // Каждый показанный экземпляр страницы получает своё событие, не все web.page.
+  const pageId = elements.page?.nodeId;
   useEffect(() => {
-    if (elements.page && !pageFired.current) {
-      pageFired.current = true;
-      void fireWebTrigger({ event: 'page_load', at: Date.now() });
+    const key = pageId ? `${context}:${pageId}` : null;
+    if (key && pageFired.current !== key && !running) {
+      pageFired.current = key;
+      void fireWebTrigger({ event: 'page_load', at: Date.now() }, pageId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elements.page?.nodeId]);
+    if (!key) pageFired.current = null;
+  }, [context, pageId, running, fireWebTrigger]);
 
   if (!elements.page && elements.buttons.length === 0 && elements.forms.length === 0) {
     return (
@@ -51,11 +57,11 @@ export function WebPreview() {
   const address = `${(project?.name ?? 'app').toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'app'}.nodezzle.app`;
 
   const reload = () => {
-    void fireWebTrigger({ event: 'page_load', at: Date.now() });
+    if (pageId) void fireWebTrigger({ event: 'page_load', at: Date.now() }, pageId);
   };
 
   return (
-    <div className="flex gap-4 pt-2">
+    <div className="flex flex-wrap gap-4 pt-2" data-testid="web-preview">
       {/* Окно браузера */}
       <div className="min-w-[300px] flex-1 overflow-hidden rounded-xl border border-line/60 bg-white/[0.03]">
         <div className="flex items-center gap-2 border-b border-line/50 bg-abyss/60 px-3 py-1.5">
@@ -70,7 +76,8 @@ export function WebPreview() {
           <button
             className="text-muted transition-colors hover:text-ink disabled:opacity-40"
             title={t('execution.panel.web.reload')}
-            disabled={running}
+            aria-label={t('execution.panel.web.reload')}
+            disabled={running || !pageId}
             onClick={reload}
           >
             ⟳
@@ -84,33 +91,39 @@ export function WebPreview() {
           {elements.buttons.map((b) => (
             <button
               key={b.nodeId}
+              data-testid="web-preview-button" data-node-id={b.nodeId}
               className="btn-primary !px-4 !py-1.5 !text-xs"
               disabled={running}
-              onClick={() => void fireWebTrigger({ event: 'button_click', button: b.label, at: Date.now() })}
+              onClick={() => void fireWebTrigger({ event: 'button_click', button: b.label, at: Date.now() }, b.nodeId)}
             >
               {b.label}
             </button>
           ))}
           {elements.forms.map((f) => {
-            const draft = formDrafts[f.nodeId] ?? '{ "name": "Иван", "email": "ivan@example.com" }';
+            const draft = formDrafts[f.nodeId] ?? t('execution.panel.web.formExample');
+            const values = parseWebFormJson(draft);
             return (
-              <div key={f.nodeId} className="rounded-lg border border-line/50 bg-panel/60 p-2.5">
+              <div key={f.nodeId} data-testid="web-preview-form" data-node-id={f.nodeId} className="rounded-lg border border-line/50 bg-panel/60 p-2.5">
                 <div className="mb-1 text-[11px] font-semibold text-muted">📋 {f.label}</div>
                 <textarea
                   className="input-dark h-12 resize-none font-mono text-[11px]"
+                  aria-label={t('execution.panel.web.formData', { label: f.label })}
+                  aria-invalid={values === null}
+                  aria-describedby={values === null ? `web-form-error-${f.nodeId}` : undefined}
                   value={draft}
                   onChange={(e) => setFormDrafts((d) => ({ ...d, [f.nodeId]: e.target.value }))}
                 />
+                {values === null && <p id={`web-form-error-${f.nodeId}`} role="alert" className="mt-1 text-xs text-red-300">{t('execution.panel.web.invalidForm')}</p>}
                 <button
                   className="btn-ghost mt-1.5 !px-3 !py-1 !text-[11px]"
-                  disabled={running}
+                  disabled={running || values === null}
                   onClick={() =>
-                    void fireWebTrigger({
+                    values !== null && void fireWebTrigger({
                       event: 'form_submit',
                       form: f.label,
-                      values: tryParseJson(draft, {}) as Record<string, unknown>,
+                      values,
                       at: Date.now(),
-                    })
+                    }, f.nodeId)
                   }
                 >
                   {t('execution.panel.web.submit')}

@@ -63,7 +63,7 @@ interface ExecutionState {
   setPayload: (patch: Partial<SimulatorPayload>) => void;
   run: () => Promise<void>;
   /** Запуск схемы веб-событием из превью страницы (Этап 2, подэтап I ч. 2). */
-  fireWebTrigger: (web: Record<string, unknown>) => Promise<void>;
+  fireWebTrigger: (web: Record<string, unknown>, targetNodeId?: string) => Promise<void>;
   stop: () => void;
   reset: () => void;
 }
@@ -204,9 +204,9 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
     await startRun(triggerPayload, echo);
   },
 
-  fireWebTrigger: async (web) => {
+  fireWebTrigger: async (web, targetNodeId) => {
     // Веб-превью: событие со страницы (клик, отправка формы, загрузка).
-    await startRun({ source: 'web', web }, null);
+    await startRun({ source: 'web', web, ...(targetNodeId !== undefined ? { targetNodeId } : {}) }, null);
   },
 
   stop: () => {

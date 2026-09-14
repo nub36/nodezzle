@@ -28,6 +28,8 @@ export type NodeExecutionStatus = 'idle' | 'running' | 'success' | 'error' | 'sk
  */
 export interface TriggerPayload {
   source?: 'telegram' | 'web' | 'model' | 'generic';
+  /** Необязательный ID точки входа активного холста; без него — обычный выбор триггеров. */
+  targetNodeId?: string;
   telegram?: {
     text: string;
     command?: string;

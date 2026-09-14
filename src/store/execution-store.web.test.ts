@@ -158,4 +158,13 @@ describe('fireWebTrigger — запуск схемы веб-событием', (
     expect(state.history[0]).toMatchObject({ source: 'web', status: 'waiting' });
   });
 
+  it('передаёт адрес экземпляра без добавления служебных полей в данные', async () => {
+    const nodes = ['a', 'b'].map((id) => ({ id, blockId: 'web.button', position: { x: 0, y: 0 }, config: {} }));
+    useProjectStore.setState(canvasToFlow({ id: 'c', name: 'Холст', nodes, edges: [] }));
+    await useExecutionStore.getState().fireWebTrigger({ event: 'button_click', button: 'Одинаковая подпись' }, 'b');
+    expect(useExecutionStore.getState().nodeInfo.a.status).toBe('skipped');
+    expect(useExecutionStore.getState().nodeInfo.b.outputs.data).toEqual({ event: 'button_click', button: 'Одинаковая подпись' });
+    expect(useExecutionStore.getState().history[0].status).toBe('success');
+  });
+
 });
