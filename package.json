@@ -1,0 +1,45 @@
+{
+  "name": "nodezzle",
+  "private": true,
+  "version": "0.5.28",
+  "description": "NODEZZLE — визуальная среда сборки Telegram-ботов, веб-интерфейсов и систем из соединяемых деталей. Не программируй. Собери.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "dev:all": "node scripts/dev-all.mjs",
+    "dev:reset": "node scripts/dev-reset.mjs",
+    "server:dev": "node --watch --import ./server/src/register-alias.mjs server/src/index.ts",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit && tsc -p server/tsconfig.json",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.11.6",
+    "i18next": "^26.4.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.13",
+    "react-router-dom": "^7.18.3",
+    "zod": "^4.6.4",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.20.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
+}
