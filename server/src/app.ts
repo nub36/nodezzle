@@ -22,6 +22,7 @@ import { registerProjectRoutes } from './routes/projects.ts';
 import { registerSecretRoutes } from './routes/secrets.ts';
 import { registerExecutionRoutes } from './routes/execution.ts';
 import { createTelegramBotStore } from './telegram/bots.ts';
+import { createExecutionStore, createStepStore } from './execution/journal.ts';
 import { registerTelegramBotRoutes } from './routes/telegram-bots.ts';
 import { registerWebhookRoutes } from './routes/webhook.ts';
 import type { RateLimiter } from './security/rate-limit.ts';
@@ -75,6 +76,8 @@ export function createApp(deps: AppDeps): App {
   const versions = createVersionStore(deps.db);
   const secrets = createSecretStore(deps.db, deps.config);
   const bots = createTelegramBotStore(deps.db);
+  const executions = createExecutionStore(deps.db);
+  const steps = createStepStore(deps.db);
   const authDeps = {
     config: deps.config,
     store: createAuthStore(deps.db),
@@ -103,6 +106,8 @@ export function createApp(deps: AppDeps): App {
         projects,
         versions,
         secrets,
+        executions,
+        steps,
         transportFor: deps.telegramTransportFor,
       }),
   });
@@ -115,6 +120,8 @@ export function createApp(deps: AppDeps): App {
       timeoutMs: deps.config.execTimeoutMs ?? 10_000,
       maxParallel: deps.config.execMaxParallel ?? 2,
     },
+    executions,
+    steps,
   });
 
   const handle = (req: IncomingMessage, res: ServerResponse): void => {

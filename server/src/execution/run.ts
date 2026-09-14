@@ -15,7 +15,7 @@
 
 import { executeCanvas } from '../../../src/core/runtime/execute.ts';
 import type { NodezzleProject, StoredModel } from '../../../src/core/project/schema.ts';
-import type { ExecutionResult, TriggerPayload } from '../../../src/core/types/runtime.ts';
+import type { ExecutionResult, NodeRunInfo, TriggerPayload } from '../../../src/core/types/runtime.ts';
 
 export interface ExecutionLimits {
   timeoutMs: number;
@@ -28,6 +28,8 @@ export interface ServerExecutionResult {
   durationMs: number;
   outbox: ExecutionResult['outbox'];
   logs: ExecutionResult['logs'];
+  /** Телеметрия узлов — источник шагов журнала (подэтап 5.9). */
+  nodeRuns: Record<string, NodeRunInfo>;
 }
 
 let running = 0;
@@ -84,6 +86,7 @@ export async function runLiveExecution(
         durationMs: Date.now() - startedAt,
         outbox: [],
         logs: [],
+        nodeRuns: {},
       };
     }
     const { result } = winner;
@@ -93,6 +96,7 @@ export async function runLiveExecution(
       durationMs: result.durationMs,
       outbox: result.outbox,
       logs: result.logs,
+      nodeRuns: result.nodeRuns,
     };
   } finally {
     releaseSlot();

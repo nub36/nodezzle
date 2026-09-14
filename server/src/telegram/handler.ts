@@ -13,7 +13,9 @@ import type { VersionStore } from '../projects/versions.ts';
 import type { SecretStore } from '../secrets/store.ts';
 import type { TelegramBotMeta } from './bots.ts';
 import type { TelegramEvent } from './updates.ts';
-import { runLiveExecution, ParallelLimitError } from '../execution/run.ts';
+import { ParallelLimitError } from '../execution/run.ts';
+import { runTrackedExecution } from '../execution/record.ts';
+import type { ExecutionStore, StepStore } from '../execution/journal.ts';
 import { createTelegramApi, type TelegramTransport } from './api.ts';
 
 export interface TelegramHandlerDeps {
@@ -21,6 +23,9 @@ export interface TelegramHandlerDeps {
   projects: ProjectStore;
   versions: VersionStore;
   secrets: SecretStore;
+  /** Журнал исполнений (подэтап 5.9). */
+  executions: ExecutionStore;
+  steps: StepStore;
   /** Фабрика транспорта; в тестах — только мок, без реальной сети. */
   transportFor?: (token: string) => TelegramTransport;
 }
@@ -48,7 +53,21 @@ export function createTelegramUpdateHandler(deps: TelegramHandlerDeps): Telegram
     };
     let result;
     try {
-      result = await runLiveExecution(liveDoc, event.payload, limits);
+      result = await runTrackedExecution(
+        { executions: deps.executions, steps: deps.steps },
+        {
+          workspaceId: bot.workspaceId,
+          projectId: project.id,
+          projectVersionId: live.id,
+          triggerType: 'telegram',
+          triggerSource: 'webhook',
+          telegramBotId: bot.id,
+          externalEventId: String(event.updateId),
+          payload: event.payload,
+          limits,
+        },
+        liveDoc,
+      );
     } catch (err) {
       if (err instanceof ParallelLimitError) return; // тихо: нет ресурса — нет запуска
       throw err;

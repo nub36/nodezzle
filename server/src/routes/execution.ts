@@ -10,13 +10,17 @@ import type { RouteContext, Router } from '../router.ts';
 import type { WorkspaceStore } from '../workspaces/store.ts';
 import type { ProjectStore } from '../projects/store.ts';
 import type { VersionStore } from '../projects/versions.ts';
-import { ParallelLimitError, runLiveExecution, type ExecutionLimits } from '../execution/run.ts';
+import { ParallelLimitError, type ExecutionLimits } from '../execution/run.ts';
+import { runTrackedExecution } from '../execution/record.ts';
+import type { ExecutionStore, StepStore } from '../execution/journal.ts';
 
 export interface ExecutionDeps extends AuthDeps {
   workspaces: WorkspaceStore;
   projects: ProjectStore;
   versions: VersionStore;
   limits: ExecutionLimits;
+  executions: ExecutionStore;
+  steps: StepStore;
 }
 
 export function registerExecutionRoutes(router: Router, deps: ExecutionDeps): void {
@@ -42,7 +46,19 @@ export function registerExecutionRoutes(router: Router, deps: ExecutionDeps): vo
     }
 
     try {
-      const result = await runLiveExecution(liveDoc, payload, deps.limits);
+      const result = await runTrackedExecution(
+        { executions: deps.executions, steps: deps.steps },
+        {
+          workspaceId: row.workspaceId,
+          projectId: row.id,
+          projectVersionId: live.id,
+          triggerType: 'api',
+          triggerSource: 'rest',
+          payload,
+          limits: deps.limits,
+        },
+        liveDoc,
+      );
       sendJson(ctx.res, 200, { result });
     } catch (err) {
       if (err instanceof ParallelLimitError) throw tooManyRequests(err.message);
