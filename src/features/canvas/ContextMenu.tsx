@@ -39,7 +39,7 @@ export function CanvasContextMenu({
     <>
       {/* Прозрачная подложка: клик мимо закрывает меню */}
       <div className="pointer-events-auto absolute inset-0 z-20" onClick={onClose} onContextMenu={(e) => e.preventDefault()} />
-      <div className="glass-strong pointer-events-auto absolute z-30 w-56 rounded-xl p-1.5" style={{ left: x, top: y }}>
+      <div data-canvas-menu className="glass-strong pointer-events-auto absolute z-30 w-56 rounded-xl p-1.5" style={{ left: x, top: y }}>
         {items.map((item, i) =>
           item.divider ? (
             <div key={i} className="mx-2 my-1 h-px bg-line/70" />

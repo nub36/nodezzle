@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { useProjectStore } from '@/store/project-store';
+import { useUiStore } from '@/store/ui-store';
 import { useExecutionStore } from '@/store/execution-store';
 import { CONDITION_OPERATORS } from '@/blocks/logic/blocks';
 import { cn, safeStringify, translateError } from '@/lib/utils';
@@ -87,7 +88,11 @@ export function ConfigPanel() {
           <span aria-hidden="true">{def.ui?.icon}</span>
           <span className="text-xs font-bold uppercase tracking-wider">{t('canvas.inspector.title')}</span>
         </div>
-        <button className="text-muted transition-colors hover:text-ink" onClick={() => selectNode(null)} title={t('common.close')}>
+        <button className="text-muted transition-colors hover:text-ink" onClick={() => {
+          selectNode(null);
+          useUiStore.getState().setCanvasPanel(null);
+          document.getElementById('panel-toggle-inspector')?.focus();
+        }} title={t('common.close')}>
           ✕
         </button>
       </div>

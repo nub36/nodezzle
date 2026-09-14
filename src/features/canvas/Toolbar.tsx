@@ -10,7 +10,7 @@
  * масштаб, поиск по схеме, режим и эффекты добавлены в подэтапе B.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
@@ -84,10 +84,11 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
     ).length;
   }, [nodes, schemaQuery, t]);
 
+  const [toolsOpen, setToolsOpen] = useState(false);
   if (!project) return null;
 
   return (
-    <div className="glass-strong z-20 flex items-center gap-2 border-b border-line/70 px-4 py-2.5">
+    <div className="canvas-toolbar glass-strong z-20 flex shrink-0 items-center gap-2 border-b border-line/70 px-4 py-2.5">
       <Link to="/dashboard" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('common.back')}>
         ←
       </Link>
@@ -120,7 +121,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         title={t('common.name')}
       />
 
-      <span className="status-chip !text-[10.5px]">{t(`dashboard.kinds.${project.kind}`)}</span>
+      <span className="canvas-toolbar-kind status-chip !text-[10.5px]">{t(`dashboard.kinds.${project.kind}`)}</span>
 
       <div className="mx-1 h-5 w-px bg-line" />
 
@@ -133,6 +134,9 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
 
       <div className="mx-1 h-5 w-px bg-line" />
 
+      <button data-testid="toolbar-tools-toggle" aria-expanded={toolsOpen} aria-controls="canvas-toolbar-tools"
+        className="canvas-tools-toggle btn-ghost !py-1.5 text-xs" onClick={() => setToolsOpen(!toolsOpen)}>{t('canvas.panels.tools')}</button>
+      <div id="canvas-toolbar-tools" className="canvas-toolbar-tools" data-open={toolsOpen}>
       {/* Масштаб */}
       <div className="flex items-center">
         <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => zoomOut()} title={t('canvas.toolbar.zoomOut')}>
@@ -201,6 +205,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         🎯
       </button>
 
+      </div>
       <div className="flex-1" />
 
       {/* Автосохранение */}

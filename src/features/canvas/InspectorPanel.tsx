@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { portColor } from '@/core/type-system/compatibility';
 import { useProjectStore } from '@/store/project-store';
+import { useUiStore } from '@/store/ui-store';
 import { useExecutionStore } from '@/store/execution-store';
 import { safeStringify } from '@/lib/utils';
 import { ConfigPanel } from './ConfigPanel';
@@ -34,6 +35,8 @@ function PanelShell({ title, children }: { title: string; children: React.ReactN
           onClick={() => {
             selectNode(null);
             selectEdge(null);
+            useUiStore.getState().setCanvasPanel(null);
+            document.getElementById('panel-toggle-inspector')?.focus();
           }}
           title={t('common.close')}
         >

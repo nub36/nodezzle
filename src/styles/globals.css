@@ -774,3 +774,26 @@ select.input-dark {
     transition: none;
   }
 }
+
+
+/* 08B: инструменты доступны по кнопке, а не уходят за край окна. */
+.canvas-tools-toggle { display: none; }
+.canvas-toolbar-tools { display: contents; }
+@media (max-width: 1279px) {
+  .canvas-toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 10px; }
+  .canvas-toolbar > input { width: 140px; min-width: 0; }
+  .canvas-toolbar > .bg-line, .canvas-toolbar-kind { display: none; }
+  .canvas-tools-toggle { display: inline-flex; }
+  .canvas-toolbar-tools { display: none; }
+  .canvas-toolbar-tools[data-open="true"] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; order: 10; width: 100%; max-height: 140px; overflow: auto; padding: 6px 0 18px; }
+}
+@media (max-width: 1023px) {
+  .canvas-side-panel { max-width: calc(100% - 24px); }
+  .canvas-side-panel > div { max-width: 100%; }
+  .canvas-debug-tabs { white-space: nowrap; padding-inline: 8px; }
+  .canvas-debug-tabs > * { flex-shrink: 0; }
+  .canvas-debug-body { height: min(190px, 28dvh); }
+  .canvas-editor .react-flow__minimap { display: none; }
+  /* Кнопки панелей остаются сверху; окно урока можно передвинуть вручную. */
+  body:has(.canvas-editor) .tutorial-step-window:not([style*="left:"]) { top: auto; bottom: 8px; left: 16px; right: 16px; max-height: 38dvh; }
+}

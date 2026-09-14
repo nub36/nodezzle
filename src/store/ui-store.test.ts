@@ -122,3 +122,30 @@ describe('UI-store: библиотека деталей', () => {
     expect(useUiStore.getState().focusMode).toBe(false);
   });
 });
+
+describe('08B: панели узкого Canvas', () => {
+  it('выбирает ровно одну панель и возвращает холст без панелей', () => {
+    const ui = useUiStore.getState();
+    ui.setCanvasPanel('library');
+    expect(useUiStore.getState().canvasPanel).toBe('library');
+    ui.setCanvasPanel('inspector');
+    expect(useUiStore.getState().canvasPanel).toBe('inspector');
+    ui.setCanvasPanel(null);
+    expect(useUiStore.getState().canvasPanel).toBeNull();
+  });
+  it('не сбрасывает поиск и настройки библиотеки при закрытии', () => {
+    const ui = useUiStore.getState();
+    ui.setLibraryQuery('core.text');
+    ui.setLibraryTab('favorites');
+    ui.setCanvasPanel('library');
+    ui.setCanvasPanel(null);
+    expect(useUiStore.getState().libraryQuery).toBe('core.text');
+    expect(useUiStore.getState().libraryTab).toBe('favorites');
+  });
+  it('не сохраняет открытую панель в постоянных настройках', () => {
+    useUiStore.getState().setCanvasPanel('inspector');
+    const persisted = useUiStore.persist.getOptions().partialize!(useUiStore.getState());
+    expect(persisted).not.toHaveProperty('canvasPanel');
+    useUiStore.getState().setCanvasPanel(null);
+  });
+});

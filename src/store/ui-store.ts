@@ -34,7 +34,12 @@ export const EFFECTS_CYCLE: readonly EffectsMode[] = ['full', 'reduced', 'off'];
 /** Сколько недавних деталей храним. */
 export const RECENT_LIMIT = 10;
 
+export type CanvasPanel = 'library' | 'inspector' | null;
+
 interface UiState {
+  /** Временное состояние узкого Canvas, не часть проекта или persist. */
+  canvasPanel: CanvasPanel;
+  setCanvasPanel: (panel: CanvasPanel) => void;
   libraryTab: LibraryTab;
   libraryQuery: string;
   canvasMode: CanvasMode;
@@ -95,6 +100,8 @@ function resolveStorage(): Storage {
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
+      canvasPanel: null,
+      setCanvasPanel: (canvasPanel) => set({ canvasPanel }),
       libraryTab: 'basic',
       libraryQuery: '',
       canvasMode: 'draft',

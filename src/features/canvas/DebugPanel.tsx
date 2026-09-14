@@ -45,8 +45,8 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
   ];
 
   return (
-    <div className="glass-strong z-20 border-t border-line/70" data-tutorial="debug">
-      <div className="flex items-center gap-1 px-4 pt-2">
+    <div className="canvas-debug glass-strong z-20 shrink-0 border-t border-line/70" data-tutorial="debug">
+      <div className="canvas-debug-tabs flex items-center gap-1 overflow-x-auto px-4 pt-2">
         {tabs.map((tb) => (
           <button
             key={tb.id}
@@ -83,7 +83,7 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
         </button>
       </div>
 
-      <div className="h-[190px] overflow-y-auto px-4 pb-3">
+      <div className="canvas-debug-body h-[190px] overflow-auto px-4 pb-3">
         {tab === 'simulator' && <SimulatorTab />}
         {tab === 'chat' && <ChatTab />}
         {tab === 'phone' && <PhonePreview />}

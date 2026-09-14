@@ -44,6 +44,8 @@ import { CanvasContextMenu, type ContextMenuItem } from './ContextMenu';
 import { useUiStore, type EffectsMode } from '@/store/ui-store';
 import { useConnectionFxStore } from '@/store/connection-fx-store';
 import { InspectorPanel } from './InspectorPanel';
+import { useNarrowCanvas } from '@/lib/useNarrowCanvas';
+import { CanvasPanelSwitcher } from './CanvasPanelSwitcher';
 import { Toolbar } from './Toolbar';
 import { CreateModelDialog } from './CreateModelDialog';
 import { GroupFrames } from './GroupFrames';
@@ -135,6 +137,7 @@ export function CanvasPage() {
 }
 
 function CanvasInner({ projectId }: { projectId: string }) {
+  const narrow = useNarrowCanvas();
   const { t } = useTranslation();
   const debugOpen = useUiStore((s) => s.debugOpen);
   const setDebugOpen = useUiStore((s) => s.setDebugOpen);
@@ -145,6 +148,12 @@ function CanvasInner({ projectId }: { projectId: string }) {
   useEffect(() => {
     void loadById(projectId);
   }, [projectId, loadById]);
+
+  useEffect(() => {
+    // При входе/переходе на узкий экран сначала освобождаем холст.
+    useUiStore.getState().setCanvasPanel(null);
+    if (narrow) setDebugOpen(false);
+  }, [narrow, projectId, setDebugOpen]);
 
   // Autosave: flush при переходе/закрытии и beforeunload.
   useEffect(() => {
@@ -170,8 +179,9 @@ function CanvasInner({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-abyss">
+    <div className="canvas-editor flex h-dvh min-w-0 flex-col overflow-hidden bg-abyss">
       <Toolbar onToggleDebug={() => setDebugOpen(!debugOpen)} />
+      {narrow && <CanvasPanelSwitcher />}
       <FlowCanvas />
       <DebugPanel open={debugOpen} projectId={projectId} />
     </div>
@@ -179,6 +189,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
 }
 
 function FlowCanvas() {
+  const narrow = useNarrowCanvas();
+  const panel = useUiStore((s) => s.canvasPanel);
   const { t } = useTranslation();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, getViewport, setViewport } = useReactFlow();
@@ -254,8 +266,13 @@ function FlowCanvas() {
     const wrapper = wrapperRef.current;
     if (!wrapper) return undefined;
     const rect = wrapper.getBoundingClientRect();
-    const library = wrapper.querySelector('[data-tutorial="library"]')?.getBoundingClientRect();
-    const inspector = wrapper.querySelector('[data-tutorial="inspector"]')?.getBoundingClientRect();
+    // Вставка закрывает узкую панель: считаем будущий свободный холст, не её ширину.
+    if (narrow) {
+      useUiStore.getState().setCanvasPanel(null);
+      requestAnimationFrame(() => document.getElementById('panel-toggle-canvas')?.focus());
+    }
+    const library = narrow ? undefined : wrapper.querySelector('[data-tutorial="library"]')?.getBoundingClientRect();
+    const inspector = narrow ? undefined : wrapper.querySelector('[data-tutorial="inspector"]')?.getBoundingClientRect();
     const left = (library?.right ?? rect.left) + 16;
     const right = (inspector?.left ?? rect.right) - 16;
     const top = rect.top + 16;
@@ -268,7 +285,7 @@ function FlowCanvas() {
     const end = screenToFlowPosition({ x: area.right, y: area.bottom });
     const bounds = { ...start, width: end.x - start.x, height: end.y - start.y };
     return { rect, area, bounds };
-  }, [screenToFlowPosition]);
+  }, [screenToFlowPosition, narrow]);
 
   const revealInserted = useCallback((box: Rect, layout: NonNullable<ReturnType<typeof getInsertionArea>>) => {
     const { rect, area, bounds } = layout;
@@ -590,7 +607,7 @@ function FlowCanvas() {
   return (
     <div
       ref={wrapperRef}
-      className="grid-bg relative flex-1 overflow-hidden"
+      className="grid-bg relative min-h-0 flex-1 overflow-hidden"
       data-tutorial="canvas"
       data-effects={effectsMode}
       onDrop={onDrop}
@@ -666,13 +683,14 @@ function FlowCanvas() {
       <GroupFrames />
 
       {/* Библиотека деталей (вкладки, поиск, избранное, недавние, модели) */}
-      <div className="pointer-events-none absolute bottom-3 left-3 top-3 z-10" data-tutorial="library">
+      <div id="canvas-library" hidden={narrow && panel !== 'library'} className="canvas-side-panel pointer-events-none absolute bottom-3 left-3 top-3 z-10" data-tutorial="library">
         <BlockLibrary onInsert={onInsertAtCenter} />
       </div>
 
       {/* Контекстный инспектор: деталь / соединение / холст (Этап 2, подэтап E) */}
       <div
-        className="pointer-events-none absolute right-3 top-3 z-10"
+        id="canvas-inspector" hidden={narrow && panel !== 'inspector'}
+        className="canvas-side-panel pointer-events-none absolute right-3 top-3 z-10"
         style={{ bottom: 12 }}
         data-tutorial="inspector"
       >

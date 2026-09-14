@@ -42,7 +42,11 @@ function measureTarget(target: string | undefined): Rect | null {
     ?? (panelTarget ? document.querySelector('[data-tutorial="debug-toggle"]') : null);
   if (el === null) return null;
   const box = el.getBoundingClientRect();
-  if (box.width === 0 && box.height === 0) return null;
+  if (box.width === 0 && box.height === 0) {
+    const toggle = document.querySelector(`[data-tutorial="panel-toggle-${target}"]`);
+    const button = toggle?.getBoundingClientRect();
+    return button ? { top: button.top, left: button.left, width: button.width, height: button.height } : null;
+  }
   return { top: box.top, left: box.left, width: box.width, height: box.height };
 }
 
@@ -207,7 +211,7 @@ export function TutorialOverlay() {
       <div
         ref={floating.ref}
         style={{ ...floating.style, pointerEvents: connecting ? 'none' : undefined }}
-        className={`fixed top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain ${target === 'inspector' ? 'left-4 sm:left-[304px]' : 'right-4'}`}
+        className={`tutorial-step-window fixed top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain ${target === 'inspector' ? 'left-4 sm:left-[304px]' : 'right-4'}`}
         role="dialog"
         aria-label={t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
         data-testid="tutorial-card"

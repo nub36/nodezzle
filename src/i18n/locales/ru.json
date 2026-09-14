@@ -340,6 +340,13 @@
     },
     "port": {
       "incompatible": "Несовместимый тип: {{from}} → {{to}}"
+    },
+    "panels": {
+      "navigation": "Панели редактора",
+      "library": "Детали",
+      "inspector": "Свойства",
+      "canvas": "Холст",
+      "tools": "Инструменты"
     }
   },
   "execution": {
