@@ -4,15 +4,39 @@
  * состояние — из стора прогресса.
  */
 
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { lessons } from '@/academy/catalog';
 import { isLessonAvailable, lessonPercent, levelPercent, nextLesson, totalPercent } from '@/academy/progress';
+import { blockRegistry } from '@/core/registry/block-registry';
+import { buildReference } from '@/academy/reference';
+import { buildHelpIndex, searchHelp, type HelpSearchResult } from '@/academy/search';
 import type { LessonDefinition } from '@/academy/types';
 import { useAcademyStore } from '@/store/academy-store';
 import { cn } from '@/lib/utils';
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+
+function HelpResultRow({ result }: { result: HelpSearchResult }) {
+  const { t } = useTranslation();
+  const isLesson = result.entry.kind === 'lesson';
+  const to = isLesson ? `/academy/lesson/${result.entry.id}` : `/academy/reference?block=${encodeURIComponent(result.entry.id)}`;
+  return (
+    <Link to={to} className="glass block rounded-xl px-4 py-3 transition-all hover:border-cyan-400/40">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className="text-sm">{isLesson ? '🎓' : '🧩'}</span>
+        <span className="truncate text-sm font-bold">{t(result.entry.titleKey)}</span>
+        <span className="ml-auto shrink-0 text-[10px] uppercase tracking-wider text-muted">
+          {t(isLesson ? 'academy.help.resultLesson' : 'academy.help.resultBlock')}
+        </span>
+      </div>
+      {result.entry.descriptionKey !== undefined && (
+        <div className="mt-1 line-clamp-1 text-xs text-muted">{t(result.entry.descriptionKey)}</div>
+      )}
+    </Link>
+  );
+}
 
 function LessonCard({ lesson }: { lesson: LessonDefinition }) {
   const { t } = useTranslation();
@@ -65,6 +89,9 @@ export function AcademyPage() {
   const progress = useAcademyStore((s) => s.progress);
   const total = totalPercent(progress, lessons);
   const next = nextLesson(progress, lessons);
+  const [query, setQuery] = useState('');
+  const helpIndex = useMemo(() => buildHelpIndex(lessons, buildReference(blockRegistry.list())), []);
+  const results = useMemo(() => searchHelp(helpIndex, query, (key) => t(key ?? '')), [helpIndex, query, t]);
 
   return (
     <div className="aurora min-h-screen bg-abyss text-ink">
@@ -99,11 +126,31 @@ export function AcademyPage() {
           </div>
         </div>
 
+        <div className="glass mb-6 rounded-2xl p-3">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('academy.help.searchPlaceholder')}
+            aria-label={t('academy.help.searchPlaceholder')}
+            className="input-dark w-full"
+          />
+          {query.trim().length > 0 && (
+            <div className="mt-3 space-y-2" role="list" aria-label={t('academy.help.searchResults')}>
+              {results.length === 0 ? (
+                <div className="rounded-xl px-4 py-3 text-center text-xs text-muted">{t('academy.help.noResults')}</div>
+              ) : (
+                results.map((r) => <HelpResultRow key={`${r.entry.kind}:${r.entry.id}`} result={r} />)
+              )}
+            </div>
+          )}
+        </div>
+
         {lessons.length === 0 && (
           <div className="glass rounded-2xl p-8 text-center text-sm text-muted">{t('academy.emptyCatalog')}</div>
         )}
 
-        <div className="space-y-8">
+        <div className={cn('space-y-8', query.trim().length > 0 && 'hidden')}>
           {LEVELS.map((level) => {
             const levelLessons = lessons.filter((l) => l.level === level);
             if (levelLessons.length === 0) return null;

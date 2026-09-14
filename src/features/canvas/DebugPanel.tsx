@@ -7,7 +7,9 @@
 
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useExecutionStore } from '@/store/execution-store';
+import { helpRouteForError } from '@/academy/search';
 import { formatTimeRu, safeStringify, translateError } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { LogEntry } from '@/core/types/runtime';
@@ -312,6 +314,15 @@ function LogTab() {
               {entry.level}
             </span>
             <span className="flex-1 truncate font-medium">{translateError(entry.message)}</span>
+            {entry.message.startsWith('ERR_') && (
+              <Link
+                to={helpRouteForError(entry.message)}
+                className="shrink-0 text-[10px] text-cyan-300 hover:underline"
+                title={t('execution.panel.log.howToFix')}
+              >
+                {t('execution.panel.log.howToFix')}
+              </Link>
+            )}
           </div>
           {entry.data !== undefined && (
             <pre className="log-json">{safeStringify(entry.data, 1)}</pre>

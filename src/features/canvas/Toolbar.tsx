@@ -18,6 +18,7 @@ import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
 import { useUiStore } from '@/store/ui-store';
 import { blockRegistry } from '@/core/registry/block-registry';
+import { contextHelp } from '@/academy/search';
 import { nodeMatchesQuery } from './library-utils';
 import { cn, formatDateRu } from '@/lib/utils';
 import type { ExecutionStatus } from '@/core/types/runtime';
@@ -36,6 +37,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
   const project = useProjectStore((s) => s.project);
   const renameProject = useProjectStore((s) => s.renameProject);
   const nodes = useProjectStore((s) => s.nodes);
+  const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const saveState = useProjectStore((s) => s.saveState);
   const savedAt = useProjectStore((s) => s.savedAt);
   const canUndo = useProjectStore((s) => s.past.length > 0);
@@ -60,6 +62,16 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
   const run = useExecutionStore((s) => s.run);
   const stop = useExecutionStore((s) => s.stop);
 
+  // Контекстные подсказки помощи (5.11F): зависят от состояния холста.
+  const suggestions = useMemo(() => {
+    const last = status === 'success' ? 'success' : status === 'error' ? 'error' : status === 'stopped' ? 'finished' : undefined;
+    return contextHelp({
+      nodeCount: nodes.length,
+      hasSelection: selectedNodeId !== null,
+      lastRunStatus: last,
+    });
+  }, [status, nodes.length, selectedNodeId]);
+
   // Количество узлов схемы, подходящих под поиск (0 при пустом запросе).
   const foundCount = useMemo(() => {
     const q = schemaQuery.trim();
@@ -79,9 +91,27 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
       <Link to="/dashboard" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('common.back')}>
         ←
       </Link>
-      <Link to="/academy" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('academy.toolbarHelp')}>
-        ?
-      </Link>
+      <details className="relative">
+        <summary className="btn-ghost list-none !px-2.5 !py-1.5 text-xs" title={t('academy.toolbarHelp')} aria-label={t('academy.toolbarHelp')}>
+          ?
+        </summary>
+        <div className="glass-strong absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl border border-line/70 p-3">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted">{t('academy.help.panelTitle')}</div>
+          <div className="mb-2 flex gap-2">
+            <Link to="/academy" className="btn-ghost flex-1 !py-1.5 text-xs">🎓 {t('academy.help.toAcademy')}</Link>
+            <Link to="/academy/reference" className="btn-ghost flex-1 !py-1.5 text-xs">📚 {t('academy.help.toReference')}</Link>
+          </div>
+          <ul className="space-y-1.5">
+            {suggestions.map((s) => (
+              <li key={s.textKey}>
+                <Link to={s.to} className="block rounded-lg border border-line/60 bg-abyss/40 px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-cyan-400/40 hover:text-ink">
+                  💡 {t(s.textKey)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       <input
         className="input-dark max-w-[200px] !border-transparent !bg-transparent !px-2 text-sm font-semibold hover:!border-line focus:!border-cyan-400/50"
