@@ -23,6 +23,8 @@ import { logicOperatorBlocks } from './logic/operators';
 import { dataStructureBlocks } from './data/structures';
 import { flowControlBlocks } from './flow/control';
 import { telegramExtendedBlocks } from './telegram/extended';
+import { webUiBlocks } from './web/ui';
+import { webEventBlocks } from './web/events';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -36,6 +38,8 @@ const ALL_BLOCKS = [
   ...telegramBlocks,
   ...telegramExtendedBlocks,
   ...webBlocks,
+  ...webUiBlocks,
+  ...webEventBlocks,
   ...modelBlocks,
   ...debugBlocks,
   ...datetimeBlocks,
