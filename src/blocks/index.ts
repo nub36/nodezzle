@@ -27,6 +27,8 @@ import { webUiBlocks } from './web/ui';
 import { webEventBlocks } from './web/events';
 import { modelExtendedBlocks } from './models/extended';
 import { memoryBlocks } from './memory/blocks';
+import { datetimeExtendedBlocks } from './datetime/extended';
+import { httpBlocks } from './http/blocks';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -47,6 +49,8 @@ const ALL_BLOCKS = [
   ...memoryBlocks,
   ...debugBlocks,
   ...datetimeBlocks,
+  ...datetimeExtendedBlocks,
+  ...httpBlocks,
   ...reservedBlocks,
   ...noteBlocks,
 ];
