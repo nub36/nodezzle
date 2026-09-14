@@ -70,3 +70,26 @@ export function matchesQuery(def: BlockDefinition, query: string, texts: BlockSe
 export function pushRecent(list: string[], blockId: string, limit: number): string[] {
   return [blockId, ...list.filter((id) => id !== blockId)].slice(0, limit);
 }
+
+/** Узел схемы для поиска (минимальная структура, без типов React Flow). */
+export interface SchemaNodeLike {
+  data: { blockId: string; label?: string };
+}
+
+/**
+ * Поиск узла схемы по запросу: имя экземпляра, идентификатор блока,
+ * локализованное название блока. Пустой запрос подходит всем.
+ */
+export function nodeMatchesQuery(
+  node: SchemaNodeLike,
+  query: string,
+  blockLabel: (blockId: string) => string,
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (q === '') return true;
+  const label = node.data?.label;
+  if (typeof label === 'string' && label.toLowerCase().includes(q)) return true;
+  const blockId = node.data?.blockId ?? '';
+  if (blockId.toLowerCase().includes(q)) return true;
+  return blockLabel(blockId).toLowerCase().includes(q);
+}

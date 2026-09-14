@@ -10,7 +10,7 @@
  * Ctrl+C / Ctrl+V (копировать/вставить), Delete (удалить — встроенный в RF).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -30,7 +30,8 @@ import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
 import { NodezzleNode } from './NodezzleNode';
 import { BlockLibrary } from './BlockLibrary';
-import { DND_MIME, decodeDnd, type DndPayload } from './library-utils';
+import { DND_MIME, decodeDnd, nodeMatchesQuery, type DndPayload } from './library-utils';
+import { useUiStore } from '@/store/ui-store';
 import { ConfigPanel } from './ConfigPanel';
 import { Toolbar } from './Toolbar';
 import { DebugPanel } from './DebugPanel';
@@ -116,17 +117,34 @@ function FlowCanvas() {
   const pasteAt = useProjectStore((s) => s.pasteAt);
 
   const flowEdges = useExecutionStore((s) => s.flowEdges);
+  const effectsEnabled = useUiStore((s) => s.effectsEnabled);
+  const schemaQuery = useUiStore((s) => s.schemaQuery);
 
   // Рёбра: цвет типа порта + анимация «текущих» данных во время выполнения.
+  // Переключатель эффектов (тулбар) отключает анимацию.
   const displayEdges = useCallback(
     (list: Edge[]): Edge[] =>
       list.map((e) => ({
         ...e,
-        animated: flowEdges.includes(e.id),
+        animated: effectsEnabled && flowEdges.includes(e.id),
         style: { stroke: (e.data as { color?: string })?.color ?? '#475569', strokeWidth: 1.8 },
       })),
-    [flowEdges],
+    [flowEdges, effectsEnabled],
   );
+
+  // Поиск по схеме (тулбар): неподходящие узлы приглушаются.
+  const displayNodes = useMemo(() => {
+    const q = schemaQuery.trim();
+    if (q === '') return nodes;
+    return nodes.map((n) =>
+      nodeMatchesQuery(n, q, (blockId) => {
+        const def = blockRegistry.get(blockId);
+        return def ? t(def.labelKey) : '';
+      })
+        ? n
+        : { ...n, style: { ...n.style, opacity: 0.3 } },
+    );
+  }, [nodes, schemaQuery, t]);
 
   // Умные соединения: запрещаем несовместимые типы INPUT/OUTPUT.
   const isValidConnection = useCallback((conn: Connection | Edge) => {
@@ -242,7 +260,7 @@ function FlowCanvas() {
       onDragOver={onDragOver}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={displayNodes}
         edges={displayEdges(edges)}
         nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}

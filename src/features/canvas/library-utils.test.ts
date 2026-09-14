@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { BlockDefinition } from '@/core/types/blocks';
-import { decodeDnd, encodeDnd, matchesQuery, pushRecent } from './library-utils';
+import { decodeDnd, encodeDnd, matchesQuery, nodeMatchesQuery, pushRecent } from './library-utils';
 
 const def: BlockDefinition = {
   id: 'telegram.send_message',
@@ -81,5 +81,26 @@ describe('pushRecent', () => {
   it('список ограничен: остаются самые свежие', () => {
     // Вход: от новых к старым. «a» свежее «c» — при переполнении «c» теряется.
     expect(pushRecent(['a', 'b', 'c'], 'd', 3)).toEqual(['d', 'a', 'b']);
+  });
+});
+
+describe('nodeMatchesQuery (поиск по схеме)', () => {
+  const blockLabel = (id: string) => (id === 'telegram.send_message' ? 'Отправить сообщение' : id);
+
+  it('пустой запрос подходит всем', () => {
+    expect(nodeMatchesQuery({ data: { blockId: 'core.text' } }, '  ', blockLabel)).toBe(true);
+  });
+
+  it('ищет по имени экземпляра', () => {
+    expect(nodeMatchesQuery({ data: { blockId: 'core.text', label: 'Приветствие' } }, 'привет', blockLabel)).toBe(true);
+  });
+
+  it('ищет по идентификатору блока', () => {
+    expect(nodeMatchesQuery({ data: { blockId: 'telegram.send_message' } }, 'send', blockLabel)).toBe(true);
+  });
+
+  it('ищет по локализованному названию блока', () => {
+    expect(nodeMatchesQuery({ data: { blockId: 'telegram.send_message' } }, 'отправить', blockLabel)).toBe(true);
+    expect(nodeMatchesQuery({ data: { blockId: 'telegram.send_message' } }, 'задержка', blockLabel)).toBe(false);
   });
 });

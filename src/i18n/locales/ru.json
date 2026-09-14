@@ -121,7 +121,15 @@
   "canvas": {
     "toolbar": {
       "undo": "Отменить (Ctrl+Z)",
-      "redo": "Повторить (Ctrl+Shift+Z)"
+      "redo": "Повторить (Ctrl+Shift+Z)",
+      "zoomIn": "Приблизить",
+      "zoomOut": "Отдалить",
+      "fitView": "Вписать схему в экран",
+      "searchSchemaPlaceholder": "Поиск по схеме…",
+      "found": "Найдено: {{count}}",
+      "draft": "Черновик",
+      "live": "Живой",
+      "effects": "Эффекты выполнения (частицы по соединениям)"
     },
     "save": {
       "idle": "Черновик",

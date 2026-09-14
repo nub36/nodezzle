@@ -3,10 +3,12 @@
  *
  * Отдельный стор для настроек интерфейса, не связанных с документом проекта:
  * активная вкладка библиотеки, строка поиска, избранные и недавние детали,
- * свёрнутые категории. Избранное/недавние/вкладка сохраняются в LocalStorage
+ * свёрнутые категории; режим схемы «Черновик/Живой», визуальные эффекты
+ * и поиск по схеме (Этап 2, подэтап B).
+ * Избранное/недавние/вкладка/режим/эффекты сохраняются в LocalStorage
  * (persist), чтобы настройки переживали перезагрузку страницы.
  *
- * Строка поиска НЕ сохраняется — это состояние текущей сессии.
+ * Поисковые строки НЕ сохраняются — это состояние текущей сессии.
  */
 
 import { create } from 'zustand';
@@ -15,12 +17,20 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 /** Вкладки библиотеки деталей. */
 export type LibraryTab = 'basic' | 'all' | 'favorites' | 'recent' | 'myPieces' | 'myModels';
 
+/** Режим работы со схемой (Этап 2, подэтап B). */
+export type CanvasMode = 'draft' | 'live';
+
 /** Сколько недавних деталей храним. */
 export const RECENT_LIMIT = 10;
 
 interface UiState {
   libraryTab: LibraryTab;
   libraryQuery: string;
+  canvasMode: CanvasMode;
+  /** Визуальные эффекты выполнения (частицы по соединениям). */
+  effectsEnabled: boolean;
+  /** Поиск по схеме (состояние сессии, не сохраняется). */
+  schemaQuery: string;
   /** Избранные блоки (порядок добавления). */
   favorites: string[];
   /** Недавние блоки: от новых к старым, без дублей. */
@@ -30,6 +40,9 @@ interface UiState {
 
   setLibraryTab: (tab: LibraryTab) => void;
   setLibraryQuery: (query: string) => void;
+  setCanvasMode: (mode: CanvasMode) => void;
+  toggleEffects: () => void;
+  setSchemaQuery: (query: string) => void;
   toggleFavorite: (blockId: string) => void;
   recordRecent: (blockId: string) => void;
   toggleCategory: (category: string) => void;
@@ -66,12 +79,18 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       libraryTab: 'basic',
       libraryQuery: '',
+      canvasMode: 'draft',
+      effectsEnabled: true,
+      schemaQuery: '',
       favorites: [],
       recent: [],
       collapsedCategories: [],
 
       setLibraryTab: (tab) => set({ libraryTab: tab }),
       setLibraryQuery: (query) => set({ libraryQuery: query }),
+      setCanvasMode: (mode) => set({ canvasMode: mode }),
+      toggleEffects: () => set((state) => ({ effectsEnabled: !state.effectsEnabled })),
+      setSchemaQuery: (query) => set({ schemaQuery: query }),
 
       toggleFavorite: (blockId) =>
         set((state) => ({
@@ -98,6 +117,8 @@ export const useUiStore = create<UiState>()(
       // Поисковая строка — состояние сессии, не сохраняем.
       partialize: (state) => ({
         libraryTab: state.libraryTab,
+        canvasMode: state.canvasMode,
+        effectsEnabled: state.effectsEnabled,
         favorites: state.favorites,
         recent: state.recent,
         collapsedCategories: state.collapsedCategories,

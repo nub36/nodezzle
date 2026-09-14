@@ -9,6 +9,9 @@ function resetStore() {
   useUiStore.setState({
     libraryTab: 'basic',
     libraryQuery: '',
+    canvasMode: 'draft',
+    effectsEnabled: true,
+    schemaQuery: '',
     favorites: [],
     recent: [],
     collapsedCategories: [],
@@ -58,12 +61,37 @@ describe('UI-store: библиотека деталей', () => {
     expect(useUiStore.getState().collapsedCategories).toEqual([]);
   });
 
-  it('поисковая строка не входит в сохраняемое состояние', () => {
+  it('поисковые строки не входят в сохраняемое состояние', () => {
     useUiStore.getState().setLibraryQuery('секрет');
+    useUiStore.getState().setSchemaQuery('поиск');
     const persisted = useUiStore.persist.getOptions().partialize?.(useUiStore.getState()) as Record<string, unknown>;
     expect(persisted).not.toHaveProperty('libraryQuery');
+    expect(persisted).not.toHaveProperty('schemaQuery');
     expect(persisted).toHaveProperty('favorites');
     expect(persisted).toHaveProperty('recent');
+    expect(persisted).toHaveProperty('canvasMode');
+    expect(persisted).toHaveProperty('effectsEnabled');
     expect(useUiStore.persist.getOptions().name).toBe('nodezzle-ui-v1');
+  });
+
+  it('режим схемы: черновик и живой режим', () => {
+    expect(useUiStore.getState().canvasMode).toBe('draft');
+    useUiStore.getState().setCanvasMode('live');
+    expect(useUiStore.getState().canvasMode).toBe('live');
+    useUiStore.getState().setCanvasMode('draft');
+    expect(useUiStore.getState().canvasMode).toBe('draft');
+  });
+
+  it('визуальные эффекты включаются и выключаются', () => {
+    expect(useUiStore.getState().effectsEnabled).toBe(true);
+    useUiStore.getState().toggleEffects();
+    expect(useUiStore.getState().effectsEnabled).toBe(false);
+    useUiStore.getState().toggleEffects();
+    expect(useUiStore.getState().effectsEnabled).toBe(true);
+  });
+
+  it('поиск по схеме хранится в сторе', () => {
+    useUiStore.getState().setSchemaQuery('приветствие');
+    expect(useUiStore.getState().schemaQuery).toBe('приветствие');
   });
 });
