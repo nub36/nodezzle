@@ -12,8 +12,11 @@ import { formatTimeRu, safeStringify, translateError } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { LogEntry } from '@/core/types/runtime';
 import { PhonePreview } from './PhonePreview';
+import { WebPreview } from './WebPreview';
+import { useProjectStore } from '@/store/project-store';
+import { blockRegistry } from '@/core/registry/block-registry';
 
-type Tab = 'simulator' | 'chat' | 'log' | 'history' | 'phone';
+type Tab = 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history';
 
 export function DebugPanel({ open }: { open: boolean }) {
   const { t } = useTranslation();
@@ -31,6 +34,8 @@ export function DebugPanel({ open }: { open: boolean }) {
     { id: 'simulator', label: t('execution.panel.tabs.simulator') },
     { id: 'chat', label: t('execution.panel.tabs.chat') },
     { id: 'phone', label: t('execution.panel.tabs.phone') },
+    { id: 'web', label: t('execution.panel.tabs.web') },
+    { id: 'ports', label: t('execution.panel.tabs.ports') },
     { id: 'log', label: t('execution.panel.tabs.log') },
     { id: 'history', label: t('execution.panel.tabs.history') },
   ];
@@ -75,6 +80,8 @@ export function DebugPanel({ open }: { open: boolean }) {
         {tab === 'simulator' && <SimulatorTab />}
         {tab === 'chat' && <ChatTab />}
         {tab === 'phone' && <PhonePreview />}
+        {tab === 'web' && <WebPreview />}
+        {tab === 'ports' && <PortsTab />}
         {tab === 'log' && <LogTab />}
         {tab === 'history' && <HistoryTab />}
       </div>
@@ -195,6 +202,75 @@ function ChatTab() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ---------------- Значения портов (Этап 2, подэтап I ч. 2) ---------------- */
+
+const NODE_STATUS_CHIP: Record<string, string> = {
+  idle: 'status-stopped',
+  running: 'status-running',
+  success: 'status-success',
+  error: 'status-error',
+  skipped: 'status-stopped',
+};
+
+function PortsTab() {
+  const { t } = useTranslation();
+  const nodeInfo = useExecutionStore((s) => s.nodeInfo);
+  const nodes = useProjectStore((s) => s.nodes);
+  const runs = nodes.filter((n) => nodeInfo[n.id]);
+
+  if (runs.length === 0) {
+    return <div className="pt-4 text-xs text-muted/70">{t('execution.panel.ports.empty')}</div>;
+  }
+
+  const renderValues = (values: Record<string, unknown>) =>
+    Object.entries(values).map(([port, value]) => (
+      <div key={port} className="flex items-baseline gap-2">
+        <span className="shrink-0 font-mono text-[10px] text-cyan-300/80">{port}:</span>
+        <span className="min-w-0 flex-1 break-all font-mono text-[10px] text-ink/80">{safeStringify(value)}</span>
+      </div>
+    ));
+
+  return (
+    <div className="space-y-2 pt-2">
+      {runs.map((n) => {
+        const info = nodeInfo[n.id];
+        const def = blockRegistry.get(n.data.blockId);
+        const label = n.data.label ?? (def ? t(def.labelKey) : n.data.blockId);
+        return (
+          <div key={n.id} className="rounded-lg border border-line/50 bg-abyss/40 px-3 py-2">
+            <div className="mb-1.5 flex items-center gap-2">
+              <span className="text-xs">{def?.ui?.icon}</span>
+              <span className="text-[11px] font-semibold">{label}</span>
+              <span className={cn('status-chip !px-2 !py-0 !text-[10px]', NODE_STATUS_CHIP[info.status])}>
+                <span className="status-dot" />
+                {t(`execution.status.${info.status}`)}
+              </span>
+              <span className="ml-auto font-mono text-[10px] text-muted/70">{info.durationMs} ms</span>
+            </div>
+            {Object.keys(info.inputs).length > 0 && (
+              <div className="mb-1">
+                <div className="mb-0.5 text-[9.5px] font-bold uppercase tracking-wider text-muted/70">
+                  {t('execution.panel.ports.inputs')}
+                </div>
+                {renderValues(info.inputs)}
+              </div>
+            )}
+            {Object.keys(info.outputs).length > 0 && (
+              <div>
+                <div className="mb-0.5 text-[9.5px] font-bold uppercase tracking-wider text-muted/70">
+                  {t('execution.panel.ports.outputs')}
+                </div>
+                {renderValues(info.outputs)}
+              </div>
+            )}
+            {info.error && <div className="mt-1 text-[10px] text-red-300">⛔ {translateError(info.error)}</div>}
+          </div>
+        );
+      })}
     </div>
   );
 }

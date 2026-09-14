@@ -53,6 +53,8 @@ interface ExecutionState {
 
   setPayload: (patch: Partial<SimulatorPayload>) => void;
   run: () => Promise<void>;
+  /** Запуск схемы веб-событием из превью страницы (Этап 2, подэтап I ч. 2). */
+  fireWebTrigger: (web: Record<string, unknown>) => Promise<void>;
   stop: () => void;
   reset: () => void;
 }
@@ -68,53 +70,43 @@ const DEFAULT_PAYLOAD: SimulatorPayload = {
   webJson: '{}',
 };
 
-export const useExecutionStore = create<ExecutionState>()((set, get) => ({
-  status: 'idle',
-  running: false,
-  nodeStates: {},
-  nodeInfo: {},
-  logs: [],
-  outbox: [],
-  chatEcho: null,
-  flowEdges: [],
-  history: [],
-  payload: { ...DEFAULT_PAYLOAD },
-  cancelRef: null,
+/**
+ * Чистая сборка триггерного payload по настройкам симулятора и составу
+ * схемы: если на холсте триггеры только одного источника, он побеждает
+ * (симулятор не может «угадать» несуществующий источник).
+ */
+export function buildTriggerPayload(
+  sim: SimulatorPayload,
+  triggerCategories: Array<string | undefined>,
+): TriggerPayload {
+  const hasTelegram = triggerCategories.includes('telegram');
+  const hasWeb = triggerCategories.includes('web');
+  let source: 'telegram' | 'web' = sim.source;
+  if (hasTelegram && !hasWeb) source = 'telegram';
+  else if (hasWeb && !hasTelegram) source = 'web';
 
-  setPayload: (patch) => set((s) => ({ payload: { ...s.payload, ...patch } })),
+  if (source === 'telegram') {
+    return {
+      source: 'telegram',
+      telegram: {
+        text: sim.text,
+        user_id: sim.userId,
+        chat_id: sim.chatId,
+        ...(sim.command.trim() !== '' ? { command: sim.command } : {}),
+      },
+    };
+  }
+  return { source: 'web', web: tryParseJson(sim.webJson, {}) as Record<string, unknown> };
+}
 
-  run: async () => {
+export const useExecutionStore = create<ExecutionState>()((set, get) => {
+  /** Общий запуск схемы триггерным payload (симулятор и веб-превью). */
+  const startRun = async (triggerPayload: TriggerPayload, echoText: string | null): Promise<void> => {
     if (get().running) return;
-    const { project, nodes, edges } = useProjectStore.getState();
+    const { project, nodes, edges, groups } = useProjectStore.getState();
     if (!project) return;
 
-    // Определяем источник по триггерам, лежащим на схеме.
-    const sim = get().payload;
-    const triggerDefs = nodes
-      .map((n) => blockRegistry.get(n.data.blockId))
-      .filter((d) => d && (d.trigger === true || d.entry === true));
-    const hasTelegram = triggerDefs.some((d) => d!.category === 'telegram');
-    const hasWeb = triggerDefs.some((d) => d!.category === 'web');
-    let source: 'telegram' | 'web' = sim.source;
-    if (hasTelegram && !hasWeb) source = 'telegram';
-    else if (hasWeb && !hasTelegram) source = 'web';
-
-    let triggerPayload: TriggerPayload;
-    if (source === 'telegram') {
-      triggerPayload = {
-        source: 'telegram',
-        telegram: {
-          text: sim.text,
-          user_id: sim.userId,
-          chat_id: sim.chatId,
-          ...(sim.command.trim() !== '' ? { command: sim.command } : {}),
-        },
-      };
-    } else {
-      triggerPayload = { source: 'web', web: tryParseJson(sim.webJson, {}) as Record<string, unknown> };
-    }
-
-    const doc = flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name);
+    const doc = flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name, undefined, groups);
     const cancel = { cancelled: false };
 
     set({
@@ -125,9 +117,8 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => ({
       logs: [],
       outbox: [],
       flowEdges: [],
-      chatEcho: source === 'telegram' ? sim.text : null,
+      chatEcho: echoText,
       cancelRef: cancel,
-      payload: { ...sim, source },
     });
 
     const result = await executeCanvas(doc, {
@@ -161,6 +152,40 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => ({
       history: [record, ...s.history].slice(0, 30),
       cancelRef: null,
     }));
+  };
+
+  return {
+  status: 'idle',
+  running: false,
+  nodeStates: {},
+  nodeInfo: {},
+  logs: [],
+  outbox: [],
+  chatEcho: null,
+  flowEdges: [],
+  history: [],
+  payload: { ...DEFAULT_PAYLOAD },
+  cancelRef: null,
+
+  setPayload: (patch) => set((s) => ({ payload: { ...s.payload, ...patch } })),
+
+  run: async () => {
+    const { nodes } = useProjectStore.getState();
+    const sim = get().payload;
+    const triggerCategories = nodes
+      .map((n) => blockRegistry.get(n.data.blockId))
+      .filter((d) => d && (d.trigger === true || d.entry === true))
+      .map((d) => d!.category);
+    const triggerPayload = buildTriggerPayload(sim, triggerCategories);
+    const echo = triggerPayload.source === 'telegram' ? sim.text : null;
+    const nextSource = triggerPayload.source === 'web' ? 'web' : 'telegram';
+    set({ payload: { ...sim, source: nextSource } });
+    await startRun(triggerPayload, echo);
+  },
+
+  fireWebTrigger: async (web) => {
+    // Веб-превью: событие со страницы (клик, отправка формы, загрузка).
+    await startRun({ source: 'web', web }, null);
   },
 
   stop: () => {
@@ -180,4 +205,5 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => ({
       flowEdges: [],
       cancelRef: null,
     }),
-}));
+  };
+});
