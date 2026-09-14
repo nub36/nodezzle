@@ -31,6 +31,8 @@ import { datetimeExtendedBlocks } from './datetime/extended';
 import { httpBlocks } from './http/blocks';
 import { mediaBlocks } from './media/blocks';
 import { securityBlocks } from './security/blocks';
+import { debugExtendedBlocks } from './debug/extended';
+import { converterBlocks } from './converters/blocks';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
@@ -55,6 +57,8 @@ const ALL_BLOCKS = [
   ...httpBlocks,
   ...mediaBlocks,
   ...securityBlocks,
+  ...debugExtendedBlocks,
+  ...converterBlocks,
   ...reservedBlocks,
   ...noteBlocks,
 ];
