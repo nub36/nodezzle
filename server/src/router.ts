@@ -53,6 +53,10 @@ export class Router {
     return this.on('DELETE', path, handler);
   }
 
+  patch(path: string, handler: RouteHandler): this {
+    return this.on('PATCH', path, handler);
+  }
+
   /**
    * Ищет маршрут под запрос.
    * Возвращает `null`, если путь не совпал ни с одним шаблоном,

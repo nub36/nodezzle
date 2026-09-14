@@ -21,6 +21,8 @@ import { registerWorkspaceRoutes } from './routes/workspaces.ts';
 import { registerProjectRoutes } from './routes/projects.ts';
 import { registerSecretRoutes } from './routes/secrets.ts';
 import { registerExecutionRoutes } from './routes/execution.ts';
+import { createTelegramBotStore } from './telegram/bots.ts';
+import { registerTelegramBotRoutes } from './routes/telegram-bots.ts';
 
 /** Лимит попыток входа/регистрации с одного адреса. */
 const AUTH_LIMIT_PER_WINDOW = 20;
@@ -55,6 +57,7 @@ export function createApp(deps: AppDeps): App {
   const projects = createProjectStore(deps.db);
   const versions = createVersionStore(deps.db);
   const secrets = createSecretStore(deps.db, deps.config);
+  const bots = createTelegramBotStore(deps.db);
   const authDeps = {
     config: deps.config,
     store: createAuthStore(deps.db),
@@ -65,6 +68,7 @@ export function createApp(deps: AppDeps): App {
   registerWorkspaceRoutes(router, { ...authDeps, workspaces });
   registerProjectRoutes(router, { ...authDeps, workspaces, projects, versions });
   registerSecretRoutes(router, { ...authDeps, workspaces, secrets });
+  registerTelegramBotRoutes(router, { ...authDeps, workspaces, projects, secrets, bots });
   registerExecutionRoutes(router, {
     ...authDeps,
     workspaces,

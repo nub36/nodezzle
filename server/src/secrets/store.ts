@@ -32,6 +32,8 @@ interface SecretRow {
 export interface SecretStore {
   create(workspaceId: string, name: string, value: string): SecretMeta;
   list(workspaceId: string): SecretMeta[];
+  /** Метаданные секрета без значения (для связывания, например ботов). */
+  meta(workspaceId: string, secretId: string): SecretMeta | null;
   /** Внутренний доступ для рантайма; наружу значения не отдаются. */
   decrypt(workspaceId: string, secretId: string): string | null;
   delete(workspaceId: string, secretId: string): boolean;
@@ -67,6 +69,11 @@ export function createSecretStore(db: Db, config: ServerConfig): SecretStore {
     list(workspaceId) {
       const rows = listStmt.all(workspaceId) as unknown as SecretRow[];
       return rows.map(toMeta);
+    },
+    meta(workspaceId, secretId) {
+      const row = getStmt.get(secretId, workspaceId) as SecretRow | undefined;
+      if (!row) return null;
+      return toMeta(row);
     },
     decrypt(workspaceId, secretId) {
       const row = getStmt.get(secretId, workspaceId) as SecretRow | undefined;
