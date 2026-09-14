@@ -24,6 +24,7 @@ import { portColor } from '@/core/type-system/compatibility';
 import type { PortKind, PortType } from '@/core/types/ports';
 import { uid } from '@/lib/id';
 import { useUiStore } from '@/store/ui-store';
+import { extractModel } from '@/core/models/extract';
 import { createDemoProject, DEMO_PROJECT_ID } from '@/demo/seed';
 import type { NodezzleFlowNode } from '@/core/project/serialize';
 
@@ -112,6 +113,11 @@ interface ProjectState {
   setNoteText: (nodeId: string, text: string) => void;
   /** Отключить узел: удалить все подходя к нему соединения. */
   disconnectNode: (nodeId: string) => void;
+  /**
+   * Создать модель из выделенных деталей (Этап 2, подэтап G).
+   * Возвращает код ошибки либо `null` при успехе.
+   */
+  createModelFromSelection: (name: string) => string | null;
   setNodeConfig: (nodeId: string, key: string, value: unknown) => void;
   setNodeLabel: (nodeId: string, label: string) => void;
   undo: () => void;
@@ -504,6 +510,60 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         }),
       });
       commit(before);
+    },
+
+    createModelFromSelection: (name) => {
+      const { project, nodes, edges, activeModelId } = get();
+      if (!project) return 'ERR_MODEL_EXTRACT_EMPTY';
+      const selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
+
+      const activeDoc = activeModelId
+        ? project.models.find((m) => m.id === activeModelId)?.canvas
+        : project.canvas;
+      if (!activeDoc) return 'ERR_MODEL_EXTRACT_EMPTY';
+
+      const doc = flowToCanvas(nodes, edges, activeDoc.id, activeDoc.name, activeDoc.viewport);
+      const result = extractModel({
+        canvas: doc,
+        selectedNodeIds: selectedIds,
+        modelName: name,
+        getBlock: (id) => blockRegistry.get(id),
+        portName: (labelKey, fallback) => i18n.t(labelKey, fallback),
+      });
+      if (!result.ok) return result.error;
+
+      const before = snapshotOf(nodes, edges);
+      const flow = canvasToFlow(result.value.canvas);
+      // Цвета рёбер по типу порта источника (как в `handleConnect`).
+      const coloredEdges = flow.edges.map((e) => {
+        const sourceNode = flow.nodes.find((n) => n.id === e.source);
+        const def = sourceNode ? blockRegistry.get(sourceNode.data.blockId) : undefined;
+        const port = def?.outputs.find((p) => p.id === e.sourceHandle);
+        return { ...e, data: { color: port ? portColor(port.type) : '#475569' } };
+      });
+
+      const updatedProject: NodezzleProject = {
+        ...project,
+        models: [...project.models, result.value.model],
+        meta: { ...project.meta, updatedAt: Date.now() },
+      };
+      const finalProject = activeModelId
+        ? {
+            ...updatedProject,
+            models: updatedProject.models.map((m) =>
+              m.id === activeModelId ? { ...m, canvas: result.value.canvas, updatedAt: Date.now() } : m,
+            ),
+          }
+        : { ...updatedProject, canvas: result.value.canvas };
+
+      set({
+        project: finalProject,
+        nodes: flow.nodes.map((n) => ({ ...n, selected: n.id === result.value.callNodeId })),
+        edges: coloredEdges,
+        selectedNodeId: result.value.callNodeId,
+      });
+      commit(before);
+      return null;
     },
 
     disconnectNode: (nodeId) => {

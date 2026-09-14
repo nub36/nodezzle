@@ -43,6 +43,7 @@ import { CanvasContextMenu, type ContextMenuItem } from './ContextMenu';
 import { useUiStore } from '@/store/ui-store';
 import { InspectorPanel } from './InspectorPanel';
 import { Toolbar } from './Toolbar';
+import { CreateModelDialog } from './CreateModelDialog';
 import { DebugPanel } from './DebugPanel';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { isCompatible } from '@/core/type-system/compatibility';
@@ -163,6 +164,8 @@ function FlowCanvas() {
 
   // --- Контекстное меню (Этап 2, подэтап F) ---
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string | null } | null>(null);
+  // Диалог создания модели из выделенного (Этап 2, подэтап G)
+  const [createModelOpen, setCreateModelOpen] = useState(false);
 
   const ctxItems = useMemo<ContextMenuItem[]>(() => {
     if (!ctxMenu) return [];
@@ -210,6 +213,7 @@ function FlowCanvas() {
       },
       { divider: true, label: '', onClick: () => undefined },
       { label: t('canvas.context.addNote'), icon: '📝', onClick: noteAt },
+      { label: t('canvas.context.createModel'), icon: '📦', onClick: () => setCreateModelOpen(true) },
       {
         label: t('canvas.context.delete'),
         icon: '🗑',
@@ -539,6 +543,9 @@ function FlowCanvas() {
           onClose={() => setQuickInsert(null)}
         />
       )}
+
+      {/* Диалог «Создать модель из выделенного» (Этап 2, подэтап G) */}
+      {createModelOpen && <CreateModelDialog onClose={() => setCreateModelOpen(false)} />}
     </div>
   );
 }
