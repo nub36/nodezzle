@@ -26,8 +26,14 @@ export const BLOCK_CATEGORIES = [
   'logic',
   'data',
   'flow',
-  'telegram',
-  'web',
+  // Этап 4: категории «Телеграм» и «Веб» разделены на события/действия и
+  // интерфейс/события. Старые 'telegram'/'web' удалены из перечня —
+  // все определения перенесены в новые категории (категория в формате
+  // проекта не хранится, поэтому миграция не требуется).
+  'telegram_events',
+  'telegram_actions',
+  'web_ui',
+  'web_events',
   'models',
   'memory',
   'http',
@@ -35,6 +41,7 @@ export const BLOCK_CATEGORIES = [
   'media',
   'security',
   'debug',
+  'converters',
   'ai',
   'notes',
 ] as const;
@@ -53,6 +60,18 @@ export interface BlockUiMeta {
  * «Базовые» попадают в режим «Основные» библиотеки, «Продвинутые» — только в «Все».
  */
 export type BlockDifficulty = 'basic' | 'advanced';
+
+/**
+ * Зрелость определения (Этап 4 — «Библиотека блоков»,
+ * см. docs/agent-plan/04-BLOCK-LIBRARY.md и docs/BLOCK_CATALOG.md):
+ * - planned — только определение/контракт, исполнение не реализовано;
+ * - prototype — черновое исполнение, поведение может меняться;
+ * - implemented — стабильное исполнение;
+ * - experimental — доступно, но поведение может существенно меняться;
+ * - deprecated — не рекомендуется, поддерживается совместимость.
+ * Если поле не задано, статус выводится функцией `effectiveStatus`.
+ */
+export type BlockStatus = 'planned' | 'prototype' | 'implemented' | 'experimental' | 'deprecated';
 
 export interface BlockDefinition {
   /** Уникальный технический идентификатор: `<category>.<name>`. */
@@ -96,4 +115,10 @@ export interface BlockDefinition {
   keywords?: string[];
   /** Сложность детали: 'basic' — режим «Основные», 'advanced' — только «Все». */
   difficulty?: BlockDifficulty;
+  /** Версия определения (задел под совместимость/миграции определений). */
+  version?: string;
+  /** Уточняющая группировка внутри категории (подкатегория каталога). */
+  subcategory?: string;
+  /** Зрелость определения; при отсутствии выводится `effectiveStatus`. */
+  status?: BlockStatus;
 }

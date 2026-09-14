@@ -15,6 +15,7 @@ export const noteBlocks: BlockDefinition[] = [
     labelKey: 'blocks.note.sticky.label',
     descriptionKey: 'blocks.note.sticky.description',
     category: 'notes',
+    difficulty: 'basic',
     available: false,
     keywords: ['заметка', 'стикер', 'комментарий', 'подпись'],
     inputs: [],

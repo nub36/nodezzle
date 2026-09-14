@@ -47,6 +47,7 @@ export const logicBlocks: BlockDefinition[] = [
     descriptionKey: 'blocks.logic.condition.description',
     keywords: ['условие', 'если', 'ветвление', 'сравнение', 'ветка'],
     category: 'logic',
+    difficulty: 'basic',
     inputs: [dport('value', 'blocks.ports.value', 'any')],
     outputs: [dport('true', 'blocks.ports.true', 'any'), dport('false', 'blocks.ports.false', 'any')],
     defaults: { operator: 'equals', target: '', trueValue: '', falseValue: '' },
@@ -68,6 +69,7 @@ export const logicBlocks: BlockDefinition[] = [
     descriptionKey: 'blocks.logic.switch.description',
     keywords: ['переключатель', 'выбор', 'случай', 'вариант'],
     category: 'logic',
+    difficulty: 'advanced',
     inputs: [dport('value', 'blocks.ports.value', 'any')],
     outputs: [
       dport('case_1', 'blocks.ports.case_1', 'any'),

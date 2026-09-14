@@ -35,11 +35,11 @@ describe('BlockRegistry', () => {
 
   it('фильтрует доступные блоки и категории', () => {
     const reg = new BlockRegistry();
-    reg.register(makeDef('telegram.msg', { category: 'telegram', trigger: true }));
+    reg.register(makeDef('telegram.msg', { category: 'telegram_actions', trigger: true }));
     reg.register(makeDef('memory.var', { category: 'memory', available: false }));
     reg.register(makeDef('core.x', { category: 'core' }));
     expect(reg.available()).toHaveLength(2);
-    expect(reg.byCategory('telegram')).toHaveLength(1);
+    expect(reg.byCategory('telegram_actions')).toHaveLength(1);
     expect(reg.triggers()).toHaveLength(1);
   });
 

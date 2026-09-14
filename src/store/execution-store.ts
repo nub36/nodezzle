@@ -79,8 +79,8 @@ export function buildTriggerPayload(
   sim: SimulatorPayload,
   triggerCategories: Array<string | undefined>,
 ): TriggerPayload {
-  const hasTelegram = triggerCategories.includes('telegram');
-  const hasWeb = triggerCategories.includes('web');
+  const hasTelegram = triggerCategories.some((c) => typeof c === 'string' && c.startsWith('telegram'));
+  const hasWeb = triggerCategories.some((c) => typeof c === 'string' && c.startsWith('web'));
   let source: 'telegram' | 'web' = sim.source;
   if (hasTelegram && !hasWeb) source = 'telegram';
   else if (hasWeb && !hasTelegram) source = 'web';

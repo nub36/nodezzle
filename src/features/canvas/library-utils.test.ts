@@ -12,7 +12,7 @@ const def: BlockDefinition = {
   id: 'telegram.send_message',
   labelKey: 'blocks.telegram.send_message.label',
   descriptionKey: 'blocks.telegram.send_message.description',
-  category: 'telegram',
+  category: 'telegram_actions',
   keywords: ['телеграм', 'бот', 'отправить', 'сообщение'],
   inputs: [],
   outputs: [],

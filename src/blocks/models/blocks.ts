@@ -18,6 +18,7 @@ export const modelBlocks: BlockDefinition[] = [
     descriptionKey: 'blocks.models.call.description',
     keywords: ['модель', 'вызов', 'подсхема', 'подпрограмма'],
     category: 'models',
+    difficulty: 'advanced',
     inputs: [dport('payload', 'blocks.ports.payload', 'object')],
     outputs: [dport('result', 'blocks.ports.result', 'object'), eport()],
     defaults: { modelId: '' },

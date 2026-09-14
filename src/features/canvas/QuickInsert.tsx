@@ -93,8 +93,8 @@ export function QuickInsertStarter({ onInsert }: { onInsert: (payload: DndPayloa
 
   const groups = useMemo(() => {
     const available = blockRegistry.available();
-    const telegram = available.filter((b) => b.trigger === true && b.category === 'telegram');
-    const web = available.filter((b) => b.trigger === true && b.category === 'web');
+    const telegram = available.filter((b) => b.trigger === true && b.category.startsWith('telegram'));
+    const web = available.filter((b) => b.trigger === true && b.category.startsWith('web'));
     const values = available.filter((b) => ['core.text', 'core.number', 'core.json'].includes(b.id));
     return [
       { key: 'startTelegram', items: telegram },

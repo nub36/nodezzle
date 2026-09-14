@@ -25,31 +25,31 @@ const baseSim: SimulatorPayload = {
 
 describe('buildTriggerPayload — источник и состав события', () => {
   it('телеграм-триггеры на схеме побеждают выбор симулятора', () => {
-    const p = buildTriggerPayload({ ...baseSim, source: 'web' }, ['telegram']);
+    const p = buildTriggerPayload({ ...baseSim, source: 'web' }, ['telegram_events']);
     expect(p.source).toBe('telegram');
     expect(p.telegram?.text).toBe('привет');
   });
 
   it('веб-триггеры на схеме побеждают выбор симулятора', () => {
-    const p = buildTriggerPayload(baseSim, ['web']);
+    const p = buildTriggerPayload(baseSim, ['web_events']);
     expect(p.source).toBe('web');
     expect(p.web).toEqual({ a: 1 });
   });
 
   it('при смешанных триггерах решают настройки симулятора', () => {
-    expect(buildTriggerPayload(baseSim, ['telegram', 'web']).source).toBe('telegram');
-    expect(buildTriggerPayload({ ...baseSim, source: 'web' }, ['telegram', 'web']).source).toBe('web');
+    expect(buildTriggerPayload(baseSim, ['telegram_events', 'web_events']).source).toBe('telegram');
+    expect(buildTriggerPayload({ ...baseSim, source: 'web' }, ['telegram_events', 'web_events']).source).toBe('web');
   });
 
   it('команда попадает в payload только непустая', () => {
-    const withCmd = buildTriggerPayload({ ...baseSim, command: '/start' }, ['telegram']);
+    const withCmd = buildTriggerPayload({ ...baseSim, command: '/start' }, ['telegram_events']);
     expect(withCmd.telegram?.command).toBe('/start');
-    const noCmd = buildTriggerPayload(baseSim, ['telegram']);
+    const noCmd = buildTriggerPayload(baseSim, ['telegram_events']);
     expect(noCmd.telegram?.command).toBeUndefined();
   });
 
   it('битый JSON веб-данных превращается в пустой объект', () => {
-    const p = buildTriggerPayload({ ...baseSim, webJson: '{oops' }, ['web']);
+    const p = buildTriggerPayload({ ...baseSim, webJson: '{oops' }, ['web_events']);
     expect(p.web).toEqual({});
   });
 });

@@ -10,6 +10,7 @@ export const datetimeBlocks: BlockDefinition[] = [
     descriptionKey: 'blocks.datetime.now.description',
     keywords: ['время', 'дата', 'сейчас', 'текущее'],
     category: 'datetime',
+    difficulty: 'basic',
     inputs: [],
     outputs: [dport('value', 'blocks.ports.value', 'date')],
     runtime: () => ({ outputs: { value: new Date().toISOString() } }),

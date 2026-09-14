@@ -18,10 +18,18 @@ import { debugBlocks } from './debug/blocks';
 import { datetimeBlocks } from './datetime/blocks';
 import { reservedBlocks } from './reserved';
 import { noteBlocks } from './note/blocks';
+import { coreValueBlocks } from './core/values';
+import { logicOperatorBlocks } from './logic/operators';
+import { dataStructureBlocks } from './data/structures';
+import { flowControlBlocks } from './flow/control';
 
 const ALL_BLOCKS = [
   ...coreBlocks,
+  ...coreValueBlocks,
   ...dataBlocks,
+  ...dataStructureBlocks,
+  ...logicOperatorBlocks,
+  ...flowControlBlocks,
   ...logicBlocks,
   ...flowBlocks,
   ...telegramBlocks,

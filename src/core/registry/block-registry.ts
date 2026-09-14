@@ -8,7 +8,18 @@
  */
 
 import type { BlockCategory } from '../types/blocks';
-import type { BlockDefinition } from '../types/blocks';
+import type { BlockDefinition, BlockStatus } from '../types/blocks';
+
+/**
+ * Фактический статус определения (Этап 4): явное поле `status` важнее всего;
+ * иначе — «реализовано», если есть исполнение и деталь доступна,
+ * «запланировано» — если исполнения нет или деталь скрыта.
+ */
+export function effectiveStatus(def: BlockDefinition): BlockStatus {
+  if (def.status) return def.status;
+  if (def.available === false || !def.runtime) return 'planned';
+  return 'implemented';
+}
 
 export class BlockRegistry {
   private byId = new Map<string, BlockDefinition>();

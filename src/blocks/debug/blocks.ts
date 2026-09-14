@@ -14,6 +14,7 @@ export const debugBlocks: BlockDefinition[] = [
     descriptionKey: 'blocks.debug.log.description',
     keywords: ['отладка', 'лог', 'журнал', 'печать', 'вывод'],
     category: 'debug',
+    difficulty: 'basic',
     inputs: [dport('value', 'blocks.ports.value', 'any')],
     outputs: [dport('value', 'blocks.ports.value', 'any')],
     defaults: { label: 'Значение' },

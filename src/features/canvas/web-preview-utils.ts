@@ -30,7 +30,7 @@ export function collectWebElements(
   const result: WebElements = { page: null, buttons: [], forms: [] };
   for (const node of nodes) {
     const def = getBlock(node.data.blockId);
-    if (!def || def.category !== 'web') continue;
+    if (!def || !def.category.startsWith('web')) continue;
     const label =
       node.data.label ??
       (typeof node.data.config.label === 'string' && node.data.config.label.trim() !== ''

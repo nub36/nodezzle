@@ -21,7 +21,8 @@ export const telegramBlocks: BlockDefinition[] = [
     labelKey: 'blocks.telegram.message_received.label',
     descriptionKey: 'blocks.telegram.message_received.description',
     keywords: ['телеграм', 'бот', 'сообщение', 'входящее', 'триггер', 'событие'],
-    category: 'telegram',
+    category: 'telegram_events',
+    difficulty: 'basic',
     trigger: true,
     inputs: [],
     outputs: [
@@ -56,7 +57,8 @@ export const telegramBlocks: BlockDefinition[] = [
     labelKey: 'blocks.telegram.command.label',
     descriptionKey: 'blocks.telegram.command.description',
     keywords: ['телеграм', 'бот', 'команда', 'слеш', 'триггер', 'старт'],
-    category: 'telegram',
+    category: 'telegram_events',
+    difficulty: 'basic',
     trigger: true,
     inputs: [],
     outputs: [
@@ -92,7 +94,8 @@ export const telegramBlocks: BlockDefinition[] = [
     labelKey: 'blocks.telegram.send_message.label',
     descriptionKey: 'blocks.telegram.send_message.description',
     keywords: ['телеграм', 'бот', 'отправить', 'сообщение', 'ответ', 'чат'],
-    category: 'telegram',
+    category: 'telegram_actions',
+    difficulty: 'basic',
     inputs: [dport('text', 'blocks.ports.text', 'text'), dport('chat_id', 'blocks.ports.chat_id', 'number')],
     outputs: [dport('message_id', 'blocks.ports.message_id', 'number'), eport()],
     runtime: async ({ inputs, runtime }) => {
@@ -111,7 +114,8 @@ export const telegramBlocks: BlockDefinition[] = [
     labelKey: 'blocks.telegram.send_photo.label',
     descriptionKey: 'blocks.telegram.send_photo.description',
     keywords: ['телеграм', 'бот', 'фото', 'картинка', 'изображение', 'отправить'],
-    category: 'telegram',
+    category: 'telegram_actions',
+    difficulty: 'basic',
     inputs: [
       dport('photo', 'blocks.ports.photo', 'image'),
       dport('caption', 'blocks.ports.caption', 'text'),
