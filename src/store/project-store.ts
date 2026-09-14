@@ -24,6 +24,7 @@ import { blockRegistry } from '@/core/registry/block-registry';
 import { portColor } from '@/core/type-system/compatibility';
 import type { PortKind, PortType } from '@/core/types/ports';
 import { uid } from '@/lib/id';
+import { findFreePosition, occupiedRects, unionRects, INSERT_GAP, type Point, type Rect } from '@/lib/node-placement';
 import { useUiStore } from '@/store/ui-store';
 import { extractModel } from '@/core/models/extract';
 import { createDemoProject, DEMO_PROJECT_ID } from '@/demo/seed';
@@ -93,9 +94,11 @@ interface ProjectState {
   renameProject: (name: string) => void;
   /** Возвращает id созданного узла (или undefined, если блок/проект недоступны). */
   addNode: (blockId: string, position: { x: number; y: number }, configOverrides?: Record<string, unknown>) => string | undefined;
-  duplicateSelection: () => void;
+  /** Клонирование целого фрагмента на свободное место; возвращает новые ID. */
+  duplicateSelection: (bounds?: Rect) => string[];
   copySelection: () => void;
-  pasteAt: (position: { x: number; y: number }) => void;
+  /** Без position — центр bounds; без bounds — рядом с исходником. */
+  pasteAt: (position?: Point, bounds?: Rect) => string[];
   handleNodesChange: OnNodesChange<NodezzleFlowNode>;
   handleEdgesChange: OnEdgesChange;
   handleConnect: (connection: Connection) => void;
@@ -172,6 +175,42 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     if (last && snapshotsEqual(last, before)) return;
     set({ past: [...past.slice(-99), before], future: [] });
     scheduleSave();
+  };
+
+  /** Один шаг истории; буфер остаётся приватным, UI получает только новые ID. */
+  const insertFragment = (fragment: ClipboardData, preferred?: Point, bounds?: Rect): string[] => {
+    const { project, nodes, edges } = get();
+    if (!project || fragment.nodes.length === 0) return [];
+    const getBlock = (id: string) => blockRegistry.get(id);
+    const box = unionRects(occupiedRects(fragment.nodes, getBlock))!;
+    const target = preferred ?? (bounds
+      ? { x: bounds.x + (bounds.width - box.width) / 2, y: bounds.y + (bounds.height - box.height) / 2 }
+      : { x: box.x + INSERT_GAP, y: box.y + INSERT_GAP });
+    // Вызов без UI тоже безопасен: сначала пробуем target, затем справа от схемы.
+    const searchArea = bounds ?? { ...target, width: box.width, height: box.height };
+    const position = findFreePosition(target, box, occupiedRects(nodes, getBlock), searchArea);
+    const offset = { x: position.x - box.x, y: position.y - box.y };
+    const before = snapshotOf(nodes, edges);
+    const idMap = new Map(fragment.nodes.map((n) => [n.id, uid()]));
+    const newNodes: NodezzleFlowNode[] = fragment.nodes.map((n) => ({
+      ...clone(n),
+      id: idMap.get(n.id)!,
+      position: { x: n.position.x + offset.x, y: n.position.y + offset.y },
+      selected: true,
+      dragging: false,
+    }));
+    const newEdges: Edge[] = fragment.edges
+      .filter((e) => idMap.has(e.source) && idMap.has(e.target))
+      .map((e) => ({
+        ...clone(e), id: uid(), source: idMap.get(e.source)!, target: idMap.get(e.target)!, selected: false,
+      }));
+    set({
+      nodes: [...nodes.map((n) => ({ ...n, selected: false })), ...newNodes],
+      edges: [...edges.map((e) => ({ ...e, selected: false })), ...newEdges],
+      selectedNodeId: newNodes[0].id,
+    });
+    commit(before);
+    return newNodes.map((n) => n.id);
   };
 
   /**
@@ -392,34 +431,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       return node.id;
     },
 
-    duplicateSelection: () => {
+    duplicateSelection: (bounds) => {
       const { nodes, edges } = get();
       const selected = nodes.filter((n) => n.selected);
-      if (selected.length === 0) return;
-      const selectedIds = new Set(selected.map((n) => n.id));
-      const before = snapshotOf(nodes, edges);
-      const idMap = new Map<string, string>();
-      for (const n of selected) idMap.set(n.id, uid());
-      const newNodes: NodezzleFlowNode[] = selected.map((n) => ({
-        ...clone(n),
-        id: idMap.get(n.id)!,
-        position: { x: n.position.x + 36, y: n.position.y + 36 },
-        selected: true,
-      }));
-      const newEdges: Edge[] = edges
-        .filter((e) => selectedIds.has(e.source) && selectedIds.has(e.target))
-        .map((e) => ({
-          ...clone(e),
-          id: uid(),
-          source: idMap.get(e.source)!,
-          target: idMap.get(e.target)!,
-        }));
-      set({
-        nodes: [...nodes.map((n) => ({ ...n, selected: false })), ...newNodes],
-        edges: [...edges, ...newEdges],
-        selectedNodeId: newNodes[0]?.id ?? null,
-      });
-      commit(before);
+      const box = unionRects(occupiedRects(selected, (id) => blockRegistry.get(id)));
+      return insertFragment({ nodes: selected, edges }, box && { x: box.x + INSERT_GAP, y: box.y + INSERT_GAP }, bounds);
     },
 
     copySelection: () => {
@@ -429,38 +445,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       const selectedIds = new Set(selected.map((n) => n.id));
       clipboard = {
         nodes: clone(selected),
-        edges: edges.filter((e) => selectedIds.has(e.source) && selectedIds.has(e.target)),
+        edges: clone(edges.filter((e) => selectedIds.has(e.source) && selectedIds.has(e.target))),
       };
     },
 
-    pasteAt: (position) => {
-      const { nodes, edges } = get();
-      if (!clipboard || clipboard.nodes.length === 0) return;
-      const minX = Math.min(...clipboard.nodes.map((n) => n.position.x));
-      const minY = Math.min(...clipboard.nodes.map((n) => n.position.y));
-      const offset = { x: position.x - minX, y: position.y - minY };
-      const before = snapshotOf(nodes, edges);
-      const idMap = new Map<string, string>();
-      for (const n of clipboard.nodes) idMap.set(n.id, uid());
-      const newNodes: NodezzleFlowNode[] = clipboard.nodes.map((n) => ({
-        ...clone(n),
-        id: idMap.get(n.id)!,
-        position: { x: n.position.x + offset.x, y: n.position.y + offset.y },
-        selected: true,
-      }));
-      const newEdges: Edge[] = clipboard.edges.map((e) => ({
-        ...clone(e),
-        id: uid(),
-        source: idMap.get(e.source)!,
-        target: idMap.get(e.target)!,
-      }));
-      set({
-        nodes: [...nodes.map((n) => ({ ...n, selected: false })), ...newNodes],
-        edges: [...edges, ...newEdges],
-        selectedNodeId: newNodes[0]?.id ?? null,
-      });
-      commit(before);
-    },
+    pasteAt: (position, bounds) => clipboard ? insertFragment(clipboard, position, bounds) : [],
 
     handleNodesChange: (changes) => {
       const before = snapshotOf(get().nodes, get().edges);

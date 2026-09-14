@@ -1,6 +1,6 @@
 /** Геометрия вставки: без DOM, без перестановки старых узлов. */
 import { describe, expect, it } from 'vitest';
-import { estimateNodeSize, occupiedRects, findFreePosition, fitsIn, INSERT_GAP, type Rect } from './node-placement';
+import { estimateNodeSize, occupiedRects, unionRects, findFreePosition, fitsIn, INSERT_GAP, type Rect } from './node-placement';
 import { blockRegistry } from '@/core/registry/block-registry';
 import '@/blocks';
 
@@ -93,5 +93,17 @@ describe('Размеры до и после измерения React Flow', () =
     expect(occupiedRects([node], getBlock)[0]).toEqual({ x: 15, y: 30, width: 240, height: 80 });
     expect(occupiedRects([{ ...node, measured: { width: 300, height: 180 } }], getBlock)[0].height).toBe(180);
     expect(occupiedRects([{ ...node, measured: { width: 0, height: NaN } }], getBlock)[0].height).toBe(80);
+  });
+});
+
+describe('Границы целого фрагмента', () => {
+  it('пустой фрагмент не имеет границ', () => {
+    expect(unionRects([])).toBeUndefined();
+  });
+  it('объединяет отрицательные и дробные позиции, учитывает высоту и пустоты', () => {
+    expect(unionRects([
+      { x: -120.5, y: 10.25, width: 240, height: 80 },
+      { x: 400.75, y: -200.5, width: 260, height: 500 },
+    ])).toEqual({ x: -120.5, y: -200.5, width: 781.25, height: 500 });
   });
 });

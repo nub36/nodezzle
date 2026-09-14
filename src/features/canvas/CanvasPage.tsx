@@ -28,7 +28,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
-import { estimateNodeSize, occupiedRects, findFreePosition, fitsIn } from './node-placement';
+import { estimateNodeSize, occupiedRects, findFreePosition, fitsIn, unionRects, type Rect } from '@/lib/node-placement';
 import { NodezzleNode } from './NodezzleNode';
 import { BlockLibrary } from './BlockLibrary';
 import {
@@ -249,6 +249,62 @@ function FlowCanvas() {
   const [quickInsert, setQuickInsert] = useState<{ x: number; y: number; port: DragPortInfo } | null>(null);
   const connectFired = useRef(false);
 
+  // Одинаковая доступная область для одиночной детали и целого фрагмента.
+  const getInsertionArea = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return undefined;
+    const rect = wrapper.getBoundingClientRect();
+    const library = wrapper.querySelector('[data-tutorial="library"]')?.getBoundingClientRect();
+    const inspector = wrapper.querySelector('[data-tutorial="inspector"]')?.getBoundingClientRect();
+    const left = (library?.right ?? rect.left) + 16;
+    const right = (inspector?.left ?? rect.right) - 16;
+    const top = rect.top + 16;
+    const bottom = rect.bottom - 16;
+    // На экране, где панели перекрывают весь холст, гарантировать видимость
+    // невозможно. Используем сам холст, но по-прежнему исключаем наложения узлов.
+    const area = right > left ? { left, right, top, bottom }
+      : { left: rect.left + 16, right: rect.right - 16, top, bottom };
+    const start = screenToFlowPosition({ x: area.left, y: area.top });
+    const end = screenToFlowPosition({ x: area.right, y: area.bottom });
+    const bounds = { ...start, width: end.x - start.x, height: end.y - start.y };
+    return { rect, area, bounds };
+  }, [screenToFlowPosition]);
+
+  const revealInserted = useCallback((box: Rect, layout: NonNullable<ReturnType<typeof getInsertionArea>>) => {
+    const { rect, area, bounds } = layout;
+    if (fitsIn(box, box, bounds)) return;
+    // Меняем только камеру, никогда не координаты существующих деталей.
+    const zoom = Math.max(0.15, Math.min(getViewport().zoom, (area.right - area.left) / box.width, (area.bottom - area.top) / box.height));
+    void setViewport({
+      x: (area.left + area.right) / 2 - rect.left - (box.x + box.width / 2) * zoom,
+      y: (area.top + area.bottom) / 2 - rect.top - (box.y + box.height / 2) * zoom,
+      zoom,
+    });
+  }, [getViewport, setViewport]);
+
+  const insertAtFreePosition = useCallback((payload: DndPayload, point?: { x: number; y: number }) => {
+    const layout = getInsertionArea();
+    if (!layout) return undefined;
+    const { bounds } = layout;
+    const size = estimateNodeSize(blockRegistry.get(payload.blockId));
+    const preferred = point ? screenToFlowPosition(point)
+      : { x: bounds.x + (bounds.width - size.width) / 2, y: bounds.y + (bounds.height - size.height) / 2 };
+    const obstacles = occupiedRects(useProjectStore.getState().nodes, (id) => blockRegistry.get(id));
+    const position = findFreePosition(preferred, size, obstacles, bounds);
+    const id = addNode(payload.blockId, position, payload.config);
+    if (id) revealInserted({ ...position, ...size }, layout);
+    return id;
+  }, [addNode, screenToFlowPosition, getInsertionArea, revealInserted]);
+
+  const insertSelectedFragment = useCallback((operation: 'duplicate' | 'paste') => {
+    const layout = getInsertionArea();
+    if (!layout) return;
+    const ids = new Set(operation === 'duplicate' ? duplicateSelection(layout.bounds) : pasteAt(undefined, layout.bounds));
+    const created = useProjectStore.getState().nodes.filter((n) => ids.has(n.id));
+    const box = unionRects(occupiedRects(created, (id) => blockRegistry.get(id)));
+    if (box) revealInserted(box, layout);
+  }, [duplicateSelection, pasteAt, getInsertionArea, revealInserted]);
+
   // --- Контекстное меню (Этап 2, подэтап F) ---
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string | null } | null>(null);
   // Диалог создания модели из выделенного (Этап 2, подэтап G)
@@ -286,7 +342,7 @@ function FlowCanvas() {
         icon: '⧉',
         onClick: () => {
           selectNode(nodeId);
-          duplicateSelection();
+          insertSelectedFragment('duplicate');
         },
       },
       {
@@ -328,12 +384,14 @@ function FlowCanvas() {
         },
       },
     ] as ContextMenuItem[])];
-  }, [ctxMenu, nodes, edges, groups, t, addNote, selectNode, duplicateSelection, copySelection, disconnectNode, deleteSelection, screenToFlowPosition, groupSelection, ungroupGroup]);
+  }, [ctxMenu, nodes, edges, groups, t, addNote, selectNode, insertSelectedFragment, copySelection, disconnectNode, deleteSelection, screenToFlowPosition, groupSelection, ungroupGroup]);
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: { id: string }) => {
       event.preventDefault();
       if (!wrapperRef.current) return;
+      const current = useProjectStore.getState();
+      if (!current.nodes.find((n) => n.id === node.id)?.selected) current.selectNodeIds([node.id]);
       selectNode(node.id);
       const rect = wrapperRef.current.getBoundingClientRect();
       setCtxMenu({
@@ -392,43 +450,6 @@ function FlowCanvas() {
     },
     [setDragPort],
   );
-
-  // Общая геометрия вставки из библиотеки/меню. Стор читаем непосредственно
-  // перед добавлением: даже несколько быстрых кликов видят предыдущие узлы.
-  const insertAtFreePosition = useCallback((payload: DndPayload, point?: { x: number; y: number }) => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return undefined;
-    const rect = wrapper.getBoundingClientRect();
-    const library = wrapper.querySelector('[data-tutorial="library"]')?.getBoundingClientRect();
-    const inspector = wrapper.querySelector('[data-tutorial="inspector"]')?.getBoundingClientRect();
-    const left = (library?.right ?? rect.left) + 16;
-    const right = (inspector?.left ?? rect.right) - 16;
-    const top = rect.top + 16;
-    const bottom = rect.bottom - 16;
-    // На экране, где панели перекрывают весь холст, гарантировать видимость
-    // невозможно. Используем сам холст, но по-прежнему исключаем наложения узлов.
-    const area = right > left ? { left, right, top, bottom }
-      : { left: rect.left + 16, right: rect.right - 16, top, bottom };
-    const start = screenToFlowPosition({ x: area.left, y: area.top });
-    const end = screenToFlowPosition({ x: area.right, y: area.bottom });
-    const bounds = { ...start, width: end.x - start.x, height: end.y - start.y };
-    const size = estimateNodeSize(blockRegistry.get(payload.blockId));
-    const center = screenToFlowPosition({ x: (area.left + area.right) / 2, y: (area.top + area.bottom) / 2 });
-    const preferred = point ? screenToFlowPosition(point) : { x: center.x - size.width / 2, y: center.y - size.height / 2 };
-    const obstacles = occupiedRects(useProjectStore.getState().nodes, (id) => blockRegistry.get(id));
-    const position = findFreePosition(preferred, size, obstacles, bounds);
-    const id = addNode(payload.blockId, position, payload.config);
-    if (id && !fitsIn(position, size, bounds)) {
-      // Места на экране нет: показываем новую деталь, не переставляя старые.
-      const zoom = Math.max(0.15, Math.min(getViewport().zoom, (area.right - area.left) / size.width, (area.bottom - area.top) / size.height));
-      void setViewport({
-        x: (area.left + area.right) / 2 - rect.left - (position.x + size.width / 2) * zoom,
-        y: (area.top + area.bottom) / 2 - rect.top - (position.y + size.height / 2) * zoom,
-        zoom,
-      });
-    }
-    return id;
-  }, [addNode, screenToFlowPosition, getViewport, setViewport]);
 
   // Выбор детали из меню: создать рядом и автоматически подключить.
   const handleQuickPick = useCallback(
@@ -549,25 +570,18 @@ function FlowCanvas() {
         redo();
       } else if (key === 'd') {
         e.preventDefault();
-        duplicateSelection();
+        insertSelectedFragment('duplicate');
       } else if (key === 'c') {
         e.preventDefault();
         copySelection();
       } else if (key === 'v') {
         e.preventDefault();
-        if (wrapperRef.current) {
-          const rect = wrapperRef.current.getBoundingClientRect();
-          const position = screenToFlowPosition({
-            x: rect.width / 2 - 100 + Math.random() * 60,
-            y: rect.height / 2 - 60 + Math.random() * 40,
-          });
-          pasteAt(position);
-        }
+        insertSelectedFragment('paste');
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo, duplicateSelection, copySelection, pasteAt, screenToFlowPosition]);
+  }, [undo, redo, insertSelectedFragment, copySelection]);
 
   const isEmpty = nodes.length === 0;
 

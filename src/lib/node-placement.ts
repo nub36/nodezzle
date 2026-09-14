@@ -25,6 +25,19 @@ export function occupiedRects(nodes: NodezzleFlowNode[], getBlock: (id: string) 
   });
 }
 
+/** Общие границы фрагмента: переносим его целиком, не меняя внутреннюю раскладку. */
+export function unionRects(rects: Rect[]): Rect | undefined {
+  if (rects.length === 0) return undefined;
+  let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+  for (const r of rects) {
+    left = Math.min(left, r.x);
+    top = Math.min(top, r.y);
+    right = Math.max(right, r.x + r.width);
+    bottom = Math.max(bottom, r.y + r.height);
+  }
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
 export function fitsIn(position: Point, size: Size, bounds: Rect): boolean {
   return position.x >= bounds.x && position.y >= bounds.y &&
     position.x + size.width <= bounds.x + bounds.width + 1e-6 &&
