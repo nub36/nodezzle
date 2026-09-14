@@ -217,6 +217,9 @@ function FlowCanvas() {
   const connectFx = useConnectionFxStore((s) => s.success);
   useConnectionHover(dragPort);
 
+  // При уходе с холста гасим эфемерные эффекты соединения.
+  useEffect(() => () => useConnectionFxStore.getState().resetConnectionFx(), []);
+
   // Рёбра: цвет типа порта + анимация «текущих» данных во время выполнения.
   // Переключатель эффектов (тулбар) отключает анимацию.
   const displayEdges = useCallback(
