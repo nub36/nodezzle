@@ -11,8 +11,9 @@ import { useExecutionStore } from '@/store/execution-store';
 import { formatTimeRu, safeStringify, translateError } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { LogEntry } from '@/core/types/runtime';
+import { PhonePreview } from './PhonePreview';
 
-type Tab = 'simulator' | 'chat' | 'log' | 'history';
+type Tab = 'simulator' | 'chat' | 'log' | 'history' | 'phone';
 
 export function DebugPanel({ open }: { open: boolean }) {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ export function DebugPanel({ open }: { open: boolean }) {
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: 'simulator', label: t('execution.panel.tabs.simulator') },
     { id: 'chat', label: t('execution.panel.tabs.chat') },
+    { id: 'phone', label: t('execution.panel.tabs.phone') },
     { id: 'log', label: t('execution.panel.tabs.log') },
     { id: 'history', label: t('execution.panel.tabs.history') },
   ];
@@ -72,6 +74,7 @@ export function DebugPanel({ open }: { open: boolean }) {
       <div className="h-[190px] overflow-y-auto px-4 pb-3">
         {tab === 'simulator' && <SimulatorTab />}
         {tab === 'chat' && <ChatTab />}
+        {tab === 'phone' && <PhonePreview />}
         {tab === 'log' && <LogTab />}
         {tab === 'history' && <HistoryTab />}
       </div>
