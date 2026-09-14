@@ -1,12 +1,13 @@
 /** Подготовка только предпосылок; целевой урок проходится действиями в браузере. */
 import { expect, type Page } from '@playwright/test';
 
-export async function startLesson(page: Page, lessonId: string, prerequisites: string[] = []) {
+export async function openLesson(page: Page, lessonId: string, prerequisites: string[] = []) {
+  if (prerequisites.includes(lessonId)) throw new Error(`Целевой урок ${lessonId} нельзя завершать в фикстуре`);
   await page.addInitScript((extraPrerequisites) => {
     if (sessionStorage.getItem('practice-initialized')) return;
     const done = { status: 'completed', stepIndex: 9, startedAt: 1, completedAt: 2 };
     localStorage.setItem('nodezzle-academy-v1', JSON.stringify({
-      lessons: { 'intro-what': done, 'intro-canvas': done, 'basics-ports': done, 'basics-chain': done, ...Object.fromEntries(extraPrerequisites.map((id) => [id, done])) },
+      lessons: Object.fromEntries(extraPrerequisites.map((id) => [id, done])),
       onboarding: { done: true, choice: 'explore' },
     }));
     sessionStorage.setItem('practice-initialized', '1');
@@ -14,6 +15,11 @@ export async function startLesson(page: Page, lessonId: string, prerequisites: s
   await page.goto('/#/academy');
   await page.getByTestId(`lesson-card-${lessonId}`).click();
   await page.getByTestId('lesson-start').click();
+}
+
+/** Практические уроки старших уровней начинаются с информационного about. */
+export async function startLesson(page: Page, lessonId: string, prerequisites: string[] = []) {
+  await openLesson(page, lessonId, ['intro-what', 'intro-canvas', 'basics-ports', 'basics-chain', ...prerequisites]);
   await step(page, 'about');
   await page.getByTestId('tutorial-ack').click();
 }

@@ -262,8 +262,16 @@ describe('Интеграция: действие пользователя → с
     tutorial.start('basics-chain', 3); // шаг «Запустите схему»
     const startedAt = useTutorialStore.getState().stepStartedAt;
 
+    useProjectStore.setState({ nodes: [flowNode('t1', 'telegram.message_received'), flowNode('l1', 'debug.log')] });
+    const success = { status: 'success' as const, inputs: {}, startedAt, durationMs: 1, executions: 1 };
+    useExecutionStore.setState({ nodeInfo: {
+      t1: { ...success, outputs: { text: 'привет' } },
+      l1: { ...success, outputs: { value: 'привет' } },
+    } });
+
     // Запуск, случившийся ДО появления шага, не в счёт.
     useExecutionStore.setState({
+      nodeInfoRunId: 'h0',
       history: [{ id: 'h0', at: startedAt - 10, status: 'success', durationMs: 1 }],
     });
     tutorial.evaluate(buildAcademySnapshot());
@@ -271,6 +279,7 @@ describe('Интеграция: действие пользователя → с
 
     // Новый успешный запуск завершает шаг.
     useExecutionStore.setState({
+      nodeInfoRunId: 'h1',
       history: [{ id: 'h1', at: startedAt + 10, status: 'success', durationMs: 1 }],
     });
     tutorial.evaluate(buildAcademySnapshot());
@@ -298,12 +307,15 @@ describe('Интеграция: действие пользователя → с
     expect(useTutorialStore.getState().stepIndex).toBe(5);
   });
 
-  it('TEST 8: открыта панель отладки → шаг open-debug завершён', () => {
+  it('TEST 8: открыт журнал → шаг open-debug завершён', () => {
     const tutorial = useTutorialStore.getState();
     tutorial.start('basics-chain', 4); // шаг «Посмотрите журнал»
     tutorial.setDebugOpen(true);
+    const previousTab = useExecutionStore.getState().panelTab;
+    useExecutionStore.getState().setPanelTab('log');
     tutorial.evaluate(buildAcademySnapshot());
     expect(useTutorialStore.getState().stepIndex).toBe(5);
+    useExecutionStore.getState().setPanelTab(previousTab);
   });
 
   it('последний шаг завершает урок: finished=true, прогресс 100%', () => {

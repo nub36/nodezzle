@@ -213,6 +213,7 @@ export const baseCourse: readonly LessonDefinition[] = [
         fromBlockId: 'telegram.message_received',
         toBlockId: 'debug.log',
         fromPortId: 'text',
+        toPortId: 'value',
         titleKey: K('basics-chain') + '.steps.connect.title',
         textKey: K('basics-chain') + '.steps.connect.text',
         hintKey: K('basics-chain') + '.steps.connect.hint',
@@ -221,6 +222,7 @@ export const baseCourse: readonly LessonDefinition[] = [
       {
         id: 'run',
         kind: 'run',
+        expectedOutputs: [{ blockId: 'telegram.message_received', portId: 'text' }, { blockId: 'debug.log', portId: 'value' }],
         titleKey: K('basics-chain') + '.steps.run.title',
         textKey: K('basics-chain') + '.steps.run.text',
         hintKey: K('basics-chain') + '.steps.run.hint',
@@ -229,6 +231,7 @@ export const baseCourse: readonly LessonDefinition[] = [
       {
         id: 'debug',
         kind: 'open-debug',
+        tab: 'log',
         titleKey: K('basics-chain') + '.steps.debug.title',
         textKey: K('basics-chain') + '.steps.debug.text',
         target: 'debug',
