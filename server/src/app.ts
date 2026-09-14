@@ -27,6 +27,8 @@ import { registerWebhookRoutes } from './routes/webhook.ts';
 import type { RateLimiter } from './security/rate-limit.ts';
 import type { TelegramBotMeta } from './telegram/bots.ts';
 import type { TelegramEvent } from './telegram/updates.ts';
+import { createTelegramUpdateHandler } from './telegram/handler.ts';
+import type { TelegramTransport } from './telegram/api.ts';
 
 /** Лимит попыток входа/регистрации с одного адреса. */
 const AUTH_LIMIT_PER_WINDOW = 20;
@@ -43,8 +45,10 @@ export interface AppDeps {
   version: string;
   /** Подмена ограничителя вебхука (тесты). */
   webhookLimiter?: RateLimiter;
-  /** Обработчик входящего обновления вебхука (5.8D подключает исполнение). */
+  /** Обработчик входящего обновления вебхука (по умолчанию — запуск LIVE-версии). */
   onTelegramUpdate?: (bot: TelegramBotMeta, event: TelegramEvent) => Promise<void> | void;
+  /** Фабрика транспорта Telegram; в тестах — только мок (нет реальных запросов). */
+  telegramTransportFor?: (token: string) => TelegramTransport;
 }
 
 export interface App {
@@ -85,7 +89,14 @@ export function createApp(deps: AppDeps): App {
     config: deps.config,
     bots,
     limiter: deps.webhookLimiter ?? createRateLimiter(WEBHOOK_LIMIT_PER_WINDOW, WEBHOOK_WINDOW_MS),
-    onUpdate: deps.onTelegramUpdate,
+    onUpdate: deps.onTelegramUpdate
+      ?? createTelegramUpdateHandler({
+        config: deps.config,
+        projects,
+        versions,
+        secrets,
+        transportFor: deps.telegramTransportFor,
+      }),
   });
   registerExecutionRoutes(router, {
     ...authDeps,
