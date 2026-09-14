@@ -166,11 +166,11 @@ export function LessonPage() {
         )}
 
         <div className="flex flex-wrap items-center gap-3">
-          <button className="btn-primary text-sm" disabled={busy} onClick={() => void handleStart()}>
+          <button className="btn-primary text-sm" data-testid="lesson-start" disabled={busy} onClick={() => void handleStart()}>
             {started && state?.status !== 'completed' ? t('academy.lesson.continueLesson') : t('academy.lesson.start')}
           </button>
           {started && (
-            <button className="btn-ghost text-xs" disabled={busy} onClick={() => void handleRestart()}>
+            <button className="btn-ghost text-xs" data-testid="lesson-restart" disabled={busy} onClick={() => void handleRestart()}>
               {t('academy.lesson.restart')}
             </button>
           )}

@@ -38,3 +38,9 @@ Thumbs.db
 
 # --- Сервер: локальная база данных ---
 server/data/
+
+# Playwright (браузерный E2E Академии)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

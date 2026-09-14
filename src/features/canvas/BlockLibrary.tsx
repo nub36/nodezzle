@@ -196,6 +196,7 @@ export function BlockLibrary({ onInsert }: { onInsert: (payload: DndPayload) => 
         <input
           className="input-dark"
           placeholder={t('canvas.library.searchPlaceholder')}
+            data-testid="library-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -213,6 +214,7 @@ export function BlockLibrary({ onInsert }: { onInsert: (payload: DndPayload) => 
                 <div key={category} className="mb-1">
                   <button
                     className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted transition-colors hover:text-ink"
+                    data-testid={`library-category-${category}`}
                     onClick={() => toggleCategory(category)}
                   >
                     <span aria-hidden="true">{CATEGORY_ICONS[category]}</span>

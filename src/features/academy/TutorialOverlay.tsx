@@ -120,7 +120,7 @@ export function TutorialOverlay() {
   // Карточка «Урок завершён».
   if (finished) {
     return (
-      <div className="fixed right-4 top-16 z-[70] w-[340px] max-w-[calc(100vw-2rem)]" role="dialog" aria-label={t('academy.overlay.finishedTitle')}>
+      <div className="fixed right-4 top-16 z-[70] w-[340px] max-w-[calc(100vw-2rem)]" role="dialog" aria-label={t('academy.overlay.finishedTitle')} data-testid="tutorial-finished">
         <div className="glass-strong tutorial-anim rounded-2xl border border-emerald-400/40 p-5 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
           <div className="mb-2 text-2xl">🎉</div>
           <div className="mb-1 text-sm font-bold">{t('academy.overlay.finishedTitle')}</div>

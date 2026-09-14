@@ -79,7 +79,7 @@ export function OnboardingModal() {
           ))}
         </div>
         <div className="mt-5 flex items-center justify-between">
-          <button className="btn-ghost !py-1.5 text-xs" onClick={skip}>
+          <button className="btn-ghost !py-1.5 text-xs" data-testid="onboarding-skip" onClick={skip}>
             {t('academy.onboarding.skip')}
           </button>
           <span className="text-[10px] text-muted/70">{t('academy.onboarding.hint')}</span>
