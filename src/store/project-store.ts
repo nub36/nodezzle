@@ -78,6 +78,10 @@ interface ProjectState {
   future: Snapshot[];
 
   loadById: (id: string) => Promise<void>;
+  /** Открытый уровень: null — холст проекта, иначе — внутренний холст модели (Этап 2, подэтап H). */
+  activeModelId: string | null;
+  openModel: (modelId: string) => void;
+  closeModel: () => void;
   createProject: (kind: ProjectKind) => Promise<NodezzleProject>;
   seedDemo: () => Promise<NodezzleProject>;
   listProjects: () => Promise<ProjectSummary[]>;
@@ -135,15 +139,39 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     scheduleSave();
   };
 
-  const serializeAndSave = async () => {
-    const { project, nodes, edges } = get();
-    if (!project) return;
-    try {
-      const updated: NodezzleProject = {
+  /**
+   * Записать текущие узлы/рёбра в активный документ: холст проекта либо
+   * внутренний холст модели (Drill Down, Этап 2 подэтап H).
+   */
+  const withActiveCanvas = (
+    project: NodezzleProject,
+    activeModelId: string | null,
+    nodes: NodezzleFlowNode[],
+    edges: Edge[],
+  ): NodezzleProject => {
+    if (activeModelId) {
+      return {
         ...project,
-        canvas: flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name),
+        models: project.models.map((m) =>
+          m.id === activeModelId
+            ? { ...m, canvas: flowToCanvas(nodes, edges, m.canvas.id, m.canvas.name), updatedAt: Date.now() }
+            : m,
+        ),
         meta: { ...project.meta, updatedAt: Date.now() },
       };
+    }
+    return {
+      ...project,
+      canvas: flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name),
+      meta: { ...project.meta, updatedAt: Date.now() },
+    };
+  };
+
+  const serializeAndSave = async () => {
+    const { project, nodes, edges, activeModelId } = get();
+    if (!project) return;
+    try {
+      const updated = withActiveCanvas(project, activeModelId, nodes, edges);
       await projectStorage.save(updated);
       set({ project: updated, saveState: 'saved', savedAt: updated.meta.updatedAt });
     } catch {
@@ -158,6 +186,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     savedAt: null,
     nodes: [],
     edges: [],
+    activeModelId: null,
     selectedNodeId: null,
     dragPort: null,
     past: [],
@@ -181,7 +210,45 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         saveState: 'saved',
         savedAt: project.meta.updatedAt,
         selectedNodeId: null,
+        activeModelId: null,
       });
+    },
+
+    openModel: (modelId) => {
+      const { project, nodes, edges, activeModelId } = get();
+      if (!project || activeModelId === modelId) return;
+      const model = project.models.find((m) => m.id === modelId);
+      if (!model) return;
+      // Сначала сохраняем текущий документ (холст проекта или другую модель).
+      const written = withActiveCanvas(project, activeModelId, nodes, edges);
+      const inner = canvasToFlow(model.canvas);
+      set({
+        project: written,
+        activeModelId: modelId,
+        nodes: inner.nodes,
+        edges: inner.edges,
+        past: [],
+        future: [],
+        selectedNodeId: null,
+      });
+      scheduleSave();
+    },
+
+    closeModel: () => {
+      const { project, nodes, edges, activeModelId } = get();
+      if (!project || activeModelId === null) return;
+      const written = withActiveCanvas(project, activeModelId, nodes, edges);
+      const outer = canvasToFlow(written.canvas);
+      set({
+        project: written,
+        activeModelId: null,
+        nodes: outer.nodes,
+        edges: outer.edges,
+        past: [],
+        future: [],
+        selectedNodeId: null,
+      });
+      scheduleSave();
     },
 
     createProject: async (kind) => {
@@ -524,13 +591,9 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     },
 
     flushSave: () => {
-      const { project, nodes, edges } = get();
+      const { project, nodes, edges, activeModelId } = get();
       if (!project) return;
-      const updated: NodezzleProject = {
-        ...project,
-        canvas: flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name),
-        meta: { ...project.meta, updatedAt: Date.now() },
-      };
+      const updated = withActiveCanvas(project, activeModelId, nodes, edges);
       void projectStorage.save(updated);
     },
 

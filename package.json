@@ -1,7 +1,7 @@
 {
   "name": "nodezzle",
   "private": true,
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "NODEZZLE — визуальная среда сборки Telegram-ботов, веб-интерфейсов и систем из соединяемых деталей. Не программируй. Собери.",
   "type": "module",
   "engines": {

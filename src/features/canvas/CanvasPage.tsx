@@ -126,6 +126,10 @@ function FlowCanvas() {
   const deleteSelection = useProjectStore((s) => s.deleteSelection);
   const disconnectNode = useProjectStore((s) => s.disconnectNode);
   const addNote = useProjectStore((s) => s.addNote);
+  const activeModelId = useProjectStore((s) => s.activeModelId);
+  const openModel = useProjectStore((s) => s.openModel);
+  const closeModel = useProjectStore((s) => s.closeModel);
+  const project = useProjectStore((s) => s.project);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const pasteAt = useProjectStore((s) => s.pasteAt);
@@ -147,6 +151,11 @@ function FlowCanvas() {
   );
 
   // Поиск по схеме (тулбар): неподходящие узлы приглушаются.
+  // Drill Down (Этап 2, подэтап H): при смене уровня сбрасываем выполнение.
+  useEffect(() => {
+    useExecutionStore.getState().reset();
+  }, [activeModelId]);
+
   // Быстрая вставка: меню открывается, если соединение от порта
   // отпущено на пустом месте (без подключения к другому порту).
   const [quickInsert, setQuickInsert] = useState<{ x: number; y: number; port: DragPortInfo } | null>(null);
@@ -433,6 +442,20 @@ function FlowCanvas() {
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
+      {/* Хлебные крошки (Этап 2, подэтап H) */}
+      {activeModelId && project && (
+        <div className="glass pointer-events-auto absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px]">
+          <button className="font-semibold text-cyan-300 transition-colors hover:text-cyan-100" onClick={closeModel}>
+            {t('canvas.breadcrumb.project')}
+          </button>
+          <span className="text-muted">›</span>
+          <span className="text-muted">{t('canvas.breadcrumb.models')}</span>
+          <span className="text-muted">›</span>
+          <span className="font-semibold">
+            {project.models.find((m) => m.id === activeModelId)?.name ?? '?'}
+          </span>
+        </div>
+      )}
       <ReactFlow
         nodes={displayNodes}
         edges={displayEdges(edges)}
@@ -446,6 +469,13 @@ function FlowCanvas() {
         onNodeDragStart={handleDragStart}
         onNodeDragStop={handleDragStop}
         onNodeClick={(_e, n) => selectNode(n.id)}
+        onNodeDoubleClick={(_e, n) => {
+          const data = n.data as CanvasNodeData;
+          if (data.blockId === 'models.call') {
+            const modelId = String(data.config?.modelId ?? '');
+            if (modelId) openModel(modelId);
+          }
+        }}
         onEdgeClick={(_e, edge) => selectEdge(edge.id)}
         onNodeContextMenu={onNodeContextMenu}
         onPaneContextMenu={onPaneContextMenu}

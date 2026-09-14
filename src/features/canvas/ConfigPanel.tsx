@@ -55,6 +55,7 @@ function ModelContractInfo({ blockId, modelId }: { blockId: string; modelId: str
             </div>
           ),
         )}
+        <div className="text-[10px] leading-snug text-muted/70">{t('canvas.inspector.model.openHint')}</div>
       </div>
     </div>
   );
