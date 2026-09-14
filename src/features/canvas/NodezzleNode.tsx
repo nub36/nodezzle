@@ -212,10 +212,9 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
                     {portGlyph(p.type)}
                   </span>
                 </div>
-      
+              ))}
+            </div>
           ))}
-          </div>
-        ))}
       </div>
 
       {/* Статус / ошибка выполнения */}
