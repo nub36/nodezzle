@@ -3,12 +3,13 @@
  *
  * Элементы оформления страницы: текст, заголовки, картинки, поля ввода,
  * контейнеры. Определения фиксируют контракты и место в библиотеке.
- * Текст/заголовок реализованы в 09B1; остальные определения пока planned.
- * Структура контейнеров — следующий подэтап (см. docs/WEB.md).
+ * Текст/заголовок реализованы в 09B1, контейнер/секция/сетка — 09B2.
+ * Остальные определения пока planned (см. docs/WEB.md).
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
 import { dport } from '../shared';
+import { buildLayoutElement } from '@/core/web/layout-element';
 import { buildTextElement } from '@/core/web/text-element';
 
 export const webUiBlocks: BlockDefinition[] = [
@@ -136,8 +137,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'структура',
     difficulty: 'advanced',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: {},
+    runtime: ({ inputs, config }) => {
+      const element = buildLayoutElement('container', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_TREE' };
+    },
     inputs: [dport('children', 'blocks.ports.children', 'array')],
     outputs: [dport('element', 'blocks.ports.element', 'object')],
     ui: { icon: '📦', color: '#f472b6' },
@@ -151,8 +157,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'структура',
     difficulty: 'advanced',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { title: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildLayoutElement('section', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_TREE' };
+    },
     inputs: [
       dport('title', 'blocks.ports.title', 'text'),
       dport('children', 'blocks.ports.children', 'array'),
@@ -169,8 +180,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'структура',
     difficulty: 'advanced',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { columns: 2 },
+    runtime: ({ inputs, config }) => {
+      const element = buildLayoutElement('grid', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_TREE' };
+    },
     inputs: [
       dport('columns', 'blocks.ports.columns', 'number'),
       dport('children', 'blocks.ports.children', 'array'),

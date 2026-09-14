@@ -16,6 +16,7 @@ import { useExecutionStore } from '@/store/execution-store';
 import { useProjectStore } from '@/store/project-store';
 import { cn } from '@/lib/utils';
 import { parseWebFormJson } from './web-form-json';
+import { isWebRenderable } from './web-layout-roots';
 import { WebTextPreview } from './WebTextPreview';
 import { collectWebElements } from './web-preview-utils';
 
@@ -46,7 +47,7 @@ export function WebPreview() {
     if (!key) pageFired.current = null;
   }, [context, pageId, running, fireWebTrigger]);
 
-  const hasTextElements = nodes.some((n) => n.data.blockId === 'web.text' || n.data.blockId === 'web.heading');
+  const hasTextElements = nodes.some((n) => isWebRenderable(n.data.blockId));
   if (!elements.page && elements.buttons.length === 0 && elements.forms.length === 0 && !hasTextElements) {
     return (
       <div className="space-y-2 pt-3">
