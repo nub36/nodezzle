@@ -1,7 +1,7 @@
 {
   "name": "nodezzle",
   "private": true,
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "NODEZZLE — визуальная среда сборки Telegram-ботов, веб-интерфейсов и систем из соединяемых деталей. Не программируй. Собери.",
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "server:dev": "node --watch server/src/index.ts",
+    "server:dev": "node --watch --import ./server/src/register-alias.mjs server/src/index.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",

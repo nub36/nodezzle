@@ -8,7 +8,8 @@
  */
 
 import { tryParseProject } from '../../../src/core/project/schema.ts';
-import { badRequest, conflict, notFound, unauthorized } from '../errors.ts';
+import { badRequest, conflict, notFound, unauthorized, validationFailed } from '../errors.ts';
+import { validateForPublish } from '../publication/validate.ts';
 
 const VERSION_LABEL_MAX = 120;
 import { readJsonBody, sendJson } from '../http.ts';
@@ -124,5 +125,35 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     // Восстановление перезаписывает черновик; сама версия остаётся.
     deps.projects.update(ctx.params.id, snapshot);
     sendJson(ctx.res, 200, { project: snapshot });
+  });
+
+  // ── Публикация: серверная валидация → неизменяемая LIVE-версия ──
+  router.post('/api/projects/:id/publish', async (ctx) => {
+    const user = currentUser(ctx, deps);
+    if (!user) throw unauthorized();
+    const row = deps.projects.get(ctx.params.id);
+    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+    const issues = validateForPublish(row.document);
+    if (issues.length > 0) {
+      throw validationFailed('Схема не прошла проверку перед публикацией', issues);
+    }
+    const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
+    const label = typeof body.label === 'string' && body.label.trim() !== ''
+      ? body.label.trim().slice(0, VERSION_LABEL_MAX)
+      : `Публикация от ${new Date().toLocaleString('ru-RU')}`;
+    // Одна публикация на проект: прежняя LIVE уходит в архив.
+    deps.versions.archiveLive(ctx.params.id);
+    const version = deps.versions.create(ctx.params.id, row.document, label, 'LIVE');
+    sendJson(ctx.res, 201, { version });
+  });
+
+  router.get('/api/projects/:id/live', (ctx) => {
+    const user = currentUser(ctx, deps);
+    if (!user) throw unauthorized();
+    const row = deps.projects.get(ctx.params.id);
+    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+    const live = deps.versions.findLive(ctx.params.id);
+    if (!live) throw notFound('Проект ещё не опубликован');
+    sendJson(ctx.res, 200, { version: live, project: deps.versions.get(ctx.params.id, live.id) });
   });
 }

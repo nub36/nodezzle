@@ -12,13 +12,16 @@ import type { ServerResponse } from 'node:http';
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** Дополнительная машинная информация (например, список проблем валидации). */
+  readonly details?: unknown;
 
   /** status — HTTP-статус; code — стабильный машинный код ошибки. */
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -27,6 +30,8 @@ export const unauthorized = (message = 'Требуется вход'): ApiError 
 export const forbidden = (message = 'Недостаточно прав'): ApiError => new ApiError(403, 'FORBIDDEN', message);
 export const notFound = (message = 'Не найдено'): ApiError => new ApiError(404, 'NOT_FOUND', message);
 export const conflict = (message: string): ApiError => new ApiError(409, 'CONFLICT', message);
+export const validationFailed = (message: string, issues: unknown): ApiError =>
+  new ApiError(422, 'VALIDATION_FAILED', message, { issues });
 export const unsupportedMedia = (message = 'Неподдерживаемый тип содержимого'): ApiError =>
   new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', message);
 export const payloadTooLarge = (message = 'Слишком большой запрос'): ApiError =>
@@ -50,6 +55,7 @@ export function sendError(res: ServerResponse, err: unknown): void {
     res.end();
     return;
   }
+  const details = known && err.details !== undefined ? err.details : undefined;
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ error: { code, message } }));
+  res.end(JSON.stringify({ error: { code, message, ...(details !== undefined ? { details } : {}) } }));
 }

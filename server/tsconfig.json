@@ -16,7 +16,8 @@
     "allowImportingTsExtensions": true,
     "types": ["node"],
     "paths": {
-      "@server/*": ["./src/*"]
+      "@server/*": ["./src/*"],
+      "@/*": ["../src/*"]
     }
   },
   "include": ["src", "migrations"]

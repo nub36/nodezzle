@@ -55,7 +55,7 @@ describe('Дымовой запуск сервера (реальный проц�
   it('запускается, применяет миграции и отвечает /api/health', async () => {
     const dbPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'nodezzle-smoke-')), 'db.sqlite');
     const port = await getFreePort();
-    child = spawn(process.execPath, [path.join(repoRoot, 'server', 'src', 'index.ts')], {
+    child = spawn(process.execPath, ['--import', path.join(repoRoot, 'server', 'src', 'register-alias.mjs'), path.join(repoRoot, 'server', 'src', 'index.ts')], {
       env: {
         ...process.env,
         NODEZZLE_API_HOST: '127.0.0.1',

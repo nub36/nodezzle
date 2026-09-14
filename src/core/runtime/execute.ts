@@ -64,11 +64,13 @@ interface OutLink {
 
 /** Контроль завершения: отмена/цикл из рекурсивных вызовов. */
 class ExecutionAbort extends Error {
-  constructor(
-    readonly status: ExecutionResult['status'],
-    readonly code?: string,
-  ) {
+  readonly status: ExecutionResult['status'];
+  readonly code?: string;
+
+  constructor(status: ExecutionResult['status'], code?: string) {
     super(code ?? status);
+    this.status = status;
+    this.code = code;
   }
 }
 

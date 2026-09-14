@@ -23,7 +23,11 @@ const PREFIX = 'nodezzle.project.';
 /** Адаптер поверх localStorage (MVP). setItem выполняется синхронно —
  *  это важно для flush при закрытии вкладки (beforeunload). */
 export class LocalStorageAdapter implements ProjectStorage {
-  constructor(private readonly storage: Storage) {}
+  private readonly storage: Storage;
+
+  constructor(storage: Storage) {
+    this.storage = storage;
+  }
 
   async list(): Promise<ProjectSummary[]> {
     const items: ProjectSummary[] = [];
