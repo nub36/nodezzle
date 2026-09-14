@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkCompatibility, isCompatible } from './compatibility';
+import { checkCompatibility, portGlyph, isCompatible } from './compatibility';
 import { definePort, typeRegistry } from '../types/ports';
 import type { PortDefinition } from '../types/ports';
 
@@ -47,5 +47,19 @@ describe('checkCompatibility (умные соединения)', () => {
     expect(isCompatible(data('order_ref', 'a'), data('text', 'b'))).toBe(true);
     expect(isCompatible(data('order_ref', 'a'), data('number', 'b'))).toBe(false);
     expect(isCompatible(data('order_ref', 'a'), data('order_ref', 'b'))).toBe(true);
+  });
+});
+
+describe('portGlyph (визуальный язык типов)', () => {
+  it('известным типам назначены глифы', () => {
+    expect(portGlyph('text')).toBe('Т');
+    expect(portGlyph('number')).toBe('#');
+    expect(portGlyph('boolean')).toBe('✓');
+    expect(portGlyph('error')).toBe('!');
+    expect(portGlyph('event')).toBe('↯');
+  });
+
+  it('неизвестный тип получает нейтральный глиф', () => {
+    expect(portGlyph('какой_то_новый_тип')).toBe('·');
   });
 });

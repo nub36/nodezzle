@@ -239,7 +239,11 @@ select.input-dark {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.nodezzle-node.selected {
+.nodezzle-node:hover {
+  border-color: rgba(148, 163, 184, 0.42);
+}
+.nodezzle-node.selected,
+.nodezzle-node.selected:hover {
   border-color: rgba(34, 211, 238, 0.55);
   box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 10px 34px rgba(2, 6, 16, 0.6);
 }
@@ -275,9 +279,21 @@ select.input-dark {
   border: 2px solid var(--port-color, #64748b);
   transition: box-shadow 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
+/* Форма маркера кодирует ВИД порта (Этап 2, подэтап C):
+   данные — круг, событие — ромб, ошибка — квадрат. */
+.nzz-handle--event {
+  border-radius: 2.5px;
+  transform: rotate(45deg) scale(0.95);
+}
+.nzz-handle--error {
+  border-radius: 3px;
+}
 .nzz-handle.port-compatible {
   box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.25), 0 0 14px rgba(34, 211, 238, 0.8);
   transform: scale(1.2);
+}
+.nzz-handle--event.port-compatible {
+  transform: rotate(45deg) scale(1.15);
 }
 .nzz-handle.port-incompatible {
   opacity: 0.28;
@@ -304,6 +320,14 @@ select.input-dark {
 .port-type {
   font-size: 9.5px;
   opacity: 0.65;
+}
+/* Глиф типа порта: символ рядом с названием типа (цвет — по типу). */
+.port-glyph {
+  display: inline-block;
+  min-width: 11px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 /* ============================================================

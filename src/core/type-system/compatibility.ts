@@ -87,3 +87,31 @@ export const PORT_TYPE_COLORS: Record<string, string> = {
 export function portColor(type: string): string {
   return PORT_TYPE_COLORS[type] ?? '#64748b';
 }
+
+/**
+ * Глифы типов портов — компактный визуальный язык рядом с названием типа
+ * (Этап 2, подэтап C). Форма маркера кодирует ВИД порта (данные/событие/ошибка),
+ * глиф + цвет — тип данных.
+ */
+export const PORT_TYPE_GLYPHS: Record<string, string> = {
+  any: '∗',
+  text: 'Т',
+  number: '#',
+  boolean: '✓',
+  json: '{}',
+  object: '◇',
+  array: '[]',
+  file: '▤',
+  image: '▩',
+  user: '⊙',
+  date: '⧗',
+  url: '↗',
+  secret: '⚷',
+  telegram_message: '✈',
+  event: '↯',
+  error: '!',
+};
+
+export function portGlyph(type: string): string {
+  return PORT_TYPE_GLYPHS[type] ?? '·';
+}

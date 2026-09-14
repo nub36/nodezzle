@@ -11,7 +11,7 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 import { blockRegistry } from '@/core/registry/block-registry';
-import { checkCompatibility, portColor } from '@/core/type-system/compatibility';
+import { checkCompatibility, portColor, portGlyph } from '@/core/type-system/compatibility';
 import type { PortDefinition } from '@/core/types/ports';
 import type { CanvasNodeData } from '@/core/project/serialize';
 import { useProjectStore } from '@/store/project-store';
@@ -95,11 +95,23 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
                 id={p.id}
                 type="target"
                 position={Position.Left}
-                className={cn('nzz-handle', state === 'compatible' && 'port-compatible', state === 'incompatible' && 'port-incompatible')}
+                className={cn(
+                  'nzz-handle',
+                  p.kind === 'event' && 'nzz-handle--event',
+                  p.kind === 'error' && 'nzz-handle--error',
+                  state === 'compatible' && 'port-compatible',
+                  state === 'incompatible' && 'port-incompatible',
+                )}
                 style={{ ['--port-color' as string]: portColor(p.type) }}
               />
               <span className="port-label">
-                {t(p.labelKey)} <span className="port-type">· {t(`portTypes.${p.type}`)}</span>
+                {t(p.labelKey)}{' '}
+                <span className="port-type">
+                  <span className="port-glyph" style={{ color: portColor(p.type) }}>
+                    {portGlyph(p.type)}
+                  </span>{' '}
+                  {t(`portTypes.${p.type}`)}
+                </span>
               </span>
             </div>
           );
@@ -111,7 +123,13 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
           return (
             <div key={p.id} className="port-row port-row--output justify-end text-right">
               <span className="port-label">
-                {t(p.labelKey)} <span className="port-type">· {t(`portTypes.${p.type}`)}</span>
+                {t(p.labelKey)}{' '}
+                <span className="port-type">
+                  <span className="port-glyph" style={{ color: portColor(p.type) }}>
+                    {portGlyph(p.type)}
+                  </span>{' '}
+                  {t(`portTypes.${p.type}`)}
+                </span>
               </span>
               <Handle
                 id={p.id}
@@ -119,6 +137,8 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
                 position={Position.Right}
                 className={cn(
                   'nzz-handle',
+                  p.kind === 'event' && 'nzz-handle--event',
+                  p.kind === 'error' && 'nzz-handle--error',
                   state === 'compatible' && 'port-compatible',
                   state === 'incompatible' && 'port-incompatible',
                 )}
