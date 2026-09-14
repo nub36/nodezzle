@@ -40,7 +40,7 @@ import {
 } from './library-utils';
 import { QuickInsertMenu, QuickInsertStarter } from './QuickInsert';
 import { useUiStore } from '@/store/ui-store';
-import { ConfigPanel } from './ConfigPanel';
+import { InspectorPanel } from './InspectorPanel';
 import { Toolbar } from './Toolbar';
 import { DebugPanel } from './DebugPanel';
 import { blockRegistry } from '@/core/registry/block-registry';
@@ -118,7 +118,7 @@ function FlowCanvas() {
   const setDragPort = useProjectStore((s) => s.setDragPort);
   const addNode = useProjectStore((s) => s.addNode);
   const selectNode = useProjectStore((s) => s.selectNode);
-  const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
+  const selectEdge = useProjectStore((s) => s.selectEdge);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const duplicateSelection = useProjectStore((s) => s.duplicateSelection);
@@ -338,6 +338,7 @@ function FlowCanvas() {
         onNodeDragStart={handleDragStart}
         onNodeDragStop={handleDragStop}
         onNodeClick={(_e, n) => selectNode(n.id)}
+        onEdgeClick={(_e, edge) => selectEdge(edge.id)}
         onPaneClick={() => {
           selectNode(null);
           setQuickInsert(null);
@@ -370,12 +371,10 @@ function FlowCanvas() {
         <BlockLibrary onInsert={onInsertAtCenter} />
       </div>
 
-      {/* Инспектор выбранной детали */}
-      {selectedNodeId && (
-        <div className="pointer-events-none absolute right-3 top-3 z-10" style={{ bottom: 12 }}>
-          <ConfigPanel />
-        </div>
-      )}
+      {/* Контекстный инспектор: деталь / соединение / холст (Этап 2, подэтап E) */}
+      <div className="pointer-events-none absolute right-3 top-3 z-10" style={{ bottom: 12 }}>
+        <InspectorPanel />
+      </div>
 
       {/* Быстрая вставка на пустой схеме */}
       {isEmpty && (

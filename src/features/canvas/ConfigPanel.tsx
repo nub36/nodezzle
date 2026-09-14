@@ -11,6 +11,55 @@ import { useExecutionStore } from '@/store/execution-store';
 import { CONDITION_OPERATORS } from '@/blocks/logic/blocks';
 import { cn, safeStringify, translateError } from '@/lib/utils';
 
+/** Контракт выбранной модели для блока «Вызов модели» (Этап 2, подэтап E). */
+function ModelContractInfo({ blockId, modelId }: { blockId: string; modelId: string }) {
+  const { t } = useTranslation();
+  const project = useProjectStore((s) => s.project);
+  if (blockId !== 'models.call') return null;
+  const model = project?.models.find((m) => m.id === modelId);
+  if (!model) {
+    return (
+      <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 text-[11px] text-amber-200">
+        {t('canvas.inspector.model.noModel')}
+      </div>
+    );
+  }
+  const rows: Array<{ key: string; ports: typeof model.contract.inputs }> = [
+    { key: 'inputs', ports: model.contract.inputs },
+    { key: 'outputs', ports: model.contract.outputs },
+    { key: 'error', ports: model.contract.error ? [model.contract.error] : [] },
+  ];
+  return (
+    <div>
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted">
+        {t('canvas.inspector.model.title')}
+      </div>
+      <div className="space-y-2 rounded-xl border border-emerald-400/25 bg-emerald-400/5 p-3 text-[11px]">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate font-semibold">📦 {model.name}</span>
+          <span className="text-muted">
+            {t('canvas.inspector.model.version')}: {model.version}
+          </span>
+        </div>
+        {rows.map(({ key, ports }) =>
+          ports.length === 0 ? null : (
+            <div key={key}>
+              <div className="mb-1 text-muted">{t(`canvas.inspector.model.${key}`)}</div>
+              <div className="flex flex-wrap gap-1">
+                {ports.map((p) => (
+                  <span key={p.id} className="rounded-full border border-line/70 px-1.5 py-0.5 text-[10px]">
+                    {p.name} <span className="opacity-60">· {p.type}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ConfigPanel() {
   const { t } = useTranslation();
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
@@ -111,6 +160,8 @@ export function ConfigPanel() {
             {t('canvas.inspector.category')}: {t(`categories.${def.category}`)}
           </div>
         </div>
+
+        <ModelContractInfo blockId={def.id} modelId={String(config.modelId ?? '')} />
 
         {/* Последнее выполнение (DEBUG) */}
         <div>

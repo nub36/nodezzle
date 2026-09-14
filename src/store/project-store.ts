@@ -96,6 +96,10 @@ interface ProjectState {
   handleDragStop: () => void;
   setDragPort: (info: DragPortInfo | null) => void;
   selectNode: (nodeId: string | null) => void;
+  /** Выделение соединения (Этап 2, подэтап E — инспектор соединения). */
+  selectEdge: (edgeId: string | null) => void;
+  /** Удаление соединения (с попаданием в историю undo/redo). */
+  deleteEdge: (edgeId: string) => void;
   setNodeConfig: (nodeId: string, key: string, value: unknown) => void;
   setNodeLabel: (nodeId: string, label: string) => void;
   undo: () => void;
@@ -367,7 +371,28 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
 
     setDragPort: (info) => set({ dragPort: info }),
 
-    selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+    selectNode: (nodeId) =>
+      set((state) => ({
+        selectedNodeId: nodeId,
+        // Выделение узлов и рёбер — взаимоисключающие (для инспектора).
+        edges: state.edges.some((e) => e.selected)
+          ? state.edges.map((e) => ({ ...e, selected: false }))
+          : state.edges,
+      })),
+
+    selectEdge: (edgeId) =>
+      set((state) => ({
+        selectedNodeId: null,
+        edges: state.edges.map((e) => ({ ...e, selected: e.id === edgeId })),
+      })),
+
+    deleteEdge: (edgeId) => {
+      const { nodes, edges } = get();
+      if (!edges.some((e) => e.id === edgeId)) return;
+      const before = snapshotOf(nodes, edges);
+      set({ edges: edges.filter((e) => e.id !== edgeId) });
+      commit(before);
+    },
 
     setNodeConfig: (nodeId, key, value) => {
       const { nodes, edges } = get();
