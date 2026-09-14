@@ -509,6 +509,8 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         edgeId: edge.id,
         sourceNodeId: connection.source,
         targetNodeId: connection.target,
+        sourcePortId: connection.sourceHandle ?? undefined,
+        targetPortId: connection.targetHandle ?? undefined,
       });
       commit(before);
     },

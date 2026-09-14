@@ -57,6 +57,14 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
   const connectSuccess = useConnectionFxStore(
     (s) => s.success !== null && (s.success.sourceNodeId === id || s.success.targetNodeId === id),
   );
+  // Порт, который вспыхивает на этом узле (именно участвовавший в
+  // соединении; если ручки не было — подсвечиваем все порты узла).
+  const flashPortId = useConnectionFxStore((s) => {
+    if (s.success === null) return null;
+    if (s.success.sourceNodeId === id) return s.success.sourcePortId ?? 'all';
+    if (s.success.targetNodeId === id) return s.success.targetPortId ?? 'all';
+    return null;
+  });
   const readyPortId = useConnectionFxStore((s) =>
     s.hoverPort !== null && s.hoverPort.nodeId === id ? s.hoverPort.portId : null,
   );
@@ -122,7 +130,7 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
         view.active && 'port-active',
         view.ready && 'port-ready',
         view.academy && 'port-academy',
-        connectSuccess && 'port-connect-success',
+        connectSuccess && (flashPortId === 'all' || flashPortId === port.id) && 'port-connect-success',
       ),
       title: view.tooltip,
       'data-port-id': port.id,

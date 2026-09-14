@@ -30,6 +30,9 @@ export interface ConnectSuccessFx {
   edgeId: string;
   sourceNodeId: string;
   targetNodeId: string;
+  /** Порты, которые участвовали в соединении (вспыхивают именно они). */
+  sourcePortId?: string;
+  targetPortId?: string;
   /** Момент создания соединения (для диагностики/тестов). */
   at: number;
 }

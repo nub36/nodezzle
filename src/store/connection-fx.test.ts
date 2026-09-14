@@ -57,6 +57,19 @@ describe('Стор эффектов соединения', () => {
     expect(useConnectionFxStore.getState().success).toBeNull();
   });
 
+  it('вспышка несёт конкретные порты — вспыхивают именно соединённые', () => {
+    useConnectionFxStore.getState().markConnectSuccess({
+      edgeId: 'e1',
+      sourceNodeId: 'src',
+      targetNodeId: 'tgt',
+      sourcePortId: 'text',
+      targetPortId: 'value',
+    });
+    const fx = useConnectionFxStore.getState().success;
+    expect(fx?.sourcePortId).toBe('text');
+    expect(fx?.targetPortId).toBe('value');
+  });
+
   it('вспышка при установке гасит «готов к подключению»', () => {
     const s = useConnectionFxStore.getState();
     s.setHoverPort({ nodeId: 'n2', portId: 'value' });
