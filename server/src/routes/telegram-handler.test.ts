@@ -104,6 +104,9 @@ beforeEach(async () => {
       editMessageText: async () => true,
       deleteMessage: async () => true,
       answerCallbackQuery: async () => true,
+      setWebhook: async () => true,
+      getWebhookInfo: async () => ({ url: '', pendingUpdateCount: 0 }),
+      deleteWebhook: async () => true,
     }),
   });
   server = http.createServer(app.handle);

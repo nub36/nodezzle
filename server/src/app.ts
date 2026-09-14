@@ -28,6 +28,7 @@ import type { RateLimiter } from './security/rate-limit.ts';
 import type { TelegramBotMeta } from './telegram/bots.ts';
 import type { TelegramEvent } from './telegram/updates.ts';
 import { createTelegramUpdateHandler } from './telegram/handler.ts';
+import { registerWebhookManageRoutes } from './telegram/webhook-manage.ts';
 import type { TelegramTransport } from './telegram/api.ts';
 
 /** Лимит попыток входа/регистрации с одного адреса. */
@@ -85,6 +86,13 @@ export function createApp(deps: AppDeps): App {
   registerProjectRoutes(router, { ...authDeps, workspaces, projects, versions });
   registerSecretRoutes(router, { ...authDeps, workspaces, secrets });
   registerTelegramBotRoutes(router, { ...authDeps, workspaces, projects, secrets, bots });
+  registerWebhookManageRoutes(router, {
+    ...authDeps,
+    workspaces,
+    secrets,
+    bots,
+    transportFor: deps.telegramTransportFor ? (token) => deps.telegramTransportFor!(token) : undefined,
+  });
   registerWebhookRoutes(router, {
     config: deps.config,
     bots,

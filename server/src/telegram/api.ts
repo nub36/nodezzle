@@ -50,6 +50,10 @@ export interface TelegramTransport {
   editMessageText(params: { chatId: number | string; messageId: number; text: string }): Promise<boolean>;
   deleteMessage(params: { chatId: number | string; messageId: number }): Promise<boolean>;
   answerCallbackQuery(params: { callbackQueryId: string; text?: string }): Promise<boolean>;
+  /** Регистрация вебхука (только публичный HTTPS-адрес). */
+  setWebhook(params: { url: string; secretToken?: string }): Promise<boolean>;
+  getWebhookInfo(): Promise<{ url: string; pendingUpdateCount: number; lastErrorDate?: number }>;
+  deleteWebhook(): Promise<boolean>;
 }
 
 function assertSafeBaseUrl(baseUrl: string): string {
@@ -126,6 +130,28 @@ export function createTelegramApi(options: TelegramTransportOptions): TelegramTr
         callback_query_id: callbackQueryId,
         ...(text !== undefined ? { text } : {}),
       });
+      return true;
+    },
+    async setWebhook({ url, secretToken }) {
+      await call<unknown>('setWebhook', {
+        url,
+        ...(secretToken !== undefined ? { secret_token: secretToken } : {}),
+      });
+      return true;
+    },
+    async getWebhookInfo() {
+      const result = await call<{ url?: string; pending_update_count?: number; last_error_date?: number }>(
+        'getWebhookInfo',
+        {},
+      );
+      return {
+        url: result.url ?? '',
+        pendingUpdateCount: result.pending_update_count ?? 0,
+        ...(result.last_error_date !== undefined ? { lastErrorDate: result.last_error_date } : {}),
+      };
+    },
+    async deleteWebhook() {
+      await call<unknown>('deleteWebhook', {});
       return true;
     },
   };
