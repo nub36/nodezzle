@@ -6,6 +6,8 @@
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
+import type { PortDefinition, PortKind, PortType } from '@/core/types/ports';
+import { isCompatible } from '@/core/type-system/compatibility';
 
 /** MIME-тип перетаскивания детали из библиотеки на Canvas. */
 export const DND_MIME = 'application/nodezzle-block';
@@ -92,4 +94,45 @@ export function nodeMatchesQuery(
   const blockId = node.data?.blockId ?? '';
   if (blockId.toLowerCase().includes(q)) return true;
   return blockLabel(blockId).toLowerCase().includes(q);
+}
+
+/** Сведения о порте, от которого тянут соединение (для быстрой вставки). */
+export interface DragPortLike {
+  direction: 'input' | 'output';
+  kind: PortKind;
+  type: PortType;
+}
+
+/** Кандидат быстрой вставки: блок и его порт, совместимый с портом-источником. */
+export interface QuickInsertCandidate {
+  def: BlockDefinition;
+  port: PortDefinition;
+}
+
+/**
+ * Быстрая вставка (Этап 2, подэтап D): блоки с портом, совместимым
+ * с портом, от которого тянут соединение. Тянут из OUTPUT — ищем INPUT
+ * кандидата (и наоборот). Учитываются правила умных соединений.
+ */
+export function quickInsertCandidates(
+  blocks: BlockDefinition[],
+  dragPort: DragPortLike,
+): QuickInsertCandidate[] {
+  const dragged: PortDefinition = {
+    id: 'drag',
+    labelKey: '',
+    kind: dragPort.kind,
+    type: dragPort.type,
+  };
+  const candidates: QuickInsertCandidate[] = [];
+  for (const def of blocks) {
+    if (dragPort.direction === 'output') {
+      const port = def.inputs.find((p) => isCompatible(dragged, p));
+      if (port) candidates.push({ def, port });
+    } else {
+      const port = def.outputs.find((p) => isCompatible(p, dragged));
+      if (port) candidates.push({ def, port });
+    }
+  }
+  return candidates;
 }

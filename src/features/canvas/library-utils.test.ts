@@ -5,7 +5,8 @@
 
 import { describe, expect, it } from 'vitest';
 import type { BlockDefinition } from '@/core/types/blocks';
-import { decodeDnd, encodeDnd, matchesQuery, nodeMatchesQuery, pushRecent } from './library-utils';
+import { decodeDnd, encodeDnd, matchesQuery, nodeMatchesQuery, pushRecent, quickInsertCandidates } from './library-utils';
+import type { PortDefinition } from '@/core/types/ports';
 
 const def: BlockDefinition = {
   id: 'telegram.send_message',
@@ -102,5 +103,58 @@ describe('nodeMatchesQuery (поиск по схеме)', () => {
   it('ищет по локализованному названию блока', () => {
     expect(nodeMatchesQuery({ data: { blockId: 'telegram.send_message' } }, 'отправить', blockLabel)).toBe(true);
     expect(nodeMatchesQuery({ data: { blockId: 'telegram.send_message' } }, 'задержка', blockLabel)).toBe(false);
+  });
+});
+
+/** Порт-заготовка для тестов быстрой вставки. */
+const tport = (id: string, kind: 'data' | 'event' | 'error', type: string): PortDefinition => ({
+  id,
+  labelKey: id,
+  kind,
+  type,
+});
+
+const tblock = (id: string, inputs: PortDefinition[], outputs: PortDefinition[]): BlockDefinition => ({
+  id,
+  labelKey: id,
+  category: 'core',
+  inputs,
+  outputs,
+});
+
+describe('quickInsertCandidates (быстрая вставка)', () => {
+  const blocks = [
+    tblock('a.text_sink', [tport('text', 'data', 'text')], []),
+    tblock('b.any_sink', [tport('value', 'data', 'any')], []),
+    tblock('c.event_sink', [tport('ev', 'event', 'event')], []),
+    tblock('d.error_source', [], [tport('error', 'error', 'error')]),
+    tblock('e.text_source', [], [tport('text', 'data', 'text')]),
+  ];
+
+  it('от текстового OUTPUT предлагает блоки с совместимыми входами', () => {
+    const res = quickInsertCandidates(blocks, { direction: 'output', kind: 'data', type: 'text' });
+    const ids = res.map((c) => c.def.id);
+    expect(ids).toContain('a.text_sink');
+    expect(ids).toContain('b.any_sink');
+    expect(ids).not.toContain('c.event_sink');
+    expect(ids).not.toContain('d.error_source');
+  });
+
+  it('от EVENT-входа без событийных выходов кандидатов нет', () => {
+    const res = quickInsertCandidates(blocks, { direction: 'input', kind: 'event', type: 'event' });
+    expect(res.map((c) => c.def.id)).toEqual([]);
+  });
+
+  it('от ERROR-входа предлагает блоки с ошибочными выходами', () => {
+    const res = quickInsertCandidates(blocks, { direction: 'input', kind: 'error', type: 'error' });
+    const ids = res.map((c) => c.def.id);
+    expect(ids).toContain('d.error_source');
+    expect(ids).not.toContain('e.text_source');
+  });
+
+  it('кандидат получает конкретный совместимый порт', () => {
+    const res = quickInsertCandidates(blocks, { direction: 'output', kind: 'data', type: 'text' });
+    const sink = res.find((c) => c.def.id === 'a.text_sink');
+    expect(sink?.port.id).toBe('text');
   });
 });

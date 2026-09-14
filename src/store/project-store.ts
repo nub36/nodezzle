@@ -84,7 +84,8 @@ interface ProjectState {
   deleteProject: (id: string) => Promise<void>;
 
   renameProject: (name: string) => void;
-  addNode: (blockId: string, position: { x: number; y: number }, configOverrides?: Record<string, unknown>) => void;
+  /** Возвращает id созданного узла (или undefined, если блок/проект недоступны). */
+  addNode: (blockId: string, position: { x: number; y: number }, configOverrides?: Record<string, unknown>) => string | undefined;
   duplicateSelection: () => void;
   copySelection: () => void;
   pasteAt: (position: { x: number; y: number }) => void;
@@ -214,7 +215,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     addNode: (blockId, position, configOverrides) => {
       const { project, nodes } = get();
       const def = blockRegistry.get(blockId);
-      if (!project || !def) return;
+      if (!project || !def) return undefined;
       const config = { ...clone(def.defaults ?? {}), ...clone(configOverrides ?? {}) };
       // Удобство: единственный проект-модель подставляется в «Вызов модели».
       if (blockId === 'models.call' && !config.modelId && project.models.length === 1) {
@@ -235,6 +236,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       commit(before);
       // Библиотека: записываем деталь в «Недавние» (сохраняется в браузере).
       useUiStore.getState().recordRecent(blockId);
+      return node.id;
     },
 
     duplicateSelection: () => {

@@ -30,7 +30,15 @@ import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
 import { NodezzleNode } from './NodezzleNode';
 import { BlockLibrary } from './BlockLibrary';
-import { DND_MIME, decodeDnd, nodeMatchesQuery, type DndPayload } from './library-utils';
+import {
+  DND_MIME,
+  decodeDnd,
+  nodeMatchesQuery,
+  quickInsertCandidates,
+  type DndPayload,
+  type QuickInsertCandidate,
+} from './library-utils';
+import { QuickInsertMenu, QuickInsertStarter } from './QuickInsert';
 import { useUiStore } from '@/store/ui-store';
 import { ConfigPanel } from './ConfigPanel';
 import { Toolbar } from './Toolbar';
@@ -39,6 +47,7 @@ import { blockRegistry } from '@/core/registry/block-registry';
 import { isCompatible } from '@/core/type-system/compatibility';
 import { CATEGORY_COLORS } from './categoryColors';
 import type { CanvasNodeData } from '@/core/project/serialize';
+import type { DragPortInfo } from '@/store/project-store';
 
 const nodeTypes = { nodezzle: NodezzleNode };
 
@@ -133,6 +142,63 @@ function FlowCanvas() {
   );
 
   // Поиск по схеме (тулбар): неподходящие узлы приглушаются.
+  // Быстрая вставка: меню открывается, если соединение от порта
+  // отпущено на пустом месте (без подключения к другому порту).
+  const [quickInsert, setQuickInsert] = useState<{ x: number; y: number; port: DragPortInfo } | null>(null);
+  const connectFired = useRef(false);
+
+  const quickCandidates = useMemo(
+    () => (quickInsert ? quickInsertCandidates(blockRegistry.available(), quickInsert.port) : []),
+    [quickInsert],
+  );
+
+  const handleConnectTracked = useCallback(
+    (connection: Connection) => {
+      connectFired.current = true;
+      handleConnect(connection);
+    },
+    [handleConnect],
+  );
+
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      const port = useProjectStore.getState().dragPort;
+      setDragPort(null);
+      const fired = connectFired.current;
+      connectFired.current = false;
+      if (fired || !port || !wrapperRef.current) return;
+      const point =
+        'clientX' in event
+          ? { x: event.clientX, y: event.clientY }
+          : { x: event.changedTouches[0]?.clientX ?? 0, y: event.changedTouches[0]?.clientY ?? 0 };
+      const rect = wrapperRef.current.getBoundingClientRect();
+      // Меню не должно вылезать за пределы холста.
+      const x = Math.min(Math.max(point.x - rect.left, 8), Math.max(rect.width - 256, 8));
+      const y = Math.min(Math.max(point.y - rect.top, 8), Math.max(rect.height - 320, 8));
+      setQuickInsert({ x, y, port });
+    },
+    [setDragPort],
+  );
+
+  // Выбор детали из меню: создать рядом и автоматически подключить.
+  const handleQuickPick = useCallback(
+    (candidate: QuickInsertCandidate) => {
+      if (!quickInsert) return;
+      const flowPos = screenToFlowPosition({ x: quickInsert.x, y: quickInsert.y });
+      const newId = addNode(candidate.def.id, { x: flowPos.x + 30, y: flowPos.y - 20 });
+      if (newId) {
+        const port = quickInsert.port;
+        const connection: Connection =
+          port.direction === 'output'
+            ? { source: port.nodeId, sourceHandle: port.portId, target: newId, targetHandle: candidate.port.id }
+            : { source: newId, sourceHandle: candidate.port.id, target: port.nodeId, targetHandle: port.portId };
+        handleConnect(connection);
+      }
+      setQuickInsert(null);
+    },
+    [quickInsert, addNode, handleConnect, screenToFlowPosition],
+  );
+
   const displayNodes = useMemo(() => {
     const q = schemaQuery.trim();
     if (q === '') return nodes;
@@ -265,14 +331,17 @@ function FlowCanvas() {
         nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
-        onConnect={handleConnect}
+        onConnect={handleConnectTracked}
         isValidConnection={isValidConnection}
         onConnectStart={onConnectStart}
-        onConnectEnd={() => setDragPort(null)}
+        onConnectEnd={onConnectEnd}
         onNodeDragStart={handleDragStart}
         onNodeDragStop={handleDragStop}
         onNodeClick={(_e, n) => selectNode(n.id)}
-        onPaneClick={() => selectNode(null)}
+        onPaneClick={() => {
+          selectNode(null);
+          setQuickInsert(null);
+        }}
         fitView
         minZoom={0.15}
         maxZoom={2.2}
@@ -308,15 +377,22 @@ function FlowCanvas() {
         </div>
       )}
 
-      {/* Подсказка для пустой схемы */}
+      {/* Быстрая вставка на пустой схеме */}
       {isEmpty && (
         <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-          <div className="glass max-w-sm rounded-2xl px-8 py-6 text-center">
-            <div className="mb-2 text-3xl">🧩</div>
-            <div className="mb-1 text-sm font-bold">{t('canvas.empty.title')}</div>
-            <div className="text-xs leading-relaxed text-muted">{t('canvas.empty.lead')}</div>
-          </div>
+          <QuickInsertStarter onInsert={onInsertAtCenter} />
         </div>
+      )}
+
+      {/* Быстрая вставка от порта (только совместимые детали) */}
+      {quickInsert && (
+        <QuickInsertMenu
+          candidates={quickCandidates}
+          x={quickInsert.x}
+          y={quickInsert.y}
+          onPick={handleQuickPick}
+          onClose={() => setQuickInsert(null)}
+        />
       )}
     </div>
   );
