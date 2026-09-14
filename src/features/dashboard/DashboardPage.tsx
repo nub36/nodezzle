@@ -11,6 +11,7 @@ import { useProjectStore } from '@/store/project-store';
 import { formatDateRu } from '@/lib/utils';
 import { TelegramBotPanel } from '@/features/telegram/TelegramBotPanel';
 import { AuditLogSection } from '@/features/history/AuditLog';
+import { OnboardingModal } from '@/features/academy/OnboardingModal';
 
 const KIND_ICONS: Record<ProjectKind, string> = {
   telegram: '🤖',
@@ -89,6 +90,7 @@ export function DashboardPage() {
 
   return (
     <div className="aurora noise min-h-screen">
+      <OnboardingModal />
       <div className="aurora-blob aurora-blob--blue" />
       <div className="aurora-blob aurora-blob--purple" />
 
