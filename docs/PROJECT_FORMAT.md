@@ -30,7 +30,10 @@
     "edges": [
       { "id": "uuid", "source": "nodeId", "sourcePort": "portId", "target": "nodeId", "targetPort": "portId" }
     ],
-    "viewport": { "x": 0, "y": 0, "zoom": 1 }   // опционально
+    "viewport": { "x": 0, "y": 0, "zoom": 1 },  // опционально
+    "groups": [                                  // опционально (Этап 2, F ч. 2)
+      { "id": "uuid", "label": "Оплата", "nodeIds": ["uuid1", "uuid2"] }
+    ]
   },
   "models": [
     {
@@ -53,7 +56,7 @@
 }
 ```
 
-**CanvasDocument** (общий для схемы проекта и схем моделей): `id, name, nodes[], edges[], viewport?`. Узлы и соединения валидируются (min length, наличие blockId/portId).
+**CanvasDocument** (общий для схемы проекта и схем моделей): `id, name, nodes[], edges[], viewport?, groups?`. Узлы и соединения валидируются (min length, наличие blockId/portId). `groups` — опциональные визуальные рамки: `{ id, label?, nodeIds[] }` (Этап 2, подэтап F часть 2); старые проекты без поля остаются валидными.
 
 ## Сериализация React Flow ↔ формат
 
@@ -83,7 +86,7 @@ interface ProjectStorage {
 
 ## Undo/Redo
 
-Явная история снапшотов canvas (до 100 состояний) в `project-store`: undo/redo (`Ctrl+Z` / `Ctrl+Shift+Z`), дубликаты/копирование/вставка, удаление. Снапшоты — канонические данные (nodes/edges), не UI-состояние.
+Явная история снапшотов canvas (до 100 состояний) в `project-store`: undo/redo (`Ctrl+Z` / `Ctrl+Shift+Z`), дубликаты/копирование/вставка, удаление. Снапшоты — канонические данные (nodes/edges/groups), не UI-состояние.
 
 ## Версии и миграции (задел)
 

@@ -183,4 +183,26 @@ describe('extractModel — создание модели из выделения
     expect(result.value.model.canvas.nodes.some((n) => n.blockId === 'note.sticky')).toBe(false);
     expect(result.value.canvas.nodes.some((n) => n.blockId === 'note.sticky')).toBe(true);
   });
+
+  it('группы внешнего холста обрезаются: выделенные детали уходят, пустые рамки исчезают', () => {
+    const canvas: CanvasDocument = {
+      ...makeCanvas(
+        [node('a', 'test.mid'), node('b', 'test.mid', 200), node('k', 'test.sink', 400)],
+        [edge('e1', 'a', 'out', 'b', 'in'), edge('e2', 'b', 'out', 'k', 'in')],
+      ),
+      groups: [
+        { id: 'g1', nodeIds: ['a', 'b'] }, // обе уходят внутрь модели → рамка исчезает
+        { id: 'g2', label: 'Хвост', nodeIds: ['b', 'k'] }, // остаётся только 'k'
+      ],
+    };
+    const result = baseExtract(canvas, ['a', 'b']);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const groups = result.value.canvas.groups ?? [];
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe('g2');
+    expect(groups[0].nodeIds).toEqual(['k']);
+    // Внутри модели рамок нет.
+    expect(result.value.model.canvas.groups ?? []).toHaveLength(0);
+  });
 });

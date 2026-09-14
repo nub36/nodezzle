@@ -44,6 +44,7 @@ import { useUiStore } from '@/store/ui-store';
 import { InspectorPanel } from './InspectorPanel';
 import { Toolbar } from './Toolbar';
 import { CreateModelDialog } from './CreateModelDialog';
+import { GroupFrames } from './GroupFrames';
 import { DebugPanel } from './DebugPanel';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { isCompatible } from '@/core/type-system/compatibility';
@@ -134,6 +135,9 @@ function FlowCanvas() {
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const pasteAt = useProjectStore((s) => s.pasteAt);
+  const groups = useProjectStore((s) => s.groups);
+  const groupSelection = useProjectStore((s) => s.groupSelection);
+  const ungroupGroup = useProjectStore((s) => s.ungroupGroup);
 
   const flowEdges = useExecutionStore((s) => s.flowEdges);
   const effectsEnabled = useUiStore((s) => s.effectsEnabled);
@@ -170,13 +174,30 @@ function FlowCanvas() {
   const ctxItems = useMemo<ContextMenuItem[]>(() => {
     if (!ctxMenu) return [];
     const noteAt = () => addNote(screenToFlowPosition({ x: ctxMenu.x, y: ctxMenu.y }));
+    const selectedCount = nodes.filter((n) => n.selected).length;
     if (!ctxMenu.nodeId) {
-      return [{ label: t('canvas.context.addNote'), icon: '📝', onClick: noteAt }];
+      const items = [{ label: t('canvas.context.addNote'), icon: '📝', onClick: noteAt }];
+      if (selectedCount >= 2) {
+        items.push({ label: t('canvas.context.group'), icon: '▣', onClick: () => groupSelection() });
+      }
+      return items;
     }
     const nodeId = ctxMenu.nodeId;
     const downEdge = edges.find((e) => e.source === nodeId);
     const upEdge = edges.find((e) => e.target === nodeId);
-    return [
+    const nodeGroup = groups.find((g) => g.nodeIds.includes(nodeId));
+    const items: ContextMenuItem[] = [];
+    if (nodeGroup) {
+      items.push({
+        label: t('canvas.context.ungroup'),
+        icon: '⛶',
+        onClick: () => ungroupGroup(nodeGroup.id),
+      });
+    }
+    if (selectedCount >= 2) {
+      items.push({ label: t('canvas.context.group'), icon: '▣', onClick: () => groupSelection() });
+    }
+    return [...items, ...([
       {
         label: t('canvas.context.duplicate'),
         icon: '⧉',
@@ -223,8 +244,8 @@ function FlowCanvas() {
           deleteSelection();
         },
       },
-    ];
-  }, [ctxMenu, edges, t, addNote, selectNode, duplicateSelection, copySelection, disconnectNode, deleteSelection, screenToFlowPosition]);
+    ] as ContextMenuItem[])];
+  }, [ctxMenu, nodes, edges, groups, t, addNote, selectNode, duplicateSelection, copySelection, disconnectNode, deleteSelection, screenToFlowPosition, groupSelection, ungroupGroup]);
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: { id: string }) => {
@@ -510,6 +531,9 @@ function FlowCanvas() {
         />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
+
+      {/* Рамки групп (Этап 2, подэтап F часть 2) */}
+      <GroupFrames />
 
       {/* Библиотека деталей (вкладки, поиск, избранное, недавние, модели) */}
       <div className="pointer-events-none absolute bottom-3 left-3 top-3 z-10">

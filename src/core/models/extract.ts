@@ -300,11 +300,23 @@ export function extractModel(options: ExtractModelOptions): ExtractModelResult {
     });
   }
 
+  // Группы (рамки): выделенные детали ушли внутрь модели, поэтому из
+  // групп внешнего холста исключаем их. Пустые группы удаляем.
+  const outerIds = new Set(outerNodes.map((n) => n.id));
+  const outerGroups = (canvas.groups ?? [])
+    .map((g) => ({ ...g, nodeIds: g.nodeIds.filter((id) => outerIds.has(id)) }))
+    .filter((g) => g.nodeIds.length > 0);
+
   return {
     ok: true,
     value: {
       model,
-      canvas: { ...canvas, nodes: outerNodes, edges: outerEdges },
+      canvas: {
+        ...canvas,
+        nodes: outerNodes,
+        edges: outerEdges,
+        groups: outerGroups.length > 0 ? outerGroups : undefined,
+      },
       callNodeId,
     },
   };

@@ -44,12 +44,25 @@ export const canvasEdgeSchema = z.object({
 });
 export type CanvasEdge = z.infer<typeof canvasEdgeSchema>;
 
+/** Визуальная группа деталей (рамка на холсте), Этап 2 подэтап F часть 2.
+ * Поле опционально — старые проекты остаются валидными без миграции. */
+export const canvasGroupSchema = z.object({
+  id: z.string().min(1),
+  /** Название группы (показывается на рамке). */
+  label: z.string().optional(),
+  /** id деталей-участников (позиции хранят сами детали). */
+  nodeIds: z.array(z.string().min(1)),
+});
+export type CanvasGroup = z.infer<typeof canvasGroupSchema>;
+
 export const canvasDocumentSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   nodes: z.array(canvasNodeSchema),
   edges: z.array(canvasEdgeSchema),
   viewport: viewportSchema.optional(),
+  /** Визуальные группы (рамки) — опционально, старые проекты валидны. */
+  groups: z.array(canvasGroupSchema).optional(),
 });
 export type CanvasDocument = z.infer<typeof canvasDocumentSchema>;
 

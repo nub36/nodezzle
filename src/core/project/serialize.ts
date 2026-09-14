@@ -63,6 +63,7 @@ export function flowToCanvas(
   id: string,
   name: string,
   viewport?: CanvasDocument['viewport'],
+  groups?: CanvasDocument['groups'],
 ): CanvasDocument {
   const canvasNodes: CanvasNode[] = nodes.map((n) => ({
     id: n.id,
@@ -80,5 +81,13 @@ export function flowToCanvas(
       target: e.target,
       targetPort: e.targetHandle as string,
     }));
-  return { id, name, nodes: canvasNodes, edges: canvasEdges, ...(viewport ? { viewport } : {}) };
+  return {
+    id,
+    name,
+    nodes: canvasNodes,
+    edges: canvasEdges,
+    ...(viewport ? { viewport } : {}),
+    // Группы (рамки) — опциональное поле формата (Этап 2, подэтап F ч. 2).
+    ...(groups && groups.length > 0 ? { groups } : {}),
+  };
 }

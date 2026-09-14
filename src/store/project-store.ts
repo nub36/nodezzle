@@ -18,7 +18,7 @@ import i18n from 'i18next';
 import { create } from 'zustand';
 import { projectStorage } from '@/core/project/storage';
 import { canvasToFlow, flowToCanvas, type CanvasNodeData } from '@/core/project/serialize';
-import type { NodezzleProject, ProjectKind, ProjectSummary } from '@/core/project/schema';
+import type { CanvasGroup, NodezzleProject, ProjectKind, ProjectSummary } from '@/core/project/schema';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { portColor } from '@/core/type-system/compatibility';
 import type { PortKind, PortType } from '@/core/types/ports';
@@ -41,6 +41,8 @@ export interface DragPortInfo {
 interface Snapshot {
   nodes: NodezzleFlowNode[];
   edges: Edge[];
+  /** Визуальные группы активного холста (Этап 2, подэтап F ч. 2). */
+  groups: CanvasGroup[];
 }
 
 interface ClipboardData {
@@ -55,13 +57,6 @@ let dragStartSnapshot: Snapshot | null = null;
 const clone = <T,>(value: T): T =>
   typeof structuredClone === 'function' ? structuredClone(value) : (JSON.parse(JSON.stringify(value)) as T);
 
-const snapshotOf = (nodes: NodezzleFlowNode[], edges: Edge[]): Snapshot => ({
-  nodes: clone(nodes),
-  edges: clone(edges),
-});
-
-const snapshotsEqual = (a: Snapshot, b: Snapshot): boolean =>
-  JSON.stringify(a.nodes) === JSON.stringify(b.nodes) && JSON.stringify(a.edges) === JSON.stringify(b.edges);
 
 interface ProjectState {
   project: NodezzleProject | null;
@@ -126,9 +121,36 @@ interface ProjectState {
   /** Синхронный flush для beforeunload. */
   flushSave: () => void;
   touch: () => void;
+
+  /** Визуальные группы (рамки) активного холста (Этап 2, подэтап F ч. 2). */
+  groups: CanvasGroup[];
+  /** Сгруппировать выделенные детали в новую рамку. Возвращает id группы или null. */
+  groupSelection: () => string | null;
+  /** Убрать рамку группы (детали остаются на холсте). */
+  ungroupGroup: (groupId: string) => void;
+  /** Переименовать группу. */
+  renameGroup: (groupId: string, label: string) => void;
+  /** Выделить набор деталей (клик по рамке группы). */
+  selectNodeIds: (ids: string[]) => void;
+  /** Перетаскивание группы рамкой: начать / применить позиции / завершить с историей. */
+  beginGroupDrag: () => void;
+  moveGroupTo: (groupId: string, positions: Record<string, { x: number; y: number }>) => void;
+  endGroupDrag: () => void;
 }
 
 export const useProjectStore = create<ProjectState>()((set, get) => {
+  /** Снимок узлов/рёбер/групп для истории (группы берутся из состояния). */
+  const snapshotOf = (nodes: NodezzleFlowNode[], edges: Edge[]): Snapshot => ({
+    nodes: clone(nodes),
+    edges: clone(edges),
+    groups: clone(get().groups),
+  });
+
+  const snapshotsEqual = (a: Snapshot, b: Snapshot): boolean =>
+    JSON.stringify(a.nodes) === JSON.stringify(b.nodes) &&
+    JSON.stringify(a.edges) === JSON.stringify(b.edges) &&
+    JSON.stringify(a.groups) === JSON.stringify(b.groups);
+
   const scheduleSave = () => {
     set({ saveState: 'saving' });
     if (saveTimer) clearTimeout(saveTimer);
@@ -154,13 +176,14 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     activeModelId: string | null,
     nodes: NodezzleFlowNode[],
     edges: Edge[],
+    groups: CanvasGroup[],
   ): NodezzleProject => {
     if (activeModelId) {
       return {
         ...project,
         models: project.models.map((m) =>
           m.id === activeModelId
-            ? { ...m, canvas: flowToCanvas(nodes, edges, m.canvas.id, m.canvas.name), updatedAt: Date.now() }
+            ? { ...m, canvas: flowToCanvas(nodes, edges, m.canvas.id, m.canvas.name, m.canvas.viewport, groups), updatedAt: Date.now() }
             : m,
         ),
         meta: { ...project.meta, updatedAt: Date.now() },
@@ -168,7 +191,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     }
     return {
       ...project,
-      canvas: flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name),
+      canvas: flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name, project.canvas.viewport, groups),
       meta: { ...project.meta, updatedAt: Date.now() },
     };
   };
@@ -177,7 +200,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     const { project, nodes, edges, activeModelId } = get();
     if (!project) return;
     try {
-      const updated = withActiveCanvas(project, activeModelId, nodes, edges);
+      const updated = withActiveCanvas(project, activeModelId, nodes, edges, get().groups);
       await projectStorage.save(updated);
       set({ project: updated, saveState: 'saved', savedAt: updated.meta.updatedAt });
     } catch {
@@ -197,6 +220,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     dragPort: null,
     past: [],
     future: [],
+    groups: [],
 
     loadById: async (id) => {
       set({ loading: true });
@@ -210,6 +234,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         project,
         nodes,
         edges,
+        groups: project.canvas.groups ?? [],
         past: [],
         future: [],
         loading: false,
@@ -226,13 +251,14 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       const model = project.models.find((m) => m.id === modelId);
       if (!model) return;
       // Сначала сохраняем текущий документ (холст проекта или другую модель).
-      const written = withActiveCanvas(project, activeModelId, nodes, edges);
+      const written = withActiveCanvas(project, activeModelId, nodes, edges, get().groups);
       const inner = canvasToFlow(model.canvas);
       set({
         project: written,
         activeModelId: modelId,
         nodes: inner.nodes,
         edges: inner.edges,
+        groups: model.canvas.groups ?? [],
         past: [],
         future: [],
         selectedNodeId: null,
@@ -243,13 +269,14 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     closeModel: () => {
       const { project, nodes, edges, activeModelId } = get();
       if (!project || activeModelId === null) return;
-      const written = withActiveCanvas(project, activeModelId, nodes, edges);
+      const written = withActiveCanvas(project, activeModelId, nodes, edges, get().groups);
       const outer = canvasToFlow(written.canvas);
       set({
         project: written,
         activeModelId: null,
         nodes: outer.nodes,
         edges: outer.edges,
+        groups: written.canvas.groups ?? [],
         past: [],
         future: [],
         selectedNodeId: null,
@@ -473,9 +500,14 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       if (selected.length === 0) return;
       const ids = new Set(selected.map((n) => n.id));
       const before = snapshotOf(nodes, edges);
+      // Из групп удаляем стёртые детали; опустевшие рамки исчезают.
+      const groups = get().groups
+        .map((g) => ({ ...g, nodeIds: g.nodeIds.filter((id) => !ids.has(id)) }))
+        .filter((g) => g.nodeIds.length > 0);
       set({
         nodes: nodes.filter((n) => !ids.has(n.id)),
         edges: edges.filter((e) => !ids.has(e.source) && !ids.has(e.target)),
+        groups,
         selectedNodeId: null,
       });
       commit(before);
@@ -522,7 +554,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         : project.canvas;
       if (!activeDoc) return 'ERR_MODEL_EXTRACT_EMPTY';
 
-      const doc = flowToCanvas(nodes, edges, activeDoc.id, activeDoc.name, activeDoc.viewport);
+      const doc = flowToCanvas(nodes, edges, activeDoc.id, activeDoc.name, activeDoc.viewport, get().groups);
       const result = extractModel({
         canvas: doc,
         selectedNodeIds: selectedIds,
@@ -560,6 +592,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         project: finalProject,
         nodes: flow.nodes.map((n) => ({ ...n, selected: n.id === result.value.callNodeId })),
         edges: coloredEdges,
+        groups: result.value.canvas.groups ?? [],
         selectedNodeId: result.value.callNodeId,
       });
       commit(before);
@@ -611,6 +644,73 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       commit(before);
     },
 
+    // --- Группы (рамки): Этап 2, подэтап F часть 2 ---
+    groupSelection: () => {
+      const { nodes, groups } = get();
+      const selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
+      if (selectedIds.length < 2) return null;
+      const before = snapshotOf(nodes, get().edges);
+      const memberSet = new Set(selectedIds);
+      // Деталь принадлежит максимум одной группе.
+      const cleaned = groups
+        .map((g) => ({ ...g, nodeIds: g.nodeIds.filter((id) => !memberSet.has(id)) }))
+        .filter((g) => g.nodeIds.length > 0);
+      const group: CanvasGroup = {
+        id: uid(),
+        label: `${i18n.t('canvas.group.defaultName')} ${cleaned.length + 1}`,
+        nodeIds: selectedIds,
+      };
+      set({ groups: [...cleaned, group] });
+      commit(before);
+      return group.id;
+    },
+
+    ungroupGroup: (groupId) => {
+      const { nodes, edges, groups } = get();
+      if (!groups.some((g) => g.id === groupId)) return;
+      const before = snapshotOf(nodes, edges);
+      set({ groups: groups.filter((g) => g.id !== groupId) });
+      commit(before);
+    },
+
+    renameGroup: (groupId, label) => {
+      const { nodes, edges, groups } = get();
+      if (!groups.some((g) => g.id === groupId) || !label.trim()) return;
+      const before = snapshotOf(nodes, edges);
+      set({ groups: groups.map((g) => (g.id === groupId ? { ...g, label: label.trim() } : g)) });
+      commit(before);
+    },
+
+    selectNodeIds: (ids) => {
+      const idSet = new Set(ids);
+      set({
+        nodes: get().nodes.map((n) => ({ ...n, selected: idSet.has(n.id) })),
+        selectedNodeId: ids[0] ?? null,
+      });
+    },
+
+    beginGroupDrag: () => {
+      dragStartSnapshot = snapshotOf(get().nodes, get().edges);
+    },
+
+    moveGroupTo: (groupId, positions) => {
+      const group = get().groups.find((g) => g.id === groupId);
+      if (!group) return;
+      const memberSet = new Set(group.nodeIds);
+      set({
+        nodes: get().nodes.map((n) =>
+          memberSet.has(n.id) && positions[n.id] ? { ...n, position: { ...positions[n.id] } } : n,
+        ),
+      });
+    },
+
+    endGroupDrag: () => {
+      const before = dragStartSnapshot;
+      dragStartSnapshot = null;
+      if (!before) return;
+      commit(before);
+    },
+
     undo: () => {
       const { past, future, nodes, edges } = get();
       const prev = past[past.length - 1];
@@ -619,6 +719,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       set({
         nodes: prev.nodes,
         edges: prev.edges,
+        groups: prev.groups,
         past: past.slice(0, -1),
         future: [...future, current].slice(-100),
         selectedNodeId: null,
@@ -634,6 +735,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       set({
         nodes: next.nodes,
         edges: next.edges,
+        groups: next.groups,
         future: future.slice(0, -1),
         past: [...past, current].slice(-100),
         selectedNodeId: null,
@@ -653,7 +755,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     flushSave: () => {
       const { project, nodes, edges, activeModelId } = get();
       if (!project) return;
-      const updated = withActiveCanvas(project, activeModelId, nodes, edges);
+      const updated = withActiveCanvas(project, activeModelId, nodes, edges, get().groups);
       void projectStorage.save(updated);
     },
 
