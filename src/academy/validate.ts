@@ -30,6 +30,9 @@ function blockIdsOfStep(step: LessonStep): string[] {
     case 'select-block':
     case 'configure':
       return [step.blockId];
+    case 'run':
+    case 'send-simulator-message':
+      return step.expectedOutputs?.map((output) => output.blockId) ?? [];
     case 'connect':
       return [step.fromBlockId, step.toBlockId];
     default:
@@ -66,6 +69,9 @@ export function validateLesson(
       if (!registry.has(blockId)) {
         errors.push(`${lesson.id}:${step.id}: блок «${blockId}» не найден в реестре`);
       }
+    }
+    if ((step.kind === 'run' || step.kind === 'send-simulator-message') && step.expectedOutputs?.length === 0) {
+      errors.push(`${lesson.id}:${step.id}: ожидаемые результаты не должны быть пустым списком`);
     }
     if (step.kind === 'open-debug' && step.tab !== undefined && !DEBUG_PANEL_TABS.includes(step.tab)) {
       errors.push(`${lesson.id}:${step.id}: неизвестная вкладка отладки «${step.tab}»`);

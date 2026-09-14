@@ -81,11 +81,20 @@ export interface ConfigureStep extends StepBase {
   notEmpty?: boolean;
 }
 
+/** Результат, который должен появиться в последнем запуске, а не просто его статус. */
+export interface RunOutputExpectation {
+  blockId: string;
+  portId: string;
+  /** Не задано — достаточно значения; задано — требуется точное совпадение. */
+  equals?: unknown;
+}
+
 /** Запустить схему (проверяется по последнему выполнению). */
 export interface RunStep extends StepBase {
   kind: 'run';
   /** 'success' — успешно; 'finished' — любое завершённое. */
   require?: 'success' | 'finished';
+  expectedOutputs?: RunOutputExpectation[];
 }
 
 /** Отправить сообщение через симулятор и запустить. */
@@ -94,6 +103,7 @@ export interface SendSimulatorMessageStep extends StepBase {
   source: 'telegram' | 'web';
   /** Текст симулятора должен содержать подстроку (необязательно). */
   textContains?: string;
+  expectedOutputs?: RunOutputExpectation[];
 }
 
 /** Выбрать деталь на холсте. */
@@ -192,7 +202,13 @@ export interface AcademySnapshot {
   /** Экземпляр выбранного узла на холсте (для событий/диагностики). */
   selectedNodeId?: string | null;
   /** Последнее завершённое выполнение (если было). */
-  lastRun?: { status: string; source?: string; at: number } | null;
+  lastRun?: {
+    status: string;
+    source?: string;
+    at: number;
+    /** Только результаты этого исполнения. Не настройки и не история старого запуска. */
+    results?: Array<{ nodeId: string; blockId: string; status: string; outputs: Record<string, unknown> }>;
+  } | null;
   /** Сколько сообщений бот отправил в outbox за текущую сессию. */
   outboxCount?: number;
   debugOpen?: boolean;

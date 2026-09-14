@@ -52,12 +52,22 @@ export function buildAcademySnapshot(): AcademySnapshot {
     selectedNodeId: project.selectedNodeId,
     lastRun:
       lastRecord !== undefined
-        ? { status: lastRecord.status, at: lastRecord.at, source: tutorial.lastRunSource ?? undefined }
+        ? {
+          status: lastRecord.status,
+          at: lastRecord.at,
+          source: lastRecord.source ?? tutorial.lastRunSource ?? undefined,
+          results: !execution.running && execution.nodeInfoRunId === lastRecord.id
+            ? project.nodes.flatMap((node) => {
+                const info = execution.nodeInfo[node.id];
+                return info ? [{ nodeId: node.id, blockId: node.data.blockId, status: info.status, outputs: info.outputs }] : [];
+              })
+            : undefined,
+        }
         : null,
     outboxCount: execution.outbox.length,
     debugOpen: tutorial.debugOpen,
     debugTab: execution.panelTab,
     route: typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '',
-    simulatorText: tutorial.lastSimulatorText ?? undefined,
+    simulatorText: lastRecord?.simulatorText ?? tutorial.lastSimulatorText ?? undefined,
   };
 }

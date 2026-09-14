@@ -1,43 +1,7 @@
 /** 07B: проходим практику через UI и проверяем результат, а не только индекс шага. */
 import { expect, test, type Page } from '@playwright/test';
 import { connectPorts, moveNode, port } from './helpers';
-
-async function startLesson(page: Page, lessonId: string) {
-  await page.addInitScript(() => {
-    if (sessionStorage.getItem('practice-initialized')) return;
-    const done = { status: 'completed', stepIndex: 9, startedAt: 1, completedAt: 2 };
-    localStorage.setItem('nodezzle-academy-v1', JSON.stringify({
-      lessons: { 'intro-what': done, 'intro-canvas': done, 'basics-ports': done, 'basics-chain': done },
-      onboarding: { done: true, choice: 'explore' },
-    }));
-    sessionStorage.setItem('practice-initialized', '1');
-  });
-  await page.goto('/#/academy');
-  await page.getByTestId(`lesson-card-${lessonId}`).click();
-  await page.getByTestId('lesson-start').click();
-  await step(page, 'about');
-  await page.getByTestId('tutorial-ack').click();
-}
-
-async function step(page: Page, id: string) {
-  await expect(page.getByTestId('tutorial-card')).toHaveAttribute('data-step-id', id);
-}
-
-async function add(page: Page, id: string) {
-  await page.getByTestId('library-search').fill(id);
-  await page.getByTestId(`library-item-${id}`).click();
-  const node = page.getByTestId(`canvas-node-${id}`);
-  await expect(node).toBeVisible();
-  return node;
-}
-
-async function completed(page: Page, lessonId: string) {
-  await expect(page.getByTestId('tutorial-finished')).toBeVisible();
-  await page.getByTestId('tutorial-to-academy').click();
-  await expect(page.getByTestId(`lesson-card-${lessonId}`)).toContainText('100%');
-  await page.reload();
-  await expect(page.getByTestId(`lesson-card-${lessonId}`)).toContainText('100%');
-}
+import { startLesson, step, add, completed } from './lesson-helpers';
 
 async function buildConverterLesson(page: Page) {
   await startLesson(page, 'data-converters');
@@ -101,6 +65,8 @@ test('эхо-бот: два нужных соединения, ответ с т�
   // Даже совместимый Число → Число не равен требуемому идентификатору чата.
   await connectPorts(page, port(trigger, 'output', 'user_id'), port(send, 'input', 'chat_id'));
   await step(page, 'connect-chat');
+  await page.getByTitle('Отменить (Ctrl+Z)').click();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(1);
   await connectPorts(page, port(trigger, 'output', 'chat_id'), port(send, 'input', 'chat_id'));
   await step(page, 'send');
   const message = 'Привет, NODEZZLE! 42 — проверка эхо.';

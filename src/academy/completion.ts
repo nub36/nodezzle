@@ -6,7 +6,7 @@
  * проверить автоматически (состав схемы, соединения, запуск, ответы).
  */
 
-import type { AcademySnapshot, LessonStep } from './types';
+import type { AcademySnapshot, LessonStep, RunOutputExpectation } from './types';
 
 const FINISHED_STATUSES = new Set(['success', 'error', 'stopped', 'timeout']);
 
@@ -40,6 +40,18 @@ function hasConnection(snapshot: AcademySnapshot, step: {
     }
     return true;
   });
+}
+
+/** Проверяем реальные выходы успешно исполненных деталей. Ложные/нулевые значения допустимы. */
+function hasExpectedOutputs(snapshot: AcademySnapshot, expected: RunOutputExpectation[] | undefined): boolean {
+  if (expected === undefined) return true;
+  return expected.every((requirement) => snapshot.lastRun?.results?.some((result) => {
+    if (result.blockId !== requirement.blockId || result.status !== 'success') return false;
+    if (!Object.hasOwn(result.outputs, requirement.portId)) return false;
+    const value = result.outputs[requirement.portId];
+    if (value === undefined) return false;
+    return requirement.equals === undefined || JSON.stringify(value) === JSON.stringify(requirement.equals);
+  }) === true);
 }
 
 /**
@@ -76,6 +88,7 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot, stepSt
       const run = snapshot.lastRun;
       if (run === undefined || run === null) return false;
       if (run.at < stepStartedAt) return false; // старый запуск не в счёт
+      if (!hasExpectedOutputs(snapshot, step.expectedOutputs)) return false;
       if (step.require === 'finished') return FINISHED_STATUSES.has(run.status);
       return run.status === 'success';
     }
@@ -85,6 +98,7 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot, stepSt
       if (run.at < stepStartedAt) return false; // старый запуск не в счёт
       if (run.status !== 'success') return false;
       if (run.source !== step.source) return false;
+      if (!hasExpectedOutputs(snapshot, step.expectedOutputs)) return false;
       if (step.textContains !== undefined) {
         const text = typeof snapshot.simulatorText === 'string' ? snapshot.simulatorText : '';
         if (!text.toLowerCase().includes(step.textContains.toLowerCase())) return false;

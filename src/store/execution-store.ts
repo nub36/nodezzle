@@ -30,6 +30,9 @@ export interface SimulatorPayload {
 }
 
 export interface ExecutionHistoryRecord {
+  /** Фактический источник и текст на момент запуска (не текущие поля формы). */
+  source?: TriggerPayload['source'];
+  simulatorText?: string;
   id: string;
   at: number;
   status: ExecutionStatus;
@@ -42,6 +45,8 @@ interface ExecutionState {
   running: boolean;
   nodeStates: Record<string, NodeExecutionStatus>;
   nodeInfo: Record<string, NodeRunInfo>;
+  /** Какой записи истории принадлежат текущие результаты; null во время запуска/сброса. */
+  nodeInfoRunId: string | null;
   logs: LogEntry[];
   outbox: TelegramOutMessage[];
   /** Эхо пользовательского сообщения симулятора (для демо-чата). */
@@ -111,6 +116,10 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
     if (!project) return;
 
     const doc = flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name, undefined, groups);
+    const source = triggerPayload.source;
+    const simulatorText = source === 'telegram'
+      ? triggerPayload.telegram?.text
+      : JSON.stringify(triggerPayload.web ?? {});
     const cancel = { cancelled: false };
 
     set({
@@ -118,6 +127,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       status: 'running',
       nodeStates: {},
       nodeInfo: {},
+      nodeInfoRunId: null,
       logs: [],
       outbox: [],
       flowEdges: [],
@@ -143,6 +153,8 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
 
     const record: ExecutionHistoryRecord = {
       id: uid(),
+      source,
+      simulatorText,
       at: Date.now(),
       status: result.status,
       durationMs: result.durationMs,
@@ -153,6 +165,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       running: false,
       status: result.status,
       nodeInfo: result.nodeRuns,
+      nodeInfoRunId: record.id,
       history: [record, ...s.history].slice(0, 30),
       cancelRef: null,
     }));
@@ -163,6 +176,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
   running: false,
   nodeStates: {},
   nodeInfo: {},
+  nodeInfoRunId: null,
   logs: [],
   outbox: [],
   chatEcho: null,
@@ -206,6 +220,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       running: false,
       nodeStates: {},
       nodeInfo: {},
+      nodeInfoRunId: null,
       logs: [],
       outbox: [],
       chatEcho: null,

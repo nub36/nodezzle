@@ -64,6 +64,16 @@ function deepValidateStep(
     errors.push(`${at}: шаг «${step.kind}» требует холст, но урок идёт без песочницы`);
   }
 
+  if (step.kind === 'run' || step.kind === 'send-simulator-message') {
+    for (const output of step.expectedOutputs ?? []) {
+      const def = registry.get(output.blockId);
+      if (def === undefined) errors.push(`${at}: деталь результата «${output.blockId}» не найдена`);
+      else if (!portIds(def, 'out').has(output.portId)) {
+        errors.push(`${at}: у детали «${output.blockId}» нет выходного порта результата «${output.portId}»`);
+      }
+    }
+  }
+
   switch (step.kind) {
     case 'open-page': {
       if (!KNOWN_ROUTES.some((r) => step.route.startsWith(r))) {

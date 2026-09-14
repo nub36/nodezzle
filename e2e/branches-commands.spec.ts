@@ -1,0 +1,139 @@
+/** 07B2: результаты ветвления и команды важнее общего статуса «Успешно». */
+import { expect, test, type Page } from '@playwright/test';
+import { add, completed, startLesson, step } from './lesson-helpers';
+import { connectPorts, moveNode, port } from './helpers';
+
+test('условие: ложная ветка не завершает задание; истинная передаёт сообщение в лог', async ({ page }) => {
+  await startLesson(page, 'logic-condition');
+  const trigger = await add(page, 'telegram.message_received');
+  await step(page, 'add-condition');
+  const condition = await add(page, 'logic.condition');
+  await step(page, 'set-operator');
+  const inspector = page.locator('[data-tutorial="inspector"]');
+  await inspector.getByRole('combobox', { name: 'Оператор', exact: true }).selectOption('equals');
+  await page.getByTestId('tutorial-recheck').click();
+  await step(page, 'set-operator');
+  await inspector.getByRole('combobox', { name: 'Оператор', exact: true }).selectOption('contains');
+  await step(page, 'set-target');
+  await inspector.getByLabel('Сравнивать с', { exact: true }).fill('');
+  await page.getByTestId('tutorial-recheck').click();
+  await step(page, 'set-target');
+  await inspector.getByLabel('Сравнивать с', { exact: true }).fill('привет');
+  await step(page, 'connect-in');
+  await moveNode(page, condition, 680, 310);
+  await moveNode(page, trigger, 360, 170);
+  await connectPorts(page, port(trigger, 'output', 'text'), port(condition, 'input', 'value'));
+  await step(page, 'add-log');
+  const log = await add(page, 'debug.log');
+  await step(page, 'connect-true');
+  await moveNode(page, log, 840, 480);
+  await connectPorts(page, port(condition, 'output', 'false'), port(log, 'input', 'value'));
+  await step(page, 'connect-true');
+  await page.getByTitle('Отменить (Ctrl+Z)').click();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(1);
+  await connectPorts(page, port(condition, 'output', 'true'), port(log, 'input', 'value'));
+  await step(page, 'run');
+  await page.getByLabel('Текст сообщения', { exact: true }).fill('добрый день');
+  await page.getByTestId('run-button').click();
+  await page.getByTestId('debug-tab-ports').click();
+  const result = page.getByTestId('debug-node-logic.condition');
+  await expect(result).toHaveAttribute('data-status', 'success');
+  await expect(result.getByTestId('output-false')).toHaveText('"добрый день"');
+  await expect(result.getByTestId('output-true')).toHaveCount(0);
+  await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveCount(0);
+  await step(page, 'run');
+  // Нельзя засчитать запуск простым редактированием текста после него.
+  await page.getByTestId('debug-tab-simulator').click();
+  await page.getByLabel('Текст сообщения', { exact: true }).fill('привет, NODEZZLE');
+  await page.getByTestId('tutorial-recheck').click();
+  await step(page, 'run');
+  await page.getByTestId('run-button').click();
+  await step(page, 'quiz-branch');
+  await page.getByTestId('debug-tab-ports').click();
+  await expect(result.getByTestId('output-true')).toHaveText('"привет, NODEZZLE"');
+  await expect(result.getByTestId('output-false')).toHaveCount(0);
+  await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveText('"привет, NODEZZLE"');
+  await page.getByTestId('tutorial-quiz-false').click();
+  await step(page, 'quiz-branch');
+  await page.getByTestId('tutorial-quiz-true').click();
+  await completed(page, 'logic-condition');
+});
+
+async function buildCommandLesson(page: Page) {
+  await startLesson(page, 'telegram-command', ['telegram-first-bot']);
+  await step(page, 'add-command');
+  const command = await add(page, 'telegram.command');
+  // /start уже задана в defaults: правило настройки закономерно выполнено.
+  await expect(page.locator('[data-tutorial="inspector"]').getByLabel('Команда', { exact: true })).toHaveValue('/start');
+  await step(page, 'add-send');
+  const send = await add(page, 'telegram.send_message');
+  await step(page, 'connect-text');
+  await moveNode(page, send, 810, 390);
+  await moveNode(page, command, 400, 180);
+  await connectPorts(page, port(command, 'output', 'args'), port(send, 'input', 'text'));
+  await step(page, 'connect-text');
+  await page.getByTitle('Отменить (Ctrl+Z)').click();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(0);
+  await connectPorts(page, port(command, 'output', 'command'), port(send, 'input', 'text'));
+  await step(page, 'connect-chat');
+  await connectPorts(page, port(command, 'output', 'chat_id'), port(send, 'input', 'chat_id'));
+  await step(page, 'send');
+  return { command, send };
+}
+
+test('команда: /help игнорируется, /start отвечает в нужный чат; просмотр чата не пропускается', async ({ page }) => {
+  await buildCommandLesson(page);
+  await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/help');
+  await page.getByTestId('run-button').click();
+  await page.getByTestId('debug-tab-chat').click();
+  await expect(page.getByTestId('simulator-chat-bot')).toHaveCount(0);
+  await step(page, 'send');
+  await page.getByTestId('debug-tab-simulator').click();
+  await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/start');
+  await page.getByLabel('ID чата', { exact: true }).fill('13579');
+  await page.getByTestId('tutorial-recheck').click();
+  await step(page, 'send');
+  await page.getByTestId('run-button').click();
+  await step(page, 'chat');
+  await page.getByTestId('debug-tab-ports').click();
+  await expect(page.getByTestId('debug-node-telegram.command').getByTestId('output-command')).toHaveText('"/start"');
+  await expect(page.getByTestId('debug-node-telegram.send_message').getByTestId('input-chat_id')).toHaveText('13579');
+  await step(page, 'chat');
+  await page.getByTestId('debug-tab-chat').click();
+  await expect(page.getByTestId('simulator-chat-bot')).toHaveCount(1);
+  await expect(page.getByTestId('simulator-chat-bot')).toHaveText('/start');
+  await expect(page.getByTestId('simulator-chat-bot')).toHaveAttribute('data-chat-id', '13579');
+  await completed(page, 'telegram-command');
+});
+
+
+test('команда: изменение настройки на /help не подменяет цель урока; F5 и исправление', async ({ page }) => {
+  const { command } = await buildCommandLesson(page);
+  await page.getByTestId('tutorial-collapse').click();
+  await command.click();
+  const setting = page.locator('[data-tutorial="inspector"]').getByLabel('Команда', { exact: true });
+  await setting.fill('/help');
+  await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/help');
+  await page.getByTestId('run-button').click();
+  await page.getByTestId('debug-tab-chat').click();
+  await expect(page.getByTestId('simulator-chat-bot')).toHaveText('/help');
+  await step(page, 'send');
+  await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
+  await page.reload();
+  await step(page, 'send');
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
+  await page.getByTestId('tutorial-collapse').click();
+  await page.getByTestId('canvas-node-telegram.command').click();
+  await expect(setting).toHaveValue('/help');
+  await setting.fill('/start');
+  await page.getByTestId('debug-tab-simulator').click();
+  await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/start');
+  await page.getByTestId('tutorial-collapse').click();
+  await page.getByTestId('tutorial-recheck').click();
+  await step(page, 'send');
+  await page.getByTestId('run-button').click();
+  await step(page, 'chat');
+  await page.getByTestId('debug-tab-chat').click();
+  await expect(page.getByTestId('simulator-chat-bot')).toHaveText('/start');
+  await completed(page, 'telegram-command');
+});

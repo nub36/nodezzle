@@ -5,7 +5,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { AcademySnapshot, LessonStep } from './types';
+import type { AcademySnapshot, LessonStep, RunOutputExpectation } from './types';
 import { lessons } from './catalog';
 import { useTutorialStore } from '@/store/tutorial-store';
 import { useAcademyStore } from '@/store/academy-store';
@@ -25,6 +25,16 @@ function edge(
   targetPortId?: string,
 ): AcademySnapshot['edges'][number] {
   return { sourceNodeId, targetNodeId, sourcePortId, targetPortId };
+}
+
+/** Синтетическое выполнение требований каталога. Реальный runtime проверяется отдельно. */
+function successfulResults(expected: RunOutputExpectation[] | undefined) {
+  return expected?.map((output, index) => ({
+    nodeId: `result-${index}`,
+    blockId: output.blockId,
+    status: 'success',
+    outputs: { [output.portId]: output.equals === undefined ? 'результат' : output.equals },
+  }));
 }
 
 /** Снимок, выполняющий шаг. Шаги интерфейса (читать/викторина) возвращают null. */
@@ -54,10 +64,10 @@ function snapshotFor(step: LessonStep): AcademySnapshot | null {
       s.edges = [edge('a', 'b', step.fromPortId, step.toPortId)];
       return s;
     case 'run':
-      s.lastRun = { status: 'success', at: now };
+      s.lastRun = { status: 'success', at: now, results: successfulResults(step.expectedOutputs) };
       return s;
     case 'send-simulator-message':
-      s.lastRun = { status: 'success', source: step.source, at: now };
+      s.lastRun = { status: 'success', source: step.source, at: now, results: successfulResults(step.expectedOutputs) };
       s.simulatorText = step.textContains ?? 'привет';
       return s;
     case 'create-model':
