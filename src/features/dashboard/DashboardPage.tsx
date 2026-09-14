@@ -116,6 +116,7 @@ export function DashboardPage() {
               {kindOptions.map((k) => (
                 <button
                   key={k}
+                  data-testid={`project-kind-${k}`}
                   onClick={() => setKind(k)}
                   className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
                     kind === k
@@ -128,7 +129,7 @@ export function DashboardPage() {
               ))}
             </div>
           </div>
-          <button className="btn-primary" onClick={() => void handleCreate()} disabled={creating}>
+          <button className="btn-primary" data-testid="create-project" onClick={() => void handleCreate()} disabled={creating}>
             {creating ? '…' : '＋'} {t('dashboard.create')}
           </button>
         </div>
