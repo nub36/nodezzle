@@ -510,6 +510,8 @@ function FlowCanvas() {
   }, []);
 
   const onConnectStart = useCallback((_event: MouseEvent | TouchEvent, params: OnConnectStartParams) => {
+    setQuickInsert(null);
+    setCtxMenu(null);
     if (!params.nodeId || !params.handleId || !params.handleType) return;
     const { nodes: currentNodes } = useProjectStore.getState();
     const node = currentNodes.find((n) => n.id === params.nodeId);

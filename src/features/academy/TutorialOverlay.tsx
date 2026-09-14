@@ -17,6 +17,10 @@ import type { LessonStep } from '@/academy/types';
 import { useAcademyStore } from '@/store/academy-store';
 import { useTutorialStore } from '@/store/tutorial-store';
 
+import { useFloatingLesson } from './useFloatingLesson';
+import { useProjectStore } from '@/store/project-store';
+import { blockRegistry } from '@/core/registry/block-registry';
+
 import { LessonStepContent } from './LessonStepContent';
 
 const AUTO_HINT_MS = 25_000;
@@ -68,6 +72,9 @@ export function TutorialOverlay() {
   const step: LessonStep | null = lesson !== null ? (lesson.steps[stepIndex] ?? null) : null;
   const [rect, setRect] = useState<Rect | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const floating = useFloatingLesson(`${lesson?.id}:${active}:${finished}`);
+  const connecting = useProjectStore((s) => s.dragPort !== null);
+  const [checkedStep, setCheckedStep] = useState<string | null>(null);
   const [wrongAnswer, setWrongAnswer] = useState(false);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -101,7 +108,7 @@ export function TutorialOverlay() {
   useEffect(() => {
     if (!active) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && window.confirm(t('academy.overlay.exitConfirm'))) {
+      if (!e.defaultPrevented && e.key === 'Escape' && window.confirm(t('academy.overlay.exitConfirm'))) {
         stop();
       }
     };
@@ -121,6 +128,7 @@ export function TutorialOverlay() {
 
   useEffect(() => {
     setWrongAnswer(false);
+    setCheckedStep(null);
     setCollapsed(false);
   }, [stepIndex, lesson?.id]);
 
@@ -129,8 +137,12 @@ export function TutorialOverlay() {
   // Карточка «Урок завершён».
   if (finished) {
     return (
-      <div className="fixed right-4 top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain" role="dialog" aria-label={t('academy.overlay.finishedTitle')} data-testid="tutorial-finished">
+      <div ref={floating.ref} style={floating.style} className="fixed right-4 top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain" role="dialog" aria-label={t('academy.overlay.finishedTitle')} data-testid="tutorial-finished">
         <div className="glass-strong tutorial-anim rounded-xl border border-emerald-400/40 p-3 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
+          <div className="mb-2 flex gap-2">
+            <button {...floating.handle} data-testid="tutorial-drag" className="min-w-0 flex-1 cursor-move touch-none select-none text-left text-xs text-muted" title={t('academy.overlay.moveHint')} aria-label={t('academy.overlay.move')}>⠿ {t('academy.overlay.finishedTitle')}</button>
+            <button onClick={floating.reset} title={t('academy.overlay.resetPosition')} aria-label={t('academy.overlay.resetPosition')}>↺</button>
+          </div>
           <div className="mb-2 text-2xl">🎉</div>
           <div className="mb-1 text-sm font-bold">{t('academy.overlay.finishedTitle')}</div>
           <p className="mb-4 text-xs text-muted">{t('academy.overlay.finishedText', { title: t(lesson.titleKey) })}</p>
@@ -186,13 +198,15 @@ export function TutorialOverlay() {
             left: rect.left - 6,
             width: rect.width + 12,
             height: rect.height + 12,
-            boxShadow: '0 0 0 9999px rgba(3, 6, 15, 0.7), 0 0 24px rgba(34, 211, 238, 0.35)',
+            boxShadow: '0 0 0 9999px rgba(3, 6, 15, 0.35), 0 0 24px rgba(34, 211, 238, 0.35)',
           }}
         />
       )}
 
-      {/* Карточка шага. */}
+      {/* При протягивании провода карточка не перехватывает отпускание над портом. */}
       <div
+        ref={floating.ref}
+        style={{ ...floating.style, pointerEvents: connecting ? 'none' : undefined }}
         className={`fixed top-16 z-[70] w-[304px] max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain ${target === 'inspector' ? 'left-4 sm:left-[304px]' : 'right-4'}`}
         role="dialog"
         aria-label={t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
@@ -202,7 +216,11 @@ export function TutorialOverlay() {
       >
         <div className="glass-strong tutorial-anim rounded-xl border border-cyan-400/30 p-3 shadow-[0_0_32px_rgba(34,211,238,0.15)]">
           <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted">
-            <span className="min-w-0 flex-1 truncate" title={t(lesson.titleKey)}>🎓 {t(lesson.titleKey)}</span>
+            <button {...floating.handle} data-testid="tutorial-drag"
+              className="min-w-0 flex-1 cursor-move touch-none select-none truncate text-left"
+              title={t('academy.overlay.moveHint')} aria-label={t('academy.overlay.move')}>⠿ {t(lesson.titleKey)}</button>
+            <button className="shrink-0 rounded px-1 py-1 hover:bg-cyan-400/10" onClick={floating.reset}
+              data-testid="tutorial-reset-position" title={t('academy.overlay.resetPosition')} aria-label={t('academy.overlay.resetPosition')}>↺</button>
             <span className="shrink-0" data-testid="tutorial-step-index">
               {t('academy.overlay.stepOf', { index: stepIndex + 1, total: lesson.steps.length })}
             </span>
@@ -270,13 +288,24 @@ export function TutorialOverlay() {
               </div>
             )}
 
+            {checkedStep === step.id && (
+              <p role="status" data-testid="tutorial-check-result" className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-amber-100">
+                {step.kind === 'connect' ? t('academy.overlay.checkConnection', {
+                  from: t(blockRegistry.get(step.fromBlockId)?.labelKey ?? step.fromBlockId),
+                  output: t(blockRegistry.get(step.fromBlockId)?.outputs.find((p) => p.id === step.fromPortId)?.labelKey ?? step.fromPortId ?? 'academy.overlay.anyOutput'),
+                  to: t(blockRegistry.get(step.toBlockId)?.labelKey ?? step.toBlockId),
+                  input: t(blockRegistry.get(step.toBlockId)?.inputs.find((p) => p.id === step.toPortId)?.labelKey ?? step.toPortId ?? 'academy.overlay.anyInput'),
+                }) : t('academy.overlay.checkPending')}
+              </p>
+            )}
+
             <div className="mt-3 flex items-center justify-between gap-2">
               {!needsAcknowledge && step.kind !== 'quiz' ? (
                 <button
                   data-testid="tutorial-recheck"
                   className="text-[10px] text-cyan-300/80 underline-offset-2 hover:underline"
                   title={t('academy.overlay.recheckHint')}
-                  onClick={recheck}
+                  onClick={() => { setCheckedStep(step.id); recheck(); }}
                 >
                   ✓ {t('academy.overlay.recheck')}
                 </button>
