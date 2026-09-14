@@ -71,7 +71,8 @@ function snapshotFor(step: LessonStep): AcademySnapshot | null {
       s.simulatorText = step.textContains ?? 'привет';
       return s;
     case 'create-model':
-      s.nodes = [node('mn1', 'models.call')];
+      s.nodes = [node('mn1', 'models.call', { modelId: 'model-1' })];
+      s.modelIds = ['model-1'];
       return s;
     case 'open-debug':
       s.debugOpen = true;

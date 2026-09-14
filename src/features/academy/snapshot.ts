@@ -50,6 +50,7 @@ export function buildAcademySnapshot(): AcademySnapshot {
         ? project.nodes.find((n) => n.id === project.selectedNodeId)?.data.blockId ?? null
         : null,
     selectedNodeId: project.selectedNodeId,
+    modelIds: project.project?.models.map((model) => model.id) ?? [],
     lastRun:
       lastRecord !== undefined
         ? {

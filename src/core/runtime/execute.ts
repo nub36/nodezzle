@@ -137,7 +137,7 @@ export async function executeCanvas(
       const model = options.models?.[modelId];
       if (!model) throw new Error('ERR_MODEL_NOT_FOUND');
       const innerOutputs: Record<string, unknown> = {};
-      await executeCanvas(model.canvas, {
+      const innerResult = await executeCanvas(model.canvas, {
         registry,
         models: options.models,
         payload: { source: 'model', model: { inputs } },
@@ -157,6 +157,10 @@ export async function executeCanvas(
           executeModel: runtime.executeModel,
         },
       });
+      // Ошибка/ожидание вложенной схемы не превращаются в успешный пустой result.
+      if (innerResult.status !== 'success') {
+        throw new Error(innerResult.error ?? 'ERR_MODEL_EXECUTION');
+      }
       return innerOutputs;
     },
     ...options.contextOverrides,

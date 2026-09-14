@@ -13,7 +13,10 @@ import type { BlockDefinition } from '@/core/types/blocks';
 import type { TriggerPayload } from '@/core/types/runtime';
 import { dport } from '../shared';
 
-const webMatches = (payload: TriggerPayload) => payload.source === undefined || payload.source === 'web';
+/** Без event сохраняем общий запуск симулятора старых схем; явное событие адресуем по типу. */
+const webMatches = (event: string) => (payload: TriggerPayload) =>
+  (payload.source === undefined || payload.source === 'web') &&
+  (payload.web?.event === undefined || payload.web.event === event);
 
 export const webBlocks: BlockDefinition[] = [
   {
@@ -26,7 +29,7 @@ export const webBlocks: BlockDefinition[] = [
     trigger: true,
     inputs: [],
     outputs: [dport('data', 'blocks.ports.data', 'object')],
-    matches: webMatches,
+    matches: webMatches('page_load'),
     runtime: ({ payload, runtime }) => {
       runtime.log('info', 'web.page_load', { data: payload.web ?? {} });
       return { outputs: { data: payload.web ?? {} } };
@@ -43,7 +46,7 @@ export const webBlocks: BlockDefinition[] = [
     trigger: true,
     inputs: [],
     outputs: [dport('data', 'blocks.ports.data', 'object')],
-    matches: webMatches,
+    matches: webMatches('button_click'),
     runtime: ({ payload, runtime }) => {
       runtime.log('info', 'web.button_click', { data: payload.web ?? {} });
       return { outputs: { data: payload.web ?? {} } };
@@ -60,7 +63,7 @@ export const webBlocks: BlockDefinition[] = [
     trigger: true,
     inputs: [],
     outputs: [dport('data', 'blocks.ports.data', 'object')],
-    matches: webMatches,
+    matches: webMatches('form_submit'),
     runtime: ({ payload, runtime }) => {
       const values = (payload.web?.values as Record<string, unknown>) ?? payload.web ?? {};
       runtime.log('info', 'web.form_submit', { values });

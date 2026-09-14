@@ -110,7 +110,8 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot, stepSt
       // а не экземпляр узла на холсте: сверяем тип с требуемым.
       return snapshot.selectedBlockId === step.blockId;
     case 'create-model':
-      return nodeBlockIds(snapshot).has('models.call');
+      return snapshot.nodes.some((node) => node.blockId === 'models.call' &&
+        typeof node.config?.modelId === 'string' && snapshot.modelIds?.includes(node.config.modelId) === true);
     case 'open-debug':
       return snapshot.debugOpen === true && (step.tab === undefined || snapshot.debugTab === step.tab);
     case 'publish-preview':

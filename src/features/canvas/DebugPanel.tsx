@@ -308,7 +308,7 @@ function LogTab() {
   return (
     <div ref={ref} className="space-y-1.5 pt-2">
       {logs.map((entry) => (
-        <div key={entry.id} className="rounded-lg border border-line/50 bg-abyss/40 px-2.5 py-1.5 text-[11px]">
+        <div key={entry.id} data-testid="execution-log-entry" className="rounded-lg border border-line/50 bg-abyss/40 px-2.5 py-1.5 text-[11px]">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] text-muted/70">{formatTimeRu(entry.at)}</span>
             <span className={cn('font-bold uppercase tracking-wide text-[10px]', LEVEL_COLORS[entry.level])}>
@@ -352,7 +352,7 @@ function HistoryTab({ projectId }: { projectId: string }) {
         <div className="text-xs text-muted/70">{t('execution.panel.history.empty')}</div>
       )}
       {history.map((h) => (
-        <div key={h.id} className="flex items-center gap-3 rounded-lg border border-line/50 bg-abyss/40 px-3 py-2 text-[11px]">
+        <div key={h.id} data-testid="local-history-entry" data-status={h.status} className="flex items-center gap-3 rounded-lg border border-line/50 bg-abyss/40 px-3 py-2 text-[11px]">
           <span className="font-mono text-[10px] text-muted/70">{formatTimeRu(h.at)}</span>
           <span className={cn('status-chip !px-2 !py-0.5 !text-[10px]', `status-${h.status}`)}>
             <span className="status-dot" />

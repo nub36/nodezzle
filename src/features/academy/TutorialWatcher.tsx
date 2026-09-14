@@ -28,7 +28,8 @@ export function TutorialWatcher() {
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const runStatus = useExecutionStore((s) => s.status);
   const panelTab = useExecutionStore((s) => s.panelTab);
-  const historyLength = useExecutionStore((s) => s.history.length);
+  // История ограничена 30 записями; новый запуск узнаём по ID, не по длине.
+  const lastRunId = useExecutionStore((s) => s.history[0]?.id);
   const debugOpen = useUiStore((s) => s.debugOpen);
 
   const active = useTutorialStore((s) => s.active);
@@ -96,7 +97,7 @@ export function TutorialWatcher() {
   useEffect(() => {
     if (!active) return;
     useTutorialStore.getState().evaluate(buildAcademySnapshot());
-  }, [active, nodes, edges, selectedNodeId, historyLength, debugOpen, panelTab, stepIndex, recheckTick, location]);
+  }, [active, nodes, edges, selectedNodeId, lastRunId, debugOpen, panelTab, stepIndex, recheckTick, location]);
 
   // Подсветка не должна выполнять за ученика действие «откройте вкладку».
   // В информационных шагах и шагах запуска автопоказ цели сохраняется.

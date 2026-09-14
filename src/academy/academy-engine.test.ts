@@ -169,14 +169,14 @@ describe('проверка шагов по снимку состояния', () 
   it('select-block, create-model, open-debug, open-page', () => {
     const nodes = [
       { id: 'n1', blockId: 'debug.log' },
-      { id: 'n2', blockId: 'models.call' },
+      { id: 'n2', blockId: 'models.call', config: { modelId: 'm' } },
     ];
     // select-block сверяет ТИП выбранной детали, а не экземпляр узла:
     // выбран «Лог» — шаг выполнен; выбрана другая деталь — нет.
     expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: 'debug.log', selectedNodeId: 'n1' })).toBe(true);
     expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: 'models.call', selectedNodeId: 'n2' })).toBe(false);
     expect(evaluateStep(step({ kind: 'select-block', blockId: 'debug.log' }), { ...base, nodes, selectedBlockId: null })).toBe(false);
-    expect(evaluateStep(step({ kind: 'create-model' }), { ...base, nodes })).toBe(true);
+    expect(evaluateStep(step({ kind: 'create-model' }), { ...base, nodes, modelIds: ['m'] })).toBe(true);
     expect(evaluateStep(step({ kind: 'open-debug' }), { ...base, debugOpen: true })).toBe(true);
     expect(evaluateStep(step({ kind: 'open-page', route: '/projects/edu' }), { ...base, route: '/projects/edu-1' })).toBe(true);
   });

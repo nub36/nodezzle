@@ -8,6 +8,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createDemoProject } from '@/demo/seed';
 import { evaluateStep } from './completion';
 import { diffSnapshots } from './events';
 import { buildAcademySnapshot } from '@/features/academy/snapshot';
@@ -291,7 +292,8 @@ describe('Интеграция: действие пользователя → с
   it('TEST 7: появилась модель (Вызов модели) → шаг create-model завершён', () => {
     const tutorial = useTutorialStore.getState();
     tutorial.start('models-first-model', 4);
-    useProjectStore.setState({ nodes: [flowNode('m1', 'models.call', { modelId: 'demo' })] });
+    const project = createDemoProject();
+    useProjectStore.setState({ project, nodes: [flowNode('m1', 'models.call', { modelId: project.models[0].id })] });
     tutorial.evaluate(buildAcademySnapshot());
     expect(useTutorialStore.getState().stepIndex).toBe(5);
   });

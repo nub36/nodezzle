@@ -132,19 +132,30 @@ describe('fireWebTrigger — запуск схемы веб-событием', (
       future: [],
     });
     useExecutionStore.getState().reset();
+    useExecutionStore.setState({ history: [] });
   });
 
   it('выполняет схему с веб-триггером и пишет историю', async () => {
-    await useExecutionStore.getState().fireWebTrigger({ event: 'button_click', button: 'ОК' });
+    await useExecutionStore.getState().fireWebTrigger({ event: 'page_load' });
     const s = useExecutionStore.getState();
     expect(s.status).toBe('success');
     expect(s.running).toBe(false);
     expect(s.history).toHaveLength(1);
     expect(s.history[0].status).toBe('success');
-    // Триггер выполнился и залогировал событие загрузки/клика.
+    // Триггер страницы выполнился и залогировал именно загрузку.
     expect(s.nodeInfo.page?.status).toBe('success');
     expect(s.logs.some((l) => l.message.startsWith('web.'))).toBe(true);
     // Веб-событие не создаёт эхо в телеграм-чате.
     expect(s.chatEcho).toBeNull();
   });
+
+  it('клик не выполняет триггер страницы и сохраняется в истории как ожидание', async () => {
+    await useExecutionStore.getState().fireWebTrigger({ event: 'button_click', button: 'ОК' });
+    const state = useExecutionStore.getState();
+    expect(state.status).toBe('waiting');
+    expect(state.nodeInfo.page?.outputs?.data).toBeUndefined();
+    expect(state.history).toHaveLength(1);
+    expect(state.history[0]).toMatchObject({ source: 'web', status: 'waiting' });
+  });
+
 });

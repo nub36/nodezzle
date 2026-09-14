@@ -112,7 +112,7 @@ export interface SelectBlockStep extends StepBase {
   blockId: string;
 }
 
-/** Создать модель (появился узел «Вызов модели»). */
+/** Создать модель: на холсте есть вызов существующей модели проекта. */
 export interface CreateModelStep extends StepBase {
   kind: 'create-model';
 }
@@ -201,6 +201,8 @@ export interface AcademySnapshot {
   selectedBlockId?: string | null;
   /** Экземпляр выбранного узла на холсте (для событий/диагностики). */
   selectedNodeId?: string | null;
+  /** Существующие модели текущего проекта, не просто детали вызова. */
+  modelIds?: string[];
   /** Последнее завершённое выполнение (если было). */
   lastRun?: {
     status: string;
