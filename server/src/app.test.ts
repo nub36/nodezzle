@@ -18,6 +18,8 @@ const config: ServerConfig = {
   env: 'development',
   repoRoot: path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..'),
   maxBodyBytes: 1024,
+  sessionSecret: 'test-secret-test-secret-test-secret-0123456789',
+  sessionTtlDays: 1,
 };
 
 beforeEach(async () => {

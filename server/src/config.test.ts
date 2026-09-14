@@ -21,6 +21,7 @@ describe('Конфигурация сервера', () => {
       NODEZZLE_DB_PATH: '/tmp/custom.db',
       NODEZZLE_ENV: 'production',
       NODEZZLE_MAX_BODY_BYTES: '1024',
+      NODEZZLE_SESSION_SECRET: 'x'.repeat(48),
     });
     expect(cfg.host).toBe('0.0.0.0');
     expect(cfg.port).toBe(5599);
@@ -43,5 +44,23 @@ describe('Конфигурация сервера', () => {
 
   it('отвергает неизвестное окружение', () => {
     expect(() => loadConfig({ NODEZZLE_ENV: 'staging' })).toThrow(ConfigError);
+  });
+
+  it('в разработке генерирует случайный секрет сессий, если он не задан', () => {
+    const cfg = loadConfig({});
+    expect(cfg.sessionSecret.length).toBeGreaterThanOrEqual(32);
+    expect(cfg.sessionTtlDays).toBe(30);
+  });
+
+  it('в продакшне требует секрет сессий достаточной длины', () => {
+    expect(() => loadConfig({ NODEZZLE_ENV: 'production' })).toThrow(ConfigError);
+    expect(() =>
+      loadConfig({ NODEZZLE_ENV: 'production', NODEZZLE_SESSION_SECRET: 'короткий' }),
+    ).toThrow(ConfigError);
+    const cfg = loadConfig({
+      NODEZZLE_ENV: 'production',
+      NODEZZLE_SESSION_SECRET: 'x'.repeat(48),
+    });
+    expect(cfg.sessionSecret).toBe('x'.repeat(48));
   });
 });

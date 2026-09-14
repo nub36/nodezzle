@@ -6,6 +6,7 @@
  * Значения по умолчанию рассчитаны на локальную разработку.
  */
 
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,6 +23,10 @@ export interface ServerConfig {
   repoRoot: string;
   /** Лимит тела запроса, байты. */
   maxBodyBytes: number;
+  /** Секрет подписи сессий. В продакшне обязателен. */
+  sessionSecret: string;
+  /** Время жизни сессии, дней. */
+  sessionTtlDays: number;
 }
 
 /** Порты, запрещённые для NODEZZLE всегда (см. docs/agent-plan/RULES.md, правило 16). */
@@ -51,6 +56,33 @@ function parsePort(raw: string | undefined, fallback: number): number {
   return value;
 }
 
+function parseSessionTtlDays(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 365) {
+    throw new ConfigError(`NODEZZLE_SESSION_TTL_DAYS: ожидается целое число 1..365, получено «${raw}»`);
+  }
+  return value;
+}
+
+/**
+ * Секрет сессий: в продакшне обязателен и должен задаваться окружением;
+ * в разработке генерируется случайный на каждый запуск (сессии переживают
+ * только текущий процесс — для локальной работы этого достаточно).
+ */
+function resolveSessionSecret(env: NodeJS.ProcessEnv, mode: 'development' | 'production'): string {
+  const raw = env.NODEZZLE_SESSION_SECRET?.trim();
+  if (raw && raw.length >= 32) return raw;
+  if (mode === 'production') {
+    throw new ConfigError('NODEZZLE_SESSION_SECRET обязателен в продакшне (минимум 32 символа)');
+  }
+  if (raw !== undefined && raw !== '') {
+    throw new ConfigError('NODEZZLE_SESSION_SECRET слишком короткий (минимум 32 символа)');
+  }
+  console.warn('[nodezzle-api] NODEZZLE_SESSION_SECRET не задан — использую случайный секрет разработки');
+  return crypto.randomBytes(32).toString('hex');
+}
+
 function parseMaxBody(raw: string | undefined, fallback: number): number {
   if (raw === undefined || raw.trim() === '') return fallback;
   const value = Number(raw);
@@ -78,5 +110,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     env: nodeEnv,
     repoRoot: root,
     maxBodyBytes: parseMaxBody(env.NODEZZLE_MAX_BODY_BYTES, 256 * 1024),
+    sessionSecret: resolveSessionSecret(env, nodeEnv),
+    sessionTtlDays: parseSessionTtlDays(env.NODEZZLE_SESSION_TTL_DAYS, 30),
   };
 }

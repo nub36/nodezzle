@@ -10,6 +10,13 @@ import { sendError, notFound, ApiError } from './errors.ts';
 import { sendJson } from './http.ts';
 import { Router } from './router.ts';
 import type { Db } from './db.ts';
+import { createAuthStore } from './auth/store.ts';
+import { createRateLimiter } from './security/rate-limit.ts';
+import { registerAuthRoutes } from './routes/auth.ts';
+
+/** Лимит попыток входа/регистрации с одного адреса. */
+const AUTH_LIMIT_PER_WINDOW = 20;
+const AUTH_WINDOW_MS = 10 * 60 * 1000;
 
 export interface AppDeps {
   config: ServerConfig;
@@ -34,6 +41,12 @@ export function createApp(deps: AppDeps): App {
       env: deps.config.env,
       time: new Date().toISOString(),
     });
+  });
+
+  registerAuthRoutes(router, {
+    config: deps.config,
+    store: createAuthStore(deps.db),
+    authLimiter: createRateLimiter(AUTH_LIMIT_PER_WINDOW, AUTH_WINDOW_MS),
   });
 
   const handle = (req: IncomingMessage, res: ServerResponse): void => {
