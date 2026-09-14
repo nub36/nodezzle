@@ -2,13 +2,14 @@
  * Детали веб-интерфейса (Этап 4, часть C).
  *
  * Элементы оформления страницы: текст, заголовки, картинки, поля ввода,
- * контейнеры. Определения фиксируют контракты и место в библиотеке
- * (статус `planned`, скрыты из палитры). Рендеринг собранной страницы
- * появится вместе с развитием веб-превью (см. docs/WEB.md).
+ * контейнеры. Определения фиксируют контракты и место в библиотеке.
+ * Текст/заголовок реализованы в 09B1; остальные определения пока planned.
+ * Структура контейнеров — следующий подэтап (см. docs/WEB.md).
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
 import { dport } from '../shared';
+import { buildTextElement } from '@/core/web/text-element';
 
 export const webUiBlocks: BlockDefinition[] = [
   {
@@ -20,8 +21,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'оформление',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { text: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildTextElement('text', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_ELEMENT' };
+    },
     inputs: [dport('text', 'blocks.ports.text', 'text')],
     outputs: [dport('element', 'blocks.ports.element', 'object')],
     ui: { icon: '🧱', color: '#f472b6' },
@@ -35,8 +41,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'оформление',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { text: '', level: 2 },
+    runtime: ({ inputs, config }) => {
+      const element = buildTextElement('heading', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_ELEMENT' };
+    },
     inputs: [
       dport('text', 'blocks.ports.text', 'text'),
       dport('level', 'blocks.ports.level', 'number'),

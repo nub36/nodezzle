@@ -16,6 +16,7 @@ import { useExecutionStore } from '@/store/execution-store';
 import { useProjectStore } from '@/store/project-store';
 import { cn } from '@/lib/utils';
 import { parseWebFormJson } from './web-form-json';
+import { WebTextPreview } from './WebTextPreview';
 import { collectWebElements } from './web-preview-utils';
 
 export function WebPreview() {
@@ -45,7 +46,8 @@ export function WebPreview() {
     if (!key) pageFired.current = null;
   }, [context, pageId, running, fireWebTrigger]);
 
-  if (!elements.page && elements.buttons.length === 0 && elements.forms.length === 0) {
+  const hasTextElements = nodes.some((n) => n.data.blockId === 'web.text' || n.data.blockId === 'web.heading');
+  if (!elements.page && elements.buttons.length === 0 && elements.forms.length === 0 && !hasTextElements) {
     return (
       <div className="space-y-2 pt-3">
         <div className="text-xs text-muted/80">{t('execution.panel.web.empty')}</div>
@@ -88,6 +90,7 @@ export function WebPreview() {
           {elements.page && (
             <div className="text-sm font-bold text-ink">{elements.page.label}</div>
           )}
+          <WebTextPreview />
           {elements.buttons.map((b) => (
             <button
               key={b.nodeId}

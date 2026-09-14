@@ -17,6 +17,7 @@ import type {
 } from '@/core/types/runtime';
 import type { DebugPanelTab } from '@/lib/debug-tabs';
 import { uid } from '@/lib/id';
+import { executionGraphKey } from '@/lib/execution-graph-key';
 import { tryParseJson } from '@/lib/utils';
 import { useProjectStore } from './project-store';
 
@@ -47,6 +48,8 @@ interface ExecutionState {
   nodeInfo: Record<string, NodeRunInfo>;
   /** Какой записи истории принадлежат текущие результаты; null во время запуска/сброса. */
   nodeInfoRunId: string | null;
+  /** Какая схема породила результат; нужен для защиты превью от устаревших данных. */
+  nodeInfoGraphKey: string | null;
   logs: LogEntry[];
   outbox: TelegramOutMessage[];
   /** Эхо пользовательского сообщения симулятора (для демо-чата). */
@@ -112,9 +115,10 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
   /** Общий запуск схемы триггерным payload (симулятор и веб-превью). */
   const startRun = async (triggerPayload: TriggerPayload, echoText: string | null): Promise<void> => {
     if (get().running) return;
-    const { project, nodes, edges, groups } = useProjectStore.getState();
+    const { project, nodes, edges, groups, activeModelId } = useProjectStore.getState();
     if (!project) return;
 
+    const graphKey = executionGraphKey(nodes, edges, project.id, activeModelId, project.models);
     const doc = flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name, undefined, groups);
     const source = triggerPayload.source;
     const simulatorText = source === 'telegram'
@@ -128,6 +132,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       nodeStates: {},
       nodeInfo: {},
       nodeInfoRunId: null,
+      nodeInfoGraphKey: null,
       logs: [],
       outbox: [],
       flowEdges: [],
@@ -166,6 +171,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       status: result.status,
       nodeInfo: result.nodeRuns,
       nodeInfoRunId: record.id,
+      nodeInfoGraphKey: graphKey,
       history: [record, ...s.history].slice(0, 30),
       cancelRef: null,
     }));
@@ -177,6 +183,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
   nodeStates: {},
   nodeInfo: {},
   nodeInfoRunId: null,
+  nodeInfoGraphKey: null,
   logs: [],
   outbox: [],
   chatEcho: null,
@@ -221,6 +228,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       nodeStates: {},
       nodeInfo: {},
       nodeInfoRunId: null,
+      nodeInfoGraphKey: null,
       logs: [],
       outbox: [],
       chatEcho: null,

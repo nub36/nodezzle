@@ -9,6 +9,7 @@ import '../blocks'; // регистрация всех блоков прилож
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { CanvasDocument } from '@/core/project/schema';
 import { canvasToFlow } from '@/core/project/serialize';
+import { executionGraphKey } from '@/lib/execution-graph-key';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { collectWebElements } from '@/features/canvas/web-preview-utils';
 import { useProjectStore } from './project-store';
@@ -133,6 +134,20 @@ describe('fireWebTrigger — запуск схемы веб-событием', (
     });
     useExecutionStore.getState().reset();
     useExecutionStore.setState({ history: [] });
+  });
+
+  it('привязывает результат к схеме на старте, а не к правкам во время выполнения; reset очищает ключ', async () => {
+    const state = useProjectStore.getState();
+    const expectedKey = executionGraphKey(state.nodes, state.edges, state.project!.id, state.activeModelId, state.project!.models);
+    const pending = useExecutionStore.getState().fireWebTrigger({ event: 'page_load' });
+    expect(useExecutionStore.getState().nodeInfoGraphKey).toBeNull();
+    const nodes = state.nodes.map((node) => ({ ...node, data: { ...node.data, config: { ...node.data.config, label: 'Правка во время запуска' } } }));
+    useProjectStore.setState({ nodes });
+    await pending;
+    expect(useExecutionStore.getState().nodeInfoGraphKey).toBe(expectedKey);
+    expect(expectedKey).not.toBe(executionGraphKey(nodes, state.edges, state.project!.id, state.activeModelId, state.project!.models));
+    useExecutionStore.getState().reset();
+    expect(useExecutionStore.getState().nodeInfoGraphKey).toBeNull();
   });
 
   it('выполняет схему с веб-триггером и пишет историю', async () => {
