@@ -8,8 +8,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'node',
-      // Тесты frontend-ядра (src/) и сервера (server/).
-      include: ['src/**/*.test.ts', 'server/src/**/*.test.ts'],
+      // Тесты frontend-ядра (src/), сервера (server/) и лаунчера (scripts/).
+      include: ['src/**/*.test.ts', 'server/src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     },
   }),
 );

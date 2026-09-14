@@ -1,0 +1,2 @@
+# Файлы запуска Windows храним с окончаниями строк CRLF.
+*.bat text eol=crlf
