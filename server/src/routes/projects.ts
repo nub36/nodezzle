@@ -9,15 +9,19 @@
 
 import { tryParseProject } from '../../../src/core/project/schema.ts';
 import { badRequest, conflict, notFound, unauthorized } from '../errors.ts';
+
+const VERSION_LABEL_MAX = 120;
 import { readJsonBody, sendJson } from '../http.ts';
 import type { Router } from '../router.ts';
 import type { ProjectStore } from '../projects/store.ts';
+import type { VersionStore } from '../projects/versions.ts';
 import { currentUser, type AuthDeps } from './auth.ts';
 import type { WorkspaceStore } from '../workspaces/store.ts';
 
 export interface ProjectDeps extends AuthDeps {
   workspaces: WorkspaceStore;
   projects: ProjectStore;
+  versions: VersionStore;
 }
 
 /** Достаёт документ из тела и валидирует форматом проекта. */
@@ -76,5 +80,49 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
     deps.projects.delete(ctx.params.id);
     sendJson(ctx.res, 200, { ok: true });
+  });
+
+  // ── Версии (снапшоты черновика) ────────────────────────────────
+  router.post('/api/projects/:id/versions', async (ctx) => {
+    const user = currentUser(ctx, deps);
+    if (!user) throw unauthorized();
+    const row = deps.projects.get(ctx.params.id);
+    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+    const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
+    const label = typeof body.label === 'string' && body.label.trim() !== ''
+      ? body.label.trim().slice(0, VERSION_LABEL_MAX)
+      : `Версия от ${new Date().toLocaleString('ru-RU')}`;
+    const version = deps.versions.create(ctx.params.id, row.document, label);
+    sendJson(ctx.res, 201, { version });
+  });
+
+  router.get('/api/projects/:id/versions', (ctx) => {
+    const user = currentUser(ctx, deps);
+    if (!user) throw unauthorized();
+    const row = deps.projects.get(ctx.params.id);
+    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+    sendJson(ctx.res, 200, { versions: deps.versions.list(ctx.params.id) });
+  });
+
+  router.get('/api/projects/:id/versions/:versionId', (ctx) => {
+    const user = currentUser(ctx, deps);
+    if (!user) throw unauthorized();
+    const row = deps.projects.get(ctx.params.id);
+    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+    const snapshot = deps.versions.get(ctx.params.id, ctx.params.versionId);
+    if (!snapshot) throw notFound('Версия не найдена');
+    sendJson(ctx.res, 200, { project: snapshot });
+  });
+
+  router.post('/api/projects/:id/versions/:versionId/restore', (ctx) => {
+    const user = currentUser(ctx, deps);
+    if (!user) throw unauthorized();
+    const row = deps.projects.get(ctx.params.id);
+    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+    const snapshot = deps.versions.get(ctx.params.id, ctx.params.versionId);
+    if (!snapshot) throw notFound('Версия не найдена');
+    // Восстановление перезаписывает черновик; сама версия остаётся.
+    deps.projects.update(ctx.params.id, snapshot);
+    sendJson(ctx.res, 200, { project: snapshot });
   });
 }
