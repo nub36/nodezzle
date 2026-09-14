@@ -30,7 +30,12 @@ interface Rect {
 
 function measureTarget(target: string | undefined): Rect | null {
   if (target === undefined || target === 'none') return null;
-  const el = document.querySelector(`[data-tutorial="${target}"]`);
+  const panelTarget = ['debug', 'simulator', 'chat', 'history'].includes(target);
+  // Цель урока — область, а DOM-маркеры вкладок имеют префикс tab-.
+  // Если панель закрыта, сначала показываем кнопку её открытия.
+  const marker = ['simulator', 'chat', 'history'].includes(target) ? `tab-${target}` : target;
+  const el = document.querySelector(`[data-tutorial="${marker}"]`)
+    ?? (panelTarget ? document.querySelector('[data-tutorial="debug-toggle"]') : null);
   if (el === null) return null;
   const box = el.getBoundingClientRect();
   if (box.width === 0 && box.height === 0) return null;
@@ -174,6 +179,7 @@ export function TutorialOverlay() {
       {rect !== null && (
         <div
           aria-hidden
+          data-testid="tutorial-highlight"
           className="tutorial-anim pointer-events-none fixed z-[60] rounded-xl border-2 border-cyan-400/80"
           style={{
             top: rect.top - 6,

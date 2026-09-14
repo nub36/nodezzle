@@ -227,7 +227,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         {running ? '⏹ ' + t('common.stop') : '▶ ' + t('common.run')}
       </button>
 
-      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" onClick={onToggleDebug} title={t('execution.panel.title')}>
+      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" data-testid="debug-toggle" data-tutorial="debug-toggle" onClick={onToggleDebug} title={t('execution.panel.title')}>
         🐞
       </button>
     </div>

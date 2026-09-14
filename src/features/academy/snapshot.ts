@@ -56,6 +56,7 @@ export function buildAcademySnapshot(): AcademySnapshot {
         : null,
     outboxCount: execution.outbox.length,
     debugOpen: tutorial.debugOpen,
+    debugTab: execution.panelTab,
     route: typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '',
     simulatorText: tutorial.lastSimulatorText ?? undefined,
   };

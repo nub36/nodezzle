@@ -27,6 +27,7 @@ export function TutorialWatcher() {
   const edges = useProjectStore((s) => s.edges);
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const runStatus = useExecutionStore((s) => s.status);
+  const panelTab = useExecutionStore((s) => s.panelTab);
   const historyLength = useExecutionStore((s) => s.history.length);
   const debugOpen = useUiStore((s) => s.debugOpen);
 
@@ -95,12 +96,15 @@ export function TutorialWatcher() {
   useEffect(() => {
     if (!active) return;
     useTutorialStore.getState().evaluate(buildAcademySnapshot());
-  }, [active, nodes, edges, selectedNodeId, historyLength, debugOpen, stepIndex, recheckTick, location]);
+  }, [active, nodes, edges, selectedNodeId, historyLength, debugOpen, panelTab, stepIndex, recheckTick, location]);
 
-  // Шаги про панель отладки/симлятор/чат/историю: открываем и включаем вкладку.
-  const stepTarget = active && lesson !== undefined ? lesson.steps[stepIndex]?.target : undefined;
+  // Подсветка не должна выполнять за ученика действие «откройте вкладку».
+  // В информационных шагах и шагах запуска автопоказ цели сохраняется.
+  const currentStep = active && lesson !== undefined ? lesson.steps[stepIndex] : undefined;
+  const stepTarget = currentStep?.target;
+  const manualTab = currentStep?.kind === 'open-debug' && currentStep.tab !== undefined;
   useEffect(() => {
-    if (stepTarget === undefined) return;
+    if (stepTarget === undefined || manualTab) return;
     const tabByTarget: Record<string, 'simulator' | 'chat' | 'history' | null> = {
       simulator: 'simulator',
       chat: 'chat',
@@ -111,7 +115,7 @@ export function TutorialWatcher() {
     useUiStore.getState().setDebugOpen(true);
     const tab = tabByTarget[stepTarget];
     if (tab !== null) useExecutionStore.getState().setPanelTab(tab);
-  }, [stepTarget]);
+  }, [stepTarget, manualTab]);
 
   return null;
 }

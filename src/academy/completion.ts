@@ -98,7 +98,7 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot, stepSt
     case 'create-model':
       return nodeBlockIds(snapshot).has('models.call');
     case 'open-debug':
-      return snapshot.debugOpen === true;
+      return snapshot.debugOpen === true && (step.tab === undefined || snapshot.debugTab === step.tab);
     case 'publish-preview':
       // Пользователь увидел панель публикации — засчитывает интерфейс.
       return snapshot.acknowledged === true;

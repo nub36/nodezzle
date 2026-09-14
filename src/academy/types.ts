@@ -8,6 +8,8 @@
  * Всё содержимое для пользователя — через i18n-ключи (поля `*Key`).
  */
 
+import type { DebugPanelTab } from '@/lib/debug-tabs';
+
 /** Уровни обучения (порядок дорожек в Академии). */
 export type LessonLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -108,6 +110,8 @@ export interface CreateModelStep extends StepBase {
 /** Открыть панель отладки. */
 export interface OpenDebugStep extends StepBase {
   kind: 'open-debug';
+  /** Если задана, нужна именно эта вкладка открытой панели. */
+  tab?: DebugPanelTab;
 }
 
 /** Посмотреть публикацию/версии (честный статус функции — в тексте). */
@@ -192,6 +196,7 @@ export interface AcademySnapshot {
   /** Сколько сообщений бот отправил в outbox за текущую сессию. */
   outboxCount?: number;
   debugOpen?: boolean;
+  debugTab?: DebugPanelTab;
   route?: string;
   /** Выбранный ответ текущего шага-викторины. */
   quizAnswer?: string | null;

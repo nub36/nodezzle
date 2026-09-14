@@ -7,6 +7,7 @@
  */
 
 import type { LessonDefinition, LessonStep } from './types';
+import { DEBUG_PANEL_TABS } from '@/lib/debug-tabs';
 
 const STEP_KINDS = new Set([
   'information',
@@ -65,6 +66,9 @@ export function validateLesson(
       if (!registry.has(blockId)) {
         errors.push(`${lesson.id}:${step.id}: блок «${blockId}» не найден в реестре`);
       }
+    }
+    if (step.kind === 'open-debug' && step.tab !== undefined && !DEBUG_PANEL_TABS.includes(step.tab)) {
+      errors.push(`${lesson.id}:${step.id}: неизвестная вкладка отладки «${step.tab}»`);
     }
     if (step.kind === 'quiz') {
       if (step.options.length < 2) {

@@ -15,6 +15,7 @@ import type {
   TelegramOutMessage,
   TriggerPayload,
 } from '@/core/types/runtime';
+import type { DebugPanelTab } from '@/lib/debug-tabs';
 import { uid } from '@/lib/id';
 import { tryParseJson } from '@/lib/utils';
 import { useProjectStore } from './project-store';
@@ -51,9 +52,9 @@ interface ExecutionState {
   payload: SimulatorPayload;
   cancelRef: { cancelled: boolean } | null;
   /** Активная вкладка панели отладки (нужна в т.ч. Академии, подэтап 5.11). */
-  panelTab: 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history';
+  panelTab: DebugPanelTab;
 
-  setPanelTab: (tab: 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history') => void;
+  setPanelTab: (tab: DebugPanelTab) => void;
   setPayload: (patch: Partial<SimulatorPayload>) => void;
   run: () => Promise<void>;
   /** Запуск схемы веб-событием из превью страницы (Этап 2, подэтап I ч. 2). */

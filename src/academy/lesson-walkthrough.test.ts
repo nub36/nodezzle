@@ -65,6 +65,7 @@ function snapshotFor(step: LessonStep): AcademySnapshot | null {
       return s;
     case 'open-debug':
       s.debugOpen = true;
+      s.debugTab = step.tab;
       return s;
     default:
       return null;

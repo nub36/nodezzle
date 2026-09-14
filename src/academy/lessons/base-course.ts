@@ -391,6 +391,8 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'connect',
         fromBlockId: 'core.text',
         toBlockId: 'data.text_to_number',
+        fromPortId: 'text',
+        toPortId: 'value',
         titleKey: K('data-converters') + '.steps.connect1.title',
         textKey: K('data-converters') + '.steps.connect1.text',
       },
@@ -406,6 +408,8 @@ export const baseCourse: readonly LessonDefinition[] = [
         kind: 'connect',
         fromBlockId: 'data.text_to_number',
         toBlockId: 'debug.log',
+        fromPortId: 'value',
+        toPortId: 'value',
         titleKey: K('data-converters') + '.steps.connect2.title',
         textKey: K('data-converters') + '.steps.connect2.text',
       },
@@ -419,6 +423,7 @@ export const baseCourse: readonly LessonDefinition[] = [
       {
         id: 'debug',
         kind: 'open-debug',
+        tab: 'ports',
         titleKey: K('data-converters') + '.steps.debug.title',
         textKey: K('data-converters') + '.steps.debug.text',
         target: 'debug',
@@ -494,6 +499,7 @@ export const baseCourse: readonly LessonDefinition[] = [
       {
         id: 'chat',
         kind: 'open-debug',
+        tab: 'chat',
         titleKey: K('telegram-first-bot') + '.steps.chat.title',
         textKey: K('telegram-first-bot') + '.steps.chat.text',
         target: 'chat',

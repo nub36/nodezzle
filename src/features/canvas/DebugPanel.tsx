@@ -18,8 +18,7 @@ import { WebPreview } from './WebPreview';
 import { ExecutionHistory } from '@/features/history/ExecutionHistory';
 import { useProjectStore } from '@/store/project-store';
 import { blockRegistry } from '@/core/registry/block-registry';
-
-type Tab = 'simulator' | 'chat' | 'phone' | 'web' | 'ports' | 'log' | 'history';
+import type { DebugPanelTab } from '@/lib/debug-tabs';
 
 export function DebugPanel({ open, projectId }: { open: boolean; projectId: string }) {
   const { t } = useTranslation();
@@ -35,7 +34,7 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
 
   if (!open) return null;
 
-  const tabs: Array<{ id: Tab; label: string }> = [
+  const tabs: Array<{ id: DebugPanelTab; label: string }> = [
     { id: 'simulator', label: t('execution.panel.tabs.simulator') },
     { id: 'chat', label: t('execution.panel.tabs.chat') },
     { id: 'phone', label: t('execution.panel.tabs.phone') },
@@ -51,6 +50,8 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
         {tabs.map((tb) => (
           <button
             key={tb.id}
+            data-testid={`debug-tab-${tb.id}`}
+            aria-pressed={tab === tb.id}
             data-tutorial={tb.id === 'simulator' || tb.id === 'chat' || tb.id === 'history' ? `tab-${tb.id}` : undefined}
             onClick={() => setTab(tb.id)}
             className={cn(
@@ -194,7 +195,7 @@ function ChatTab() {
       {chatEcho && (
         <div>
           <div className="mb-0.5 text-[10px] text-muted">{t('execution.panel.chat.user')}</div>
-          <div className="chat-bubble chat-bubble--user">{chatEcho}</div>
+          <div data-testid="simulator-chat-user" className="chat-bubble chat-bubble--user">{chatEcho}</div>
         </div>
       )}
       {outbox.map((m) => (
@@ -202,7 +203,7 @@ function ChatTab() {
           <div className="mb-0.5 text-[10px] text-muted">
             {t('execution.panel.chat.bot')} · {formatTimeRu(m.at)}
           </div>
-          <div className="chat-bubble chat-bubble--bot">
+          <div data-testid="simulator-chat-bot" data-chat-id={m.chatId} className="chat-bubble chat-bubble--bot">
             {m.kind === 'photo' ? `📷 ${t('execution.panel.chat.photo')}` : m.text}
             {m.kind === 'photo' && m.text ? ` — ${m.text}` : ''}
           </div>
@@ -232,11 +233,11 @@ function PortsTab() {
     return <div className="pt-4 text-xs text-muted/70">{t('execution.panel.ports.empty')}</div>;
   }
 
-  const renderValues = (values: Record<string, unknown>) =>
+  const renderValues = (values: Record<string, unknown>, direction: 'input' | 'output') =>
     Object.entries(values).map(([port, value]) => (
       <div key={port} className="flex items-baseline gap-2">
         <span className="shrink-0 font-mono text-[10px] text-cyan-300/80">{port}:</span>
-        <span className="min-w-0 flex-1 break-all font-mono text-[10px] text-ink/80">{safeStringify(value)}</span>
+        <span data-testid={`${direction}-${port}`} className="min-w-0 flex-1 break-all font-mono text-[10px] text-ink/80">{safeStringify(value)}</span>
       </div>
     ));
 
@@ -247,7 +248,7 @@ function PortsTab() {
         const def = blockRegistry.get(n.data.blockId);
         const label = n.data.label ?? (def ? t(def.labelKey) : n.data.blockId);
         return (
-          <div key={n.id} className="rounded-lg border border-line/50 bg-abyss/40 px-3 py-2">
+          <div key={n.id} data-testid={`debug-node-${n.data.blockId}`} data-node-id={n.id} data-status={info.status} className="rounded-lg border border-line/50 bg-abyss/40 px-3 py-2">
             <div className="mb-1.5 flex items-center gap-2">
               <span className="text-xs">{def?.ui?.icon}</span>
               <span className="text-[11px] font-semibold">{label}</span>
@@ -262,7 +263,7 @@ function PortsTab() {
                 <div className="mb-0.5 text-[9.5px] font-bold uppercase tracking-wider text-muted/70">
                   {t('execution.panel.ports.inputs')}
                 </div>
-                {renderValues(info.inputs)}
+                {renderValues(info.inputs, 'input')}
               </div>
             )}
             {Object.keys(info.outputs).length > 0 && (
@@ -270,7 +271,7 @@ function PortsTab() {
                 <div className="mb-0.5 text-[9.5px] font-bold uppercase tracking-wider text-muted/70">
                   {t('execution.panel.ports.outputs')}
                 </div>
-                {renderValues(info.outputs)}
+                {renderValues(info.outputs, 'output')}
               </div>
             )}
             {info.error && <div className="mt-1 text-[10px] text-red-300">⛔ {translateError(info.error)}</div>}

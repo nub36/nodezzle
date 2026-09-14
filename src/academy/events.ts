@@ -9,6 +9,7 @@
  *  - единой терминологии интеграционных и E2E-проверок.
  */
 
+import type { DebugPanelTab } from '@/lib/debug-tabs';
 import type { AcademySnapshot } from './types';
 
 export type TutorialEventType =
@@ -21,6 +22,7 @@ export type TutorialEventType =
   | 'MODEL_CREATED'
   | 'DEBUG_OPENED'
   | 'DEBUG_CLOSED'
+  | 'DEBUG_TAB_CHANGED'
   | 'PAGE_OPENED';
 
 export interface TutorialEvent {
@@ -40,6 +42,7 @@ export interface TutorialEvent {
     source?: string;
     text?: string;
     route?: string;
+    tab?: DebugPanelTab;
   };
   /** Шаг, текущий на момент события (диагностика сопоставления). */
   stepId?: string;
@@ -124,6 +127,10 @@ export function diffSnapshots(
     push(next.debugOpen === true ? 'DEBUG_OPENED' : 'DEBUG_CLOSED', {});
   }
 
+  if (next.debugOpen === true && next.debugTab !== undefined && prev.debugTab !== next.debugTab) {
+    push('DEBUG_TAB_CHANGED', { tab: next.debugTab });
+  }
+
   // Маршрут.
   if (prev.route !== next.route && next.route !== undefined && next.route !== '') {
     push('PAGE_OPENED', { route: next.route });
@@ -154,6 +161,8 @@ export function describeEvent(e: TutorialEvent): string {
       return 'DEBUG_OPENED';
     case 'DEBUG_CLOSED':
       return 'DEBUG_CLOSED';
+    case 'DEBUG_TAB_CHANGED':
+      return `DEBUG_TAB_CHANGED ${d.tab ?? '?'}`;
     case 'PAGE_OPENED':
       return `PAGE_OPENED ${d.route ?? ''}`;
     default:
