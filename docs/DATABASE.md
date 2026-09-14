@@ -36,7 +36,19 @@
 `005_project_versions` (снапшоты версий; редактируемый черновик — в `projects`),
 `006_secrets` (секреты пространств: шифротекст/IV/тег, только шифртекст в БД),
 `007_version_status` (статусы версий: `SNAPSHOT`/`LIVE`/`ARCHIVED`),
-`008_telegram_bots` (бот ↔ пространство/проект; токен — только ссылка `secret_id`).
+`008_telegram_bots` (бот ↔ пространство/проект; токен — только ссылка `secret_id`),
+`009_executions` (история исполнений; статусы — контролируемый набор),
+`010_execution_steps` (шаги: сводки входов/выходов после санитайзера),
+`011_audit_logs` (журнал действий; только добавление на уровне приложения).
+
+### 2.4 Хранение журналов (подэтап 5.9)
+- Исполнения и шаги — рабочий журнал: в будущем допускается политика
+  «хранить N дней» и ограничения «не более M исполнений на проект»,
+  «не более K шагов на исполнение», лимит объёма. Автоматическое
+  удаление сейчас выключено — политика вводится отдельным решением.
+- Журнал действий (`audit_logs`) имеет отдельную, более долгую
+  политику хранения; запись — только сервером, изменение и удаление
+  пользовательским АПИ не предусмотрены.
 Остальные таблицы целевой схемы добавляются следующими подэтапами
 ([06-BACKEND-PRODUCT.md](agent-plan/06-BACKEND-PRODUCT.md)).
 Форма хранения — реляционная БД; документ проекта остаётся тем же форматом
@@ -51,7 +63,9 @@
 | `workspace_members` | `workspace_id`, `user_id`, `role` | Доступы (ролевой доступ) |
 | `projects` | `id`, `workspace_id`, `name`, `kind`, `document(jsonb)`, `format_version`, `updated_at` | Проекты (весь `NodezzleProject` документом) |
 | `project_versions` | `id`, `project_id`, `snapshot(jsonb)`, `label`, `created_at` | История версий: снапшот, сравнение, откат |
-| `executions` | `id`, `project_id`, `status`, `started_at`, `duration_ms`, `log(jsonb)` | История выполнений |
+| `executions` | `id`, `workspace_id`, `project_id`, `project_version_id`, `trigger_type`, `trigger_source`, `telegram_bot_id`, `external_event_id`, `parent_execution_id`, `status`, `error_code`, `started_at`, `finished_at`, `duration_ms`, `created_at` | История выполнений (подэтап 5.9) |
+| `execution_steps` | `id`, `execution_id`, `node_id`, `block_type`, `sequence`, `status`, `started_at`, `finished_at`, `duration_ms`, `error_code`, `input_summary`, `output_summary` | Шаги выполнения (задел Time Travel Debug) |
+| `audit_logs` | `id`, `workspace_id`, `actor_user_id`, `action`, `target_type`, `target_id`, `metadata`, `created_at` | Журнал действий, только добавление (подэтап 5.9) |
 | `secrets` | `id`, `workspace_id`, `name`, `value_encrypted`, `created_at` | Секреты (шифруются; в схемах — только `secret_id`) |
 
 Переменные проекта и модели хранятся **внутри документа проекта**
