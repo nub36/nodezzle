@@ -18,6 +18,7 @@ import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { CanvasPage } from '@/features/canvas/CanvasPage';
 import { AcademyPage } from '@/features/academy/AcademyPage';
 import { LessonPage } from '@/features/academy/LessonPage';
+import { BlockReferencePage } from '@/features/academy/BlockReferencePage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/projects/:projectId" element={<CanvasPage />} />
         <Route path="/academy" element={<AcademyPage />} />
+        <Route path="/academy/reference" element={<BlockReferencePage />} />
         <Route path="/academy/lesson/:lessonId" element={<LessonPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

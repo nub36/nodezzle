@@ -17,6 +17,7 @@
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { BLOCK_CATEGORIES, type BlockCategory, type BlockDefinition } from '@/core/types/blocks';
 import { useUiStore, type LibraryTab } from '@/store/ui-store';
@@ -37,6 +38,7 @@ const TABS: { id: LibraryTab; labelKey: string }[] = [
 /** Строка детали: перетаскивание на Canvas или клик (вставка в центр). */
 function BlockRow({ def, onInsert }: { def: BlockDefinition; onInsert: (payload: DndPayload) => void }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const isFavorite = useUiStore((s) => s.favorites.includes(def.id));
   const toggleFavorite = useUiStore((s) => s.toggleFavorite);
 
@@ -58,6 +60,17 @@ function BlockRow({ def, onInsert }: { def: BlockDefinition; onInsert: (payload:
       {def.trigger === true && (
         <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_6px_rgba(232,121,249,0.9)]" />
       )}
+      <button
+        className="px-0.5 text-xs leading-none text-muted opacity-0 transition-opacity hover:text-cyan-300 group-hover:opacity-100 focus-visible:opacity-100"
+        title={t('canvas.library.help')}
+        aria-label={`${t('canvas.library.help')}: ${t(def.labelKey)}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          navigate(`/academy/reference?block=${encodeURIComponent(def.id)}`);
+        }}
+      >
+        ?
+      </button>
       <button
         className={cn(
           'px-0.5 text-sm leading-none transition-opacity',

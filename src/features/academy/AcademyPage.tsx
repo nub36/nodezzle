@@ -70,9 +70,14 @@ export function AcademyPage() {
     <div className="aurora min-h-screen bg-abyss text-ink">
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-8">
-          <button className="btn-ghost mb-4 !py-1.5 text-xs" onClick={() => navigate('/dashboard')}>
-            ← {t('academy.backToDashboard')}
-          </button>
+          <div className="mb-4 flex items-center gap-2">
+            <button className="btn-ghost !py-1.5 text-xs" onClick={() => navigate('/dashboard')}>
+              ← {t('academy.backToDashboard')}
+            </button>
+            <Link to="/academy/reference" className="btn-ghost !py-1.5 text-xs">
+              📚 {t('academy.reference.open')}
+            </Link>
+          </div>
           <h1 className="text-gradient mb-1 text-3xl font-black tracking-tight">{t('academy.title')}</h1>
           <p className="mb-4 text-sm text-muted">{t('academy.subtitle')}</p>
           <div className="glass flex items-center gap-4 rounded-2xl px-4 py-3">

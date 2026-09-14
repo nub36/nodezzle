@@ -5,6 +5,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
@@ -159,6 +160,14 @@ export function ConfigPanel() {
           </div>
           <div>
             {t('canvas.inspector.category')}: {t(`categories.${def.category}`)}
+          </div>
+          <div>
+            <Link
+              to={`/academy/reference?block=${encodeURIComponent(def.id)}`}
+              className="text-cyan-300 hover:underline"
+            >
+              ? {t('canvas.library.help')}
+            </Link>
           </div>
         </div>
 
