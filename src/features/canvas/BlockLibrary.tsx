@@ -35,7 +35,7 @@ const TABS: { id: LibraryTab; labelKey: string }[] = [
   { id: 'myModels', labelKey: 'canvas.library.tabs.myModels' },
 ];
 
-/** Строка детали: перетаскивание на Canvas или клик (вставка в центр). */
+/** Строка детали: перетаскивание на Canvas или клик (вставка на свободное место). */
 function BlockRow({ def, onInsert }: { def: BlockDefinition; onInsert: (payload: DndPayload) => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();

@@ -28,6 +28,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
+import { estimateNodeSize, occupiedRects, findFreePosition, fitsIn } from './node-placement';
 import { NodezzleNode } from './NodezzleNode';
 import { BlockLibrary } from './BlockLibrary';
 import {
@@ -180,7 +181,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
 function FlowCanvas() {
   const { t } = useTranslation();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getViewport, setViewport } = useReactFlow();
 
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
@@ -392,12 +393,49 @@ function FlowCanvas() {
     [setDragPort],
   );
 
+  // Общая геометрия вставки из библиотеки/меню. Стор читаем непосредственно
+  // перед добавлением: даже несколько быстрых кликов видят предыдущие узлы.
+  const insertAtFreePosition = useCallback((payload: DndPayload, point?: { x: number; y: number }) => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return undefined;
+    const rect = wrapper.getBoundingClientRect();
+    const library = wrapper.querySelector('[data-tutorial="library"]')?.getBoundingClientRect();
+    const inspector = wrapper.querySelector('[data-tutorial="inspector"]')?.getBoundingClientRect();
+    const left = (library?.right ?? rect.left) + 16;
+    const right = (inspector?.left ?? rect.right) - 16;
+    const top = rect.top + 16;
+    const bottom = rect.bottom - 16;
+    // На экране, где панели перекрывают весь холст, гарантировать видимость
+    // невозможно. Используем сам холст, но по-прежнему исключаем наложения узлов.
+    const area = right > left ? { left, right, top, bottom }
+      : { left: rect.left + 16, right: rect.right - 16, top, bottom };
+    const start = screenToFlowPosition({ x: area.left, y: area.top });
+    const end = screenToFlowPosition({ x: area.right, y: area.bottom });
+    const bounds = { ...start, width: end.x - start.x, height: end.y - start.y };
+    const size = estimateNodeSize(blockRegistry.get(payload.blockId));
+    const center = screenToFlowPosition({ x: (area.left + area.right) / 2, y: (area.top + area.bottom) / 2 });
+    const preferred = point ? screenToFlowPosition(point) : { x: center.x - size.width / 2, y: center.y - size.height / 2 };
+    const obstacles = occupiedRects(useProjectStore.getState().nodes, (id) => blockRegistry.get(id));
+    const position = findFreePosition(preferred, size, obstacles, bounds);
+    const id = addNode(payload.blockId, position, payload.config);
+    if (id && !fitsIn(position, size, bounds)) {
+      // Места на экране нет: показываем новую деталь, не переставляя старые.
+      const zoom = Math.max(0.15, Math.min(getViewport().zoom, (area.right - area.left) / size.width, (area.bottom - area.top) / size.height));
+      void setViewport({
+        x: (area.left + area.right) / 2 - rect.left - (position.x + size.width / 2) * zoom,
+        y: (area.top + area.bottom) / 2 - rect.top - (position.y + size.height / 2) * zoom,
+        zoom,
+      });
+    }
+    return id;
+  }, [addNode, screenToFlowPosition, getViewport, setViewport]);
+
   // Выбор детали из меню: создать рядом и автоматически подключить.
   const handleQuickPick = useCallback(
     (candidate: QuickInsertCandidate) => {
-      if (!quickInsert) return;
-      const flowPos = screenToFlowPosition({ x: quickInsert.x, y: quickInsert.y });
-      const newId = addNode(candidate.def.id, { x: flowPos.x + 30, y: flowPos.y - 20 });
+      if (!quickInsert || !wrapperRef.current) return;
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const newId = insertAtFreePosition({ blockId: candidate.def.id }, { x: rect.left + quickInsert.x + 30, y: rect.top + quickInsert.y });
       if (newId) {
         const port = quickInsert.port;
         const connection: Connection =
@@ -408,7 +446,7 @@ function FlowCanvas() {
       }
       setQuickInsert(null);
     },
-    [quickInsert, addNode, handleConnect, screenToFlowPosition],
+    [quickInsert, insertAtFreePosition, handleConnect],
   );
 
   const focusMode = useUiStore((s) => s.focusMode);
@@ -477,11 +515,9 @@ function FlowCanvas() {
       event.preventDefault();
       const payload = decodeDnd(event.dataTransfer.getData(DND_MIME));
       if (!payload || !wrapperRef.current) return;
-      const rect = wrapperRef.current.getBoundingClientRect();
-      const position = screenToFlowPosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
-      addNode(payload.blockId, position, payload.config);
+      insertAtFreePosition(payload, { x: event.clientX, y: event.clientY });
     },
-    [addNode, screenToFlowPosition],
+    [insertAtFreePosition],
   );
 
   const onDragOver = useCallback((event: ReactDragEvent) => {
@@ -489,18 +525,10 @@ function FlowCanvas() {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  // Вставка из библиотеки по клику — в центр видимой области.
+  // Клик в библиотеке — ближайшее свободное место к центру между панелями.
   const onInsertAtCenter = useCallback(
-    (payload: DndPayload) => {
-      if (!wrapperRef.current) return;
-      const rect = wrapperRef.current.getBoundingClientRect();
-      const position = screenToFlowPosition({
-        x: rect.width / 2 - 110,
-        y: rect.height / 2 - 80,
-      });
-      addNode(payload.blockId, position, payload.config);
-    },
-    [addNode, screenToFlowPosition],
+    (payload: DndPayload) => { insertAtFreePosition(payload); },
+    [insertAtFreePosition],
   );
 
   // --- Клавиатура ---
@@ -622,7 +650,7 @@ function FlowCanvas() {
       <GroupFrames />
 
       {/* Библиотека деталей (вкладки, поиск, избранное, недавние, модели) */}
-      <div className="pointer-events-none absolute bottom-3 left-3 top-3 z-10">
+      <div className="pointer-events-none absolute bottom-3 left-3 top-3 z-10" data-tutorial="library">
         <BlockLibrary onInsert={onInsertAtCenter} />
       </div>
 

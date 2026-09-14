@@ -3,7 +3,7 @@
  *
  * Два сценария:
  * 1. Пустой Canvas — стартовые детали: триггеры Telegram, триггеры Web,
- *    базовые значения. Клик — деталь создаётся в центре схемы.
+ *    базовые значения. Клик — деталь создаётся на свободном месте ближе к центру.
  * 2. Соединение протянуто от порта и отпущено на пустом месте — всплывающее
  *    меню ТОЛЬКО совместимых деталей (правила умных соединений). Выбор
  *    создаёт деталь рядом и автоматически подключает её к исходному порту.
@@ -59,6 +59,7 @@ export function QuickInsertMenu({
     <div
       className="glass-strong pointer-events-auto absolute z-20 w-60 rounded-xl p-2"
       style={{ left: x, top: y }}
+      data-testid="quick-insert-menu"
     >
       <div className="mb-1 flex items-center justify-between px-1">
         <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted">
