@@ -7,6 +7,7 @@
  * должно быть — только публичные данные обновления.
  */
 
+import { messageCommand } from '../../../src/core/telegram/message-command.ts';
 import { z } from 'zod';
 import { readCallback, validCallbackData, validCallbackId } from '../../../src/core/telegram/callback.ts';
 import type { TriggerPayload } from '../../../src/core/types/runtime.ts';
@@ -52,9 +53,6 @@ export interface TelegramEvent {
   payload: TriggerPayload;
 }
 
-/** Команда вида `/start` или `/help@MyBot аргументы`. */
-const COMMAND_RE = /^\/([a-zA-Z0-9_]{1,32})(?:@\S+)?(?:\s|$)/;
-
 export function updateToEvent(update: TelegramUpdate): TelegramEvent | null {
   if (update.callback_query) {
     const q = update.callback_query;
@@ -70,8 +68,7 @@ export function updateToEvent(update: TelegramUpdate): TelegramEvent | null {
   const message = update.message ?? update.edited_message;
   if (!message) return null; // остальные типы обновлений пока игнорируем
   const text = message.text ?? '';
-  const match = COMMAND_RE.exec(text);
-  const command = match ? match[1] : undefined;
+  const command = messageCommand(text);
   const payload: TriggerPayload = {
     source: 'telegram',
     telegram: {

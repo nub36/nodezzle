@@ -124,6 +124,9 @@ export function ConfigPanel() {
               {configKeys.map((key) => {
                 const value = config[key];
                 const labelKey = isWebField(node.data.blockId) && key === 'label' ? 'fieldLabel' : node.data.blockId === 'web.modal' && key === 'title' ? 'modalTitle' : key;
+                if (node.data.blockId === 'telegram.send_message' && key === 'replyText') {
+                  return <label key={key} className="block"><span className="mb-1 block text-[11px] text-muted">{t('blocks.config.replyText')}</span><textarea className="input-dark" aria-label={t('blocks.config.replyText')} value={String(value ?? '')} onChange={(e) => setNodeConfig(node.id, key, e.target.value)} /><small>{t('simple.wirePriority')}</small></label>;
+                }
                 if ((key === 'formMode' && node.data.blockId === 'web.form') || (key === 'formNodeId' && isWebField(node.data.blockId))) {
                   const forms = nodes.filter((n) => n.data.blockId === 'web.form');
                   return <label key={key} className="block">

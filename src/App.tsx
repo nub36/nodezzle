@@ -18,6 +18,7 @@ import { WorkspaceSectionPage } from '@/features/navigation/WorkspaceSectionPage
 import { LandingPage } from '@/features/landing/LandingPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ServerCanvasPage } from '@/features/projects/ServerCanvasPage';
+import { SimpleEditorPage, SimpleStartPage } from '@/features/simple/SimpleEditorPage';
 import { CanvasPage } from '@/features/canvas/CanvasPage';
 import { AcademyPage } from '@/features/academy/AcademyPage';
 import { LessonPage } from '@/features/academy/LessonPage';
@@ -34,6 +35,8 @@ const router = createHashRouter([{
     { path: '/workspace/:section', element: <WorkspaceSectionPage /> },
     { path: '/dashboard', element: <DashboardPage /> },
     { path: '/server-projects/:projectId', element: <ServerCanvasPage /> },
+    { path: '/build', element: <SimpleStartPage /> },
+    { path: '/build/:projectId', element: <SimpleEditorPage /> },
     { path: '/projects/:projectId', element: <CanvasPage /> },
     { path: '/academy', element: <AcademyPage /> },
     { path: '/academy/reference', element: <BlockReferencePage /> },

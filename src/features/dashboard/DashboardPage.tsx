@@ -138,6 +138,7 @@ export function DashboardPage() {
               ))}
             </div>
           </div>
+          <Link to="/build" className="btn-ghost" data-testid="create-simple-project">{t('simple.newProject')}</Link>
           <button className="btn-primary" data-testid="create-project" onClick={() => void handleCreate()} disabled={creating}>
             {creating ? '…' : '＋'} {t('dashboard.create')}
           </button>
@@ -180,6 +181,7 @@ export function DashboardPage() {
                   {t('dashboard.modified')} {formatDateRu(p.updatedAt)}
                 </div>
                 <div className="mt-auto flex gap-2">
+                  <Link to={`/build/${p.id}`} className="btn-ghost flex-1 justify-center !py-2 text-xs">{t('simple.mode')}</Link>
                   <Link to={`/projects/${p.id}`} className="btn-ghost flex-1 justify-center !py-2 text-xs">
                     {t('dashboard.open')}
                   </Link>

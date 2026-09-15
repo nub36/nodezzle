@@ -12,4 +12,4 @@ export const workspaceLinks = [
   ...plannedSections.filter((id) => id !== 'requests').map((id) => ({ id, to: `/workspace/${id}`, planned: true })),
   { id: 'glossary', to: '/academy/glossary' },
 ];
-export const isEditorPath = (path: string) => /^\/(server-projects|projects)\/[^/]+$/.test(path);
+export const isEditorPath = (path: string) => /^\/(server-projects|projects|build)\/[^/]+$/.test(path);

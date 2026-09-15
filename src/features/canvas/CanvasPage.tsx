@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
+import { useLocalProjectLifecycle } from '@/features/projects/useLocalProjectLifecycle';
 import { useParams } from 'react-router-dom';
 import {
   Background,
@@ -147,11 +148,7 @@ function CanvasInner({ projectId, serverSession }: { projectId: string; serverSe
   const setDebugOpen = useUiStore((s) => s.setDebugOpen);
   const loading = useProjectStore((s) => s.loading);
   const project = useProjectStore((s) => s.project);
-  const loadById = useProjectStore((s) => s.loadById);
-
-  useEffect(() => {
-    if (!serverSession) void loadById(projectId);
-  }, [projectId, loadById, serverSession]);
+  useLocalProjectLifecycle(projectId, !!serverSession);
 
   useEffect(() => {
     // При входе/переходе на узкий экран сначала освобождаем холст.
@@ -159,21 +156,6 @@ function CanvasInner({ projectId, serverSession }: { projectId: string; serverSe
     if (narrow) setDebugOpen(false);
   }, [narrow, projectId, setDebugOpen]);
 
-  // Autosave: flush при переходе/закрытии и beforeunload.
-  useEffect(() => {
-    if (serverSession) return;
-    const handler = () => useProjectStore.getState().flushSave();
-    window.addEventListener('beforeunload', handler);
-    return () => {
-      window.removeEventListener('beforeunload', handler);
-      useProjectStore.getState().flushSave();
-    };
-  }, [projectId, serverSession]);
-
-  // Сброс состояния выполнения при смене проекта.
-  useEffect(() => {
-    useExecutionStore.getState().reset();
-  }, [projectId]);
 
   if (loading || !project) {
     return (

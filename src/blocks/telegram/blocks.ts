@@ -101,9 +101,12 @@ export const telegramBlocks: BlockDefinition[] = [
     difficulty: 'basic',
     inputs: [dport('text', 'blocks.ports.text', 'text'), dport('chat_id', 'blocks.ports.chat_id', 'number'), dport('keyboard', 'blocks.ports.keyboard', 'object')],
     outputs: [dport('message_id', 'blocks.ports.message_id', 'number'), eport()],
-    runtime: async ({ inputs, connectedInputs, runtime }) => {
+    defaults: { replyText: '' },
+    runtime: async ({ inputs, connectedInputs, config, runtime }) => {
       if (connectedInputs?.includes('keyboard') && inputs.keyboard === undefined) return { error: 'ERR_TELEGRAM_KEYBOARD' };
-      const text = String(inputs.text ?? '');
+      // Провод приоритетен даже при пустом/недоставленном значении.
+      const wiredText = connectedInputs?.includes('text') || inputs.text !== undefined;
+      const text = String((wiredText ? inputs.text : config.replyText) ?? '');
       const chatId = Number(inputs.chat_id);
       if (text.trim() === '') return { error: ERR.EMPTY_INPUT };
       if (!Number.isFinite(chatId)) return { error: ERR.EMPTY_INPUT };
