@@ -8,6 +8,7 @@
  * дорожной карты).
  */
 
+import { TelegramCallbackNotice } from './TelegramCallbackNotice';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useExecutionStore } from '@/store/execution-store';
@@ -59,7 +60,7 @@ export function PhonePreview() {
             </div>
           )}
 
-          {outbox.map((msg) => (
+          {outbox.map((msg) => msg.kind === 'callback_answer' ? <TelegramCallbackNotice key={msg.id} answer={msg} /> : (
             <div key={msg.id} className="flex justify-start">
               <div className="phone-bubble phone-bubble--bot">
                 {msg.kind === 'photo' && (

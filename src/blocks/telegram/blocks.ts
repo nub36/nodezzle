@@ -4,7 +4,7 @@
  * Telegram Layer построен поверх общего ядра: блоки — обычные
  * Block Definitions, транспорт (Bot API) изолирован в RuntimeContext.telegram.
  * Сейчас отправки идут в outbox (симуляция); реальный Bot API подключается
- * через backend (см. docs/TELEGRAM.md). Токен бота — только в .env сервера.
+ * через backend (см. docs/TELEGRAM.md). Токен бота — только в серверном Secrets Vault.
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
@@ -32,7 +32,8 @@ export const telegramBlocks: BlockDefinition[] = [
       dport('username', 'blocks.ports.username', 'text'),
       dport('message', 'blocks.ports.message', 'telegram_message'),
     ],
-    matches: (payload: TriggerPayload) => payload.source === undefined || payload.source === 'telegram',
+    matches: (payload: TriggerPayload) => (payload.source === undefined || payload.source === 'telegram')
+      && (payload.telegram?.event === undefined || payload.telegram.event === 'message'),
     runtime: ({ payload, runtime }) => {
       const m = payload.telegram ?? { text: '', user_id: 0, chat_id: 0 };
       runtime.log('info', 'telegram.message_received', {
@@ -70,7 +71,8 @@ export const telegramBlocks: BlockDefinition[] = [
     defaults: { command: '/start' },
     matches: (payload: TriggerPayload, config: Record<string, unknown>) => {
       const m = payload.telegram;
-      if (!m || payload.source === 'web') return false;
+      if (!m || (payload.source !== undefined && payload.source !== 'telegram')
+        || (m.event !== undefined && m.event !== 'message')) return false;
       const expected = normalizeCommand(String(config.command ?? ''));
       return expected !== '' && normalizeCommand(m.command ?? '') === expected;
     },

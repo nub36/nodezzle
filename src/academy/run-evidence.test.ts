@@ -147,3 +147,14 @@ describe('Результаты практического запуска', () =>
     expect(evaluateStep(wanted, buildAcademySnapshot())).toBe(true);
   });
 });
+
+
+it('09C1: callback не засчитывается как отправка сообщения, ответ на кнопку не пузырь чата', () => {
+  useExecutionStore.setState({ history: [{ id: 'cb', at: 100, status: 'success', durationMs: 1, source: 'telegram', telegramEvent: 'callback_query', simulatorText: 'привет' }],
+    outbox: [{ id: 'ack', at: 100, kind: 'callback_answer', text: 'Принято', callbackQueryId: 'cb-1', showAlert: false }] });
+  const send: LessonStep = { id: 'send', kind: 'send-simulator-message', source: 'telegram', titleKey: 't', textKey: 't' };
+  expect(buildAcademySnapshot().outboxCount).toBe(0);
+  expect(evaluateStep(send, buildAcademySnapshot())).toBe(false);
+  useExecutionStore.setState({ history: [{ id: 'msg', at: 101, status: 'success', durationMs: 1, source: 'telegram', simulatorText: 'привет' }] });
+  expect(evaluateStep(send, buildAcademySnapshot())).toBe(true);
+});

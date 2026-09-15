@@ -228,3 +228,15 @@ ERR_WEB_TREE. Поля и вложенные modal запрещены рекур
 дети и окно внутри обычной структуры допустимы. В web_ui теперь 10/10.
 Открытие ручное, локальное, не вызывает modal_open/close; эти триггеры
 сохраняют симулятор/API. Контракт, ограничения и практика — WEB.md/ADR-024.
+
+
+## Telegram callback/ответ (09C1, 0.5.44)
+
+Реализованы прежние telegram.callback_query и telegram.answer_callback.
+Первый имеет точный config.callbackDataFilter; прежние выходы data/message_id/
+user_id/chat_id сохранены, добавлен callback_id:text. Ответ сохраняет text/
+show_alert и ok/error, добавляет callback_id:text; настройки text/show_alert.
+Callback не запускает обработчики сообщения/команды. Ответ — отдельный
+callback_answer в outbox, не чат-сообщение. ok — постановка в outbox.
+Контракт, ограничения и практика — TELEGRAM.md; ADR-025. Всего 96 доступных
+исполняемых деталей из 165. Конструктора inline-клавиатуры пока нет.

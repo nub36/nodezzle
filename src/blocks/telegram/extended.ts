@@ -1,13 +1,13 @@
 /**
  * Расширенные детали Telegram (Этап 4, часть B).
  *
- * Определения фиксируют контракты портов и место в библиотеке
- * (статус `planned`, скрыты из палитры). Исполнение появится вместе с
- * реальным транспортом бота (см. docs/TELEGRAM.md) — до тех пор детали
- * не выдаются за реализованные.
+ * Callback/answer реализованы в 09C1. Остальные определения planned
+ * фиксируют будущие контракты и скрыты. Серверный транспорт уже есть;
+ * его наличие само по себе не означает реализацию всех блоков.
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
+import { readCallback, validCallbackData, validCallbackId } from '@/core/telegram/callback';
 import { dport, eport } from '../shared';
 
 export const telegramExtendedBlocks: BlockDefinition[] = [
@@ -21,11 +21,22 @@ export const telegramExtendedBlocks: BlockDefinition[] = [
     category: 'telegram_events',
     subcategory: 'inline',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { callbackDataFilter: '' },
+    matches: (payload, config) => {
+      const callback = readCallback(payload);
+      const filter = config.callbackDataFilter === undefined ? '' : config.callbackDataFilter;
+      return !!callback && (filter === '' || (validCallbackData(filter) && filter === callback.data));
+    },
+    runtime: ({ payload }) => {
+      const callback = readCallback(payload);
+      return callback ? { outputs: callback } : { error: 'ERR_TELEGRAM_CALLBACK' };
+    },
     trigger: true,
     inputs: [],
     outputs: [
+      dport('callback_id', 'blocks.ports.callback_id', 'text'),
       dport('data', 'blocks.ports.data', 'text'),
       dport('message_id', 'blocks.ports.message_id', 'number'),
       dport('user_id', 'blocks.ports.user_id', 'number'),
@@ -247,9 +258,22 @@ export const telegramExtendedBlocks: BlockDefinition[] = [
     category: 'telegram_actions',
     subcategory: 'inline',
     difficulty: 'advanced',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { text: '', show_alert: false },
+    runtime: async ({ inputs, config, payload, runtime }) => {
+      // Явный ID позволяет передавать callback через модель; fallback — только текущее проверенное событие.
+      const id = inputs.callback_id === undefined ? readCallback(payload)?.callback_id : inputs.callback_id;
+      const text = inputs.text === undefined ? (config.text === undefined ? '' : config.text) : inputs.text;
+      const alert = inputs.show_alert === undefined ? (config.show_alert === undefined ? false : config.show_alert) : inputs.show_alert;
+      if (!validCallbackId(id) || typeof text !== 'string' || [...text].length > 200 || typeof alert !== 'boolean')
+        return { error: 'ERR_TELEGRAM_CALLBACK' };
+      if (!runtime.telegram.answerCallback) return { error: 'ERR_TELEGRAM_CALLBACK_ADAPTER' };
+      const ok = await runtime.telegram.answerCallback({ callbackQueryId: id, text, showAlert: alert });
+      return { outputs: { ok } };
+    },
     inputs: [
+      dport('callback_id', 'blocks.ports.callback_id', 'text'),
       dport('text', 'blocks.ports.text', 'text'),
       dport('show_alert', 'blocks.ports.show_alert', 'boolean'),
     ],

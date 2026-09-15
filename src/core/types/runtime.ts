@@ -31,6 +31,11 @@ export interface TriggerPayload {
   /** Необязательный ID точки входа активного холста; без него — обычный выбор триггеров. */
   targetNodeId?: string;
   telegram?: {
+    /** Без event сохраняется прежняя семантика сообщения. */
+    event?: 'message' | 'callback_query';
+    callback_id?: string;
+    data?: string;
+    message_id?: number;
     text: string;
     command?: string;
     user_id: number;
@@ -54,14 +59,11 @@ export interface LogEntry {
   data?: unknown;
 }
 
-/** Сообщение, «отправленное» в Telegram (симуляция до реального API). */
-export interface TelegramOutMessage {
-  id: string;
-  chatId: number;
-  kind: 'text' | 'photo';
-  text: string;
-  at: number;
-}
+/** Исходящее действие: локальный outbox, на сервере — очередь передачи адаптеру. */
+export type TelegramOutMessage = { id: string; text: string; at: number } & (
+  | { kind: 'text' | 'photo'; chatId: number }
+  | { kind: 'callback_answer'; callbackQueryId: string; showAlert: boolean }
+);
 
 /**
  * Контекст, доступный обработчику блока во время выполнения.
@@ -75,6 +77,8 @@ export interface RuntimeContext {
   log: (level: LogLevel, message: string, data?: unknown) => void;
   telegram: {
     send: (msg: { chatId: number; text: string }) => Promise<number>;
+    /** Необязателен для совместимости старых пользовательских адаптеров. */
+    answerCallback?: (answer: { callbackQueryId: string; text: string; showAlert: boolean }) => Promise<boolean>;
     sendPhoto: (msg: { chatId: number; photo: unknown; caption?: string }) => Promise<number>;
   };
   /** Модели проекта, доступные блоку «Вызов модели». */

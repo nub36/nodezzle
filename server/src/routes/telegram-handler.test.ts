@@ -16,6 +16,7 @@ const TOKEN_VALUE = '777:МокТокенТолькоДляТестов';
 let db: Db;
 let server: Server;
 let baseUrl = '';
+const answers: Array<{ callbackQueryId: string; text?: string; showAlert?: boolean }> = [];
 const sent: Array<{ token: string; chatId: number | string; text: string }> = [];
 
 const config: ServerConfig = {
@@ -89,6 +90,7 @@ beforeEach(async () => {
   db = openDb(':memory:');
   runMigrations(db, path.join(config.repoRoot, 'server', 'migrations'));
   sent.length = 0;
+  answers.length = 0;
   const app = createApp({
     config,
     db,
@@ -103,7 +105,7 @@ beforeEach(async () => {
       sendPhoto: async () => ({ messageId: 1 }),
       editMessageText: async () => true,
       deleteMessage: async () => true,
-      answerCallbackQuery: async () => true,
+      answerCallbackQuery: async (params) => { answers.push(params); return true; },
       setWebhook: async () => true,
       getWebhookInfo: async () => ({ url: '', pendingUpdateCount: 0 }),
       deleteWebhook: async () => true,
@@ -194,4 +196,37 @@ describe('5.8D: LIVE-версия из обновления', () => {
     expect(res.status).toBe(404); // бота больше нет
     expect(sent).toEqual([]);
   });
+});
+
+
+function callbackDoc() {
+  const doc = replyDoc('Это сообщение не должно отправиться');
+  doc.canvas.nodes.push(node('q', 'telegram.callback_query', { callbackDataFilter: 'confirm' }), node('a', 'telegram.answer_callback', { text: 'Подтверждено', show_alert: true }));
+  doc.canvas.edges.push(edge('callback-id', 'q', 'callback_id', 'a', 'callback_id'));
+  return doc;
+}
+const callbackUpdate = (data = 'confirm') => ({ update_id: 99, callback_query: {
+  id: 'query-99', data, from: { id: 123 }, message: { message_id: 10, text: '/start', chat: { id: -77, type: 'group' } },
+} });
+it('09C1: callback → LIVE → outbox → answerCallbackQuery, не sendMessage; черновик не исполняется', async () => {
+  const { webhookPath, projectId, cookie } = await setup(true, callbackDoc());
+  await api('PUT', `/api/projects/${projectId}`, { document: replyDoc('Черновик') }, cookie);
+  const res = await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate());
+  expect(res.status).toBe(200);
+  expect(answers).toEqual([{ callbackQueryId: 'query-99', text: 'Подтверждено', showAlert: true }]);
+  expect(sent).toEqual([]);
+  expect(await res.text()).not.toContain(TOKEN_VALUE);
+});
+it('09C1: чужие данные и невалидный callback не создают исходящих действий', async () => {
+  const { webhookPath } = await setup(true, callbackDoc());
+  expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate('cancel'))).status).toBe(200);
+  expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate('я'.repeat(33)))).status).toBe(400);
+  expect(answers).toEqual([]);
+  expect(sent).toEqual([]);
+});
+it('09C1: callback без LIVE не исполняет черновик', async () => {
+  const { webhookPath } = await setup(false, callbackDoc());
+  expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate())).status).toBe(200);
+  expect(answers).toEqual([]);
+  expect(sent).toEqual([]);
 });

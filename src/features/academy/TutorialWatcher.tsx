@@ -47,6 +47,8 @@ export function TutorialWatcher() {
     }
     if (startedFor.current === lesson.id) return;
     startedFor.current = lesson.id;
+    // Нынешние уроки отправляют сообщения: callback-режим из другого проекта не переносим.
+    useExecutionStore.getState().setPayload({ telegramEvent: 'message' });
     const resumeStep = useAcademyStore.getState().progress.lessons[lesson.id]?.stepIndex ?? 0;
     useTutorialStore.getState().start(lesson.id, resumeStep);
   }, [lesson, project]);

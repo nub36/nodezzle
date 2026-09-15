@@ -111,6 +111,12 @@ export async function executeCanvas(
     cancel,
     log: pushLog,
     telegram: {
+      answerCallback: async (answer) => {
+        const msg: TelegramOutMessage = { id: uid(), at: Date.now(), kind: 'callback_answer', ...answer };
+        outbox.push(msg);
+        options.onOutbox?.(msg);
+        return true; // Поставлено в outbox; не подтверждение доставки Telegram.
+      },
       send: async (m) => {
         const msg: TelegramOutMessage = { id: uid(), chatId: m.chatId, kind: 'text', text: m.text, at: Date.now() };
         outbox.push(msg);

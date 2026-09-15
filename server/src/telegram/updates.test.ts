@@ -82,3 +82,22 @@ describe('updateToEvent', () => {
     expect(updateToEvent(upd)!.payload.telegram?.command).toBe('help');
   });
 });
+
+const callbackUpdate = {
+  update_id: 10, callback_query: { id: 'cb-1', data: 'confirm', from: { id: 77, username: 'user' }, message: { message_id: 9, text: '/start', from: { id: 999 }, chat: { id: -42, type: 'group' } } },
+};
+it('callback нормализуется отдельно, отправитель — нажавший, текст/команда/лишние поля не переносятся', () => {
+  const raw = { ...callbackUpdate, callback_query: { ...callbackUpdate.callback_query, secret: 'не копировать' } };
+  expect(updateToEvent(telegramUpdateSchema.parse(raw))).toEqual({ updateId: 10, payload: { source: 'telegram', telegram: { event: 'callback_query', callback_id: 'cb-1', data: 'confirm', text: '', message_id: 9, user_id: 77, username: 'user', chat_id: -42 } } });
+});
+it('не принимает неоднозначные updates и неверный callback UTF-8/ID', () => {
+  expect(telegramUpdateSchema.safeParse({ ...callbackUpdate, message: validUpdate.message }).success).toBe(false);
+  for (const patch of [{ id: '' }, { data: 'я'.repeat(33) }, { from: {} }]) {
+    expect(telegramUpdateSchema.safeParse({ ...callbackUpdate, callback_query: { ...callbackUpdate.callback_query, ...patch } }).success).toBe(false);
+  }
+});
+it('inline-mode, игры, недоступное сообщение и callback без данных игнорируются', () => {
+  for (const patch of [{ message: undefined, inline_message_id: 'inline-id' }, { game_short_name: 'game' }, { message: { ...callbackUpdate.callback_query.message, date: 0 } }, { data: undefined }]) {
+    expect(updateToEvent(telegramUpdateSchema.parse({ ...callbackUpdate, callback_query: { ...callbackUpdate.callback_query, ...patch } }))).toBeNull();
+  }
+});

@@ -8,7 +8,9 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useExecutionStore } from '@/store/execution-store';
+import { readCallback } from '@/core/telegram/callback';
+import { TelegramCallbackNotice } from './TelegramCallbackNotice';
+import { buildTriggerPayload, useExecutionStore } from '@/store/execution-store';
 import { helpRouteForError } from '@/academy/search';
 import { formatTimeRu, safeStringify, translateError } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -120,6 +122,21 @@ function SimulatorTab() {
         {payload.source === 'telegram' ? (
           <>
             <label className="block">
+              <span className="mb-1 block text-[11px] text-muted">{t('execution.panel.simulator.telegramEvent')}</span>
+              <select className="input-dark" aria-label={t('execution.panel.simulator.telegramEvent')}
+                value={payload.telegramEvent ?? 'message'} onChange={(e) => setPayload({ telegramEvent: e.target.value as 'message' | 'callback_query' })}>
+                <option value="message">{t('execution.panel.simulator.messageEvent')}</option>
+                <option value="callback_query">{t('execution.panel.simulator.callbackEvent')}</option>
+              </select>
+            </label>
+            {payload.telegramEvent === 'callback_query' ? <>
+              {(['callbackId', 'callbackData', 'messageId'] as const).map((key) => <label key={key} className="block">
+                <span className="mb-1 block text-[11px] text-muted">{t(`execution.panel.simulator.${key}`)}</span>
+                <input className="input-dark" type={key === 'messageId' ? 'number' : 'text'} value={payload[key] ?? ''}
+                  onChange={(e) => setPayload({ [key]: key === 'messageId' ? Number(e.target.value) : e.target.value })} />
+              </label>)}
+            </> : <>
+            <label className="block">
               <span className="mb-1 block text-[11px] text-muted">{t('execution.panel.simulator.text')}</span>
               <input
                 className="input-dark"
@@ -136,6 +153,7 @@ function SimulatorTab() {
                 onChange={(e) => setPayload({ command: e.target.value })}
               />
             </label>
+            </>}
             <div className="grid grid-cols-2 gap-2">
               <label className="block">
                 <span className="mb-1 block text-[11px] text-muted">{t('execution.panel.simulator.userId')}</span>
@@ -168,6 +186,8 @@ function SimulatorTab() {
           </label>
         )}
       </div>
+      {payload.source === 'telegram' && payload.telegramEvent === 'callback_query' && !readCallback(buildTriggerPayload(payload, ['telegram_events'])) &&
+        <p role="alert" className="text-xs text-red-300">{t('errors.ERR_TELEGRAM_CALLBACK')}</p>}
       <p className="text-[11px] leading-relaxed text-muted/70">{t('execution.panel.simulator.hint')}</p>
     </div>
   );
@@ -198,7 +218,7 @@ function ChatTab() {
           <div data-testid="simulator-chat-user" className="chat-bubble chat-bubble--user">{chatEcho}</div>
         </div>
       )}
-      {outbox.map((m) => (
+      {outbox.map((m) => m.kind === 'callback_answer' ? <TelegramCallbackNotice key={m.id} answer={m} /> : (
         <div key={m.id}>
           <div className="mb-0.5 text-[10px] text-muted">
             {t('execution.panel.chat.bot')} · {formatTimeRu(m.at)}

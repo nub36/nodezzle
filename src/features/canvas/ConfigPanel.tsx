@@ -156,6 +156,12 @@ export function ConfigPanel() {
                     </label>
                   );
                 }
+                if (node.data.blockId === 'telegram.answer_callback' && key === 'show_alert') {
+                  return <label key={key} className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={value === true} onChange={(e) => setNodeConfig(node.id, key, e.target.checked)} />
+                    {t('blocks.config.show_alert')}
+                  </label>;
+                }
                 const isNumber = typeof value === 'number';
                 return (
                   <label key={key} className="block">

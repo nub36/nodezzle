@@ -55,6 +55,7 @@ export function buildAcademySnapshot(): AcademySnapshot {
       lastRecord !== undefined
         ? {
           status: lastRecord.status,
+          telegramEvent: lastRecord.telegramEvent,
           at: lastRecord.at,
           source: lastRecord.source ?? tutorial.lastRunSource ?? undefined,
           results: !execution.running && execution.nodeInfoRunId === lastRecord.id
@@ -65,7 +66,7 @@ export function buildAcademySnapshot(): AcademySnapshot {
             : undefined,
         }
         : null,
-    outboxCount: execution.outbox.length,
+    outboxCount: execution.outbox.filter((m) => m.kind !== 'callback_answer').length,
     debugOpen: tutorial.debugOpen,
     debugTab: execution.panelTab,
     route: typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '',

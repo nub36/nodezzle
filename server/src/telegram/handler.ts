@@ -75,6 +75,10 @@ export function createTelegramUpdateHandler(deps: TelegramHandlerDeps): Telegram
 
     const transport = transportFor(token);
     for (const msg of result.outbox) {
+      if (msg.kind === 'callback_answer') {
+        await transport.answerCallbackQuery({ callbackQueryId: msg.callbackQueryId, text: msg.text, showAlert: msg.showAlert });
+        continue;
+      }
       // Снапшот-журнал хранит текст; фото-сообщения пока отправляются
       // подписью как текстом (см. docs/TELEGRAM.md).
       await transport.sendMessage({ chatId: msg.chatId, text: msg.text });

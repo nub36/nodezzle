@@ -39,7 +39,7 @@ describe('executeCanvas: живое выполнение схем', () => {
     expect(result.status).toBe('success');
     expect(result.outbox).toHaveLength(1);
     expect(result.outbox[0].text).toBe('Привет! Это NODEZZLE 🤖');
-    expect(result.outbox[0].chatId).toBe(1000);
+    expect(result.outbox[0]).toMatchObject({ kind: 'text', chatId: 1000 });
     // Все узлы основной схемы выполнены успешно.
     for (const n of project.canvas.nodes) {
       expect(result.nodeRuns[n.id].status).toBe('success');

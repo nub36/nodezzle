@@ -49,7 +49,7 @@ export interface TelegramTransport {
   sendPhoto(params: { chatId: number | string; photo: string; caption?: string }): Promise<{ messageId: number }>;
   editMessageText(params: { chatId: number | string; messageId: number; text: string }): Promise<boolean>;
   deleteMessage(params: { chatId: number | string; messageId: number }): Promise<boolean>;
-  answerCallbackQuery(params: { callbackQueryId: string; text?: string }): Promise<boolean>;
+  answerCallbackQuery(params: { callbackQueryId: string; text?: string; showAlert?: boolean }): Promise<boolean>;
   /** Регистрация вебхука (только публичный HTTPS-адрес). */
   setWebhook(params: { url: string; secretToken?: string }): Promise<boolean>;
   getWebhookInfo(): Promise<{ url: string; pendingUpdateCount: number; lastErrorDate?: number }>;
@@ -125,9 +125,10 @@ export function createTelegramApi(options: TelegramTransportOptions): TelegramTr
       await call<unknown>('deleteMessage', { chat_id: chatId, message_id: messageId });
       return true;
     },
-    async answerCallbackQuery({ callbackQueryId, text }) {
+    async answerCallbackQuery({ callbackQueryId, text, showAlert }) {
       await call<unknown>('answerCallbackQuery', {
         callback_query_id: callbackQueryId,
+        ...(showAlert !== undefined ? { show_alert: showAlert } : {}),
         ...(text !== undefined ? { text } : {}),
       });
       return true;

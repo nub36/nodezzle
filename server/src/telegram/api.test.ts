@@ -113,3 +113,15 @@ describe('createTelegramApi', () => {
     await expect(api.getMe()).rejects.toMatchObject({ name: 'TelegramApiError', status: 502 });
   });
 });
+
+
+it('answerCallbackQuery: show_alert true/false и пустой текст не теряются', async () => {
+  const { fetchImpl, calls } = mockFetch(() => okJson(true));
+  const api = createTelegramApi({ token: TOKEN, fetchImpl });
+  await api.answerCallbackQuery({ callbackQueryId: 'cb-1', text: '', showAlert: false });
+  await api.answerCallbackQuery({ callbackQueryId: 'cb-2', text: 'Ответ', showAlert: true });
+  expect(calls).toEqual([
+    { method: 'answerCallbackQuery', body: { callback_query_id: 'cb-1', text: '', show_alert: false } },
+    { method: 'answerCallbackQuery', body: { callback_query_id: 'cb-2', text: 'Ответ', show_alert: true } },
+  ]);
+});

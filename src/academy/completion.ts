@@ -98,6 +98,7 @@ export function evaluateStep(step: LessonStep, snapshot: AcademySnapshot, stepSt
       if (run.at < stepStartedAt) return false; // старый запуск не в счёт
       if (run.status !== 'success') return false;
       if (run.source !== step.source) return false;
+      if (step.source === 'telegram' && run.telegramEvent === 'callback_query') return false;
       if (!hasExpectedOutputs(snapshot, step.expectedOutputs)) return false;
       if (step.textContains !== undefined) {
         const text = typeof snapshot.simulatorText === 'string' ? snapshot.simulatorText : '';

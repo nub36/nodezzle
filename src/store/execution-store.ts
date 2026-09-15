@@ -23,6 +23,10 @@ import { useProjectStore } from './project-store';
 
 export interface SimulatorPayload {
   source: 'telegram' | 'web';
+  telegramEvent?: 'message' | 'callback_query';
+  callbackId?: string;
+  callbackData?: string;
+  messageId?: number;
   text: string;
   userId: number;
   chatId: number;
@@ -33,6 +37,7 @@ export interface SimulatorPayload {
 export interface ExecutionHistoryRecord {
   /** Фактический источник и текст на момент запуска (не текущие поля формы). */
   source?: TriggerPayload['source'];
+  telegramEvent?: 'message' | 'callback_query';
   simulatorText?: string;
   id: string;
   at: number;
@@ -76,6 +81,10 @@ let flowTimer: ReturnType<typeof setTimeout> | null = null;
 const DEFAULT_PAYLOAD: SimulatorPayload = {
   source: 'telegram',
   text: 'привет',
+  telegramEvent: 'message',
+  callbackId: 'sim-callback-1',
+  callbackData: 'confirm',
+  messageId: 1,
   userId: 42,
   chatId: 1000,
   command: '',
@@ -101,10 +110,12 @@ export function buildTriggerPayload(
     return {
       source: 'telegram',
       telegram: {
-        text: sim.text,
+        text: sim.telegramEvent === 'callback_query' ? '' : sim.text,
         user_id: sim.userId,
         chat_id: sim.chatId,
-        ...(sim.command.trim() !== '' ? { command: sim.command } : {}),
+        ...(sim.telegramEvent === 'callback_query'
+          ? { event: 'callback_query' as const, callback_id: sim.callbackId ?? '', data: sim.callbackData ?? '', message_id: sim.messageId }
+          : sim.command.trim() !== '' ? { command: sim.command } : {}),
       },
     };
   }
@@ -122,7 +133,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
     const doc = flowToCanvas(nodes, edges, project.canvas.id, project.canvas.name, undefined, groups);
     const source = triggerPayload.source;
     const simulatorText = source === 'telegram'
-      ? triggerPayload.telegram?.text
+      ? (triggerPayload.telegram?.event === 'callback_query' ? triggerPayload.telegram.data : triggerPayload.telegram?.text)
       : JSON.stringify(triggerPayload.web ?? {});
     const cancel = { cancelled: false };
 
@@ -159,6 +170,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
     const record: ExecutionHistoryRecord = {
       id: uid(),
       source,
+      ...(triggerPayload.telegram?.event ? { telegramEvent: triggerPayload.telegram.event } : {}),
       simulatorText,
       at: Date.now(),
       status: result.status,
@@ -205,7 +217,7 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
       .filter((d) => d && (d.trigger === true || d.entry === true))
       .map((d) => d!.category);
     const triggerPayload = buildTriggerPayload(sim, triggerCategories);
-    const echo = triggerPayload.source === 'telegram' ? sim.text : null;
+    const echo = triggerPayload.source === 'telegram' && triggerPayload.telegram?.event !== 'callback_query' ? sim.text : null;
     const nextSource = triggerPayload.source === 'web' ? 'web' : 'telegram';
     set({ payload: { ...sim, source: nextSource } });
     await startRun(triggerPayload, echo);

@@ -207,6 +207,7 @@ export interface AcademySnapshot {
   lastRun?: {
     status: string;
     source?: string;
+    telegramEvent?: 'message' | 'callback_query';
     at: number;
     /** Только результаты этого исполнения. Не настройки и не история старого запуска. */
     results?: Array<{ nodeId: string; blockId: string; status: string; outputs: Record<string, unknown> }>;
