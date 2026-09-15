@@ -103,10 +103,10 @@ export interface ServerApi {
   audit(workspaceId: string, options?: { action?: string; targetType?: string; limit?: number; offset?: number }): Promise<AuditEntry[]>;
 }
 
-type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
-export function createServerApi(fetchImpl: FetchLike = fetch): ServerApi {
-  async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+export function createJsonClient(fetchImpl: FetchLike = fetch) {
+  return async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await fetchImpl(path, {
       method,
       credentials: 'same-origin',
@@ -127,8 +127,11 @@ export function createServerApi(fetchImpl: FetchLike = fetch): ServerApi {
       );
     }
     return payload as T;
-  }
+  };
+}
 
+export function createServerApi(fetchImpl: FetchLike = fetch): ServerApi {
+  const call = createJsonClient(fetchImpl);
   return {
     async register(email, password, name) {
       await call('POST', '/api/auth/register', { email, password, name });

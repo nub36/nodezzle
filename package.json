@@ -1,7 +1,7 @@
 {
   "name": "nodezzle",
   "private": true,
-  "version": "0.5.45",
+  "version": "0.5.46",
   "description": "NODEZZLE — визуальная среда сборки Telegram-ботов, веб-интерфейсов и систем из соединяемых деталей. Не программируй. Собери.",
   "type": "module",
   "engines": {
@@ -16,7 +16,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit && tsc -p server/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc -p server/tsconfig.json && tsc -p tsconfig.e2e.json",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium"
   },

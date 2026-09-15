@@ -11,6 +11,7 @@ import { useProjectStore } from '@/store/project-store';
 import { formatDateRu } from '@/lib/utils';
 import { TelegramBotPanel } from '@/features/telegram/TelegramBotPanel';
 import { AuditLogSection } from '@/features/history/AuditLog';
+import { ServerProjectsPanel } from '@/features/projects/ServerProjectsPanel';
 import { OnboardingModal } from '@/features/academy/OnboardingModal';
 
 const KIND_ICONS: Record<ProjectKind, string> = {
@@ -23,6 +24,8 @@ const KIND_ICONS: Record<ProjectKind, string> = {
 export function DashboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [sessionEpoch, setSessionEpoch] = useState(0);
+  const sessionChanged = useCallback(() => setSessionEpoch((n) => n + 1), []);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [sandboxes, setSandboxes] = useState<ProjectSummary[]>([]);
   const [kind, setKind] = useState<ProjectKind>('telegram');
@@ -225,11 +228,13 @@ export function DashboardPage() {
           </section>
         )}
 
+        <ServerProjectsPanel localProjects={projects} onLocalChange={refresh} onSessionChange={sessionChanged} />
+
         {/* Подключение Telegram-бота (токен — только через сервер) */}
-        <TelegramBotPanel />
+        <TelegramBotPanel key={`bots-${sessionEpoch}`} />
 
         {/* Журнал действий пространства (только чтение) */}
-        <AuditLogSection />
+        <AuditLogSection key={`audit-${sessionEpoch}`} />
       </main>
     </div>
   );
