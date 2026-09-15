@@ -1,9 +1,12 @@
 /** Рендерит только уже проверенное дерево. Атрибуты пользователя не распространяются в DOM. */
 import { useTranslation } from 'react-i18next';
+import { WebImageView } from './WebImageView';
 import type { WebElement } from '@/core/web/layout-element';
 
 export function WebElementView({ element }: { element: WebElement }) {
   const { t } = useTranslation();
+  if (element.kind === 'image') return <WebImageView key={element.src} src={element.src} caption={element.caption} />;
+  if (element.kind === 'link') return <a data-web-kind="link" href={element.href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" title={t('execution.panel.web.externalLink', { url: element.href })} className="block min-w-0 whitespace-pre-wrap break-words text-sm text-cyan-300 underline">{element.text.trim() ? element.text : element.href}<span className="sr-only"> — {t('execution.panel.web.newTab')}</span></a>;
   if (element.kind === 'text') return <p data-web-kind="text" className="min-w-0 whitespace-pre-wrap break-words text-sm text-ink">{element.text}</p>;
   if (element.kind === 'heading') {
     const Heading = `h${element.level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';

@@ -4,12 +4,13 @@
  * Элементы оформления страницы: текст, заголовки, картинки, поля ввода,
  * контейнеры. Определения фиксируют контракты и место в библиотеке.
  * Текст/заголовок реализованы в 09B1, контейнер/секция/сетка — 09B2.
- * Остальные определения пока planned (см. docs/WEB.md).
+ * Изображение/ссылка — 09B3. Поля и модальное окно пока planned (см. docs/WEB.md).
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
 import { dport } from '../shared';
 import { buildLayoutElement } from '@/core/web/layout-element';
+import { buildUrlElement } from '@/core/web/url-element';
 import { buildTextElement } from '@/core/web/text-element';
 
 export const webUiBlocks: BlockDefinition[] = [
@@ -65,8 +66,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'оформление',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { src: '', caption: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildUrlElement('image', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_URL_ELEMENT' };
+    },
     inputs: [
       dport('src', 'blocks.ports.src', 'url'),
       dport('caption', 'blocks.ports.caption', 'text'),
@@ -119,8 +125,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'навигация',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { href: '', text: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildUrlElement('link', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_URL_ELEMENT' };
+    },
     inputs: [
       dport('text', 'blocks.ports.text', 'text'),
       dport('href', 'blocks.ports.href', 'url'),

@@ -4,7 +4,8 @@ import type { NodezzleFlowNode } from '@/core/project/serialize';
 import { blockRegistry } from '@/core/registry/block-registry';
 
 export const isWebLayout = (id: string) => ['web.container', 'web.section', 'web.grid'].includes(id);
-export const isWebRenderable = (id: string) => id === 'web.text' || id === 'web.heading' || isWebLayout(id);
+export const isWebUrlBlock = (id: string) => id === 'web.image' || id === 'web.link';
+export const isWebRenderable = (id: string) => id === 'web.text' || id === 'web.heading' || isWebUrlBlock(id) || isWebLayout(id);
 
 export function webLayoutRoots(nodes: NodezzleFlowNode[], edges: Edge[]) {
   const byId = new Map(nodes.map((node) => [node.id, node]));

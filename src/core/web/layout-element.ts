@@ -1,8 +1,9 @@
 /** Безопасный переносимый контракт дерева. Не содержит DOM, ссылок на узлы или HTML. */
+import { readUrlElement, type WebUrlElement } from './url-element';
 import { readTextElement, type WebTextElement } from './text-element';
 
 export type LayoutKind = 'container' | 'section' | 'grid';
-export type WebElement = WebTextElement
+export type WebElement = WebTextElement | WebUrlElement
   | { kind: 'container'; children: WebElement[] }
   | { kind: 'section'; title: string; children: WebElement[] }
   | { kind: 'grid'; columns: number; children: WebElement[] };
@@ -20,6 +21,13 @@ export function readWebElement(value: unknown): WebElement | null {
     if (obj.kind === 'text' || obj.kind === 'heading') {
       const leaf = readTextElement(obj);
       if (!leaf || (textBudget -= leaf.text.length) < 0) return null;
+      return leaf;
+    }
+    if (obj.kind === 'image' || obj.kind === 'link') {
+      const leaf = readUrlElement(obj);
+      if (!leaf) return null;
+      const size = leaf.kind === 'image' ? leaf.src.length + leaf.caption.length : leaf.href.length + leaf.text.length;
+      if ((textBudget -= size) < 0) return null;
       return leaf;
     }
     if (obj.kind !== 'container' && obj.kind !== 'section' && obj.kind !== 'grid') return null;
