@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { ProjectKind, ProjectSummary } from '@/core/project/schema';
 import { useProjectStore } from '@/store/project-store';
@@ -24,6 +24,14 @@ const KIND_ICONS: Record<ProjectKind, string> = {
 export function DashboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const section = searchParams.get('section');
+  useEffect(() => {
+    if (!section || !['account', 'telegram', 'history'].includes(section)) return;
+    const target = document.getElementById(`dashboard-${section}`);
+    target?.scrollIntoView({ block: 'start' });
+    target?.focus({ preventScroll: true });
+  }, [section]);
   const [sessionEpoch, setSessionEpoch] = useState(0);
   const sessionChanged = useCallback(() => setSessionEpoch((n) => n + 1), []);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
@@ -97,20 +105,18 @@ export function DashboardPage() {
       <div className="aurora-blob aurora-blob--blue" />
       <div className="aurora-blob aurora-blob--purple" />
 
-      <header className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/favicon.svg" alt="" className="h-8 w-8" />
-          <span className="text-lg font-extrabold tracking-wide text-gradient">NODEZZLE</span>
-        </Link>
-        <Link to="/academy" className="btn-ghost !py-1.5 text-xs" title={t('academy.subtitle')}>
-          🎓 {t('academy.dashboardCard.title')}
-        </Link>
-      </header>
+
 
       <main className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20 pt-6">
+        <p className="workspace-eyebrow mb-3">{t('navigation.workspace')}</p>
         <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
         <p className="mt-1 text-sm text-muted">{t('dashboard.subtitle')}</p>
 
+        <nav className="dashboard-shortcuts" aria-label={t('navigation.quick')}>
+          <Link to="/dashboard?section=account"><span>01</span><strong>{t('navigation.serverProjects')}</strong><small>{t('navigation.serverHint')}</small><b aria-hidden="true">↗</b></Link>
+          <Link to="/academy"><span>02</span><strong>{t('navigation.goLearn')}</strong><small>{t('navigation.learnHint')}</small><b aria-hidden="true">↗</b></Link>
+          <Link to="/workspace/requests"><span>03</span><strong>{t('navigation.links.requests')}</strong><small>{t('navigation.soon')}</small><b aria-hidden="true">↗</b></Link>
+        </nav>
         {/* Создание проекта */}
         <div className="glass mt-6 flex flex-wrap items-end gap-4 rounded-2xl p-5">
           <div className="flex-1">
@@ -228,13 +234,13 @@ export function DashboardPage() {
           </section>
         )}
 
-        <ServerProjectsPanel localProjects={projects} onLocalChange={refresh} onSessionChange={sessionChanged} />
+        <div id="dashboard-account" tabIndex={-1}><ServerProjectsPanel localProjects={projects} onLocalChange={refresh} onSessionChange={sessionChanged} /></div>
 
         {/* Подключение Telegram-бота (токен — только через сервер) */}
-        <TelegramBotPanel key={`bots-${sessionEpoch}`} />
+        <div id="dashboard-telegram" tabIndex={-1}><TelegramBotPanel key={`bots-${sessionEpoch}`} /></div>
 
         {/* Журнал действий пространства (только чтение) */}
-        <AuditLogSection key={`audit-${sessionEpoch}`} />
+        <div id="dashboard-history" tabIndex={-1}><AuditLogSection key={`audit-${sessionEpoch}`} /></div>
       </main>
     </div>
   );

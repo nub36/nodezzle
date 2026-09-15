@@ -29,27 +29,12 @@ export function LandingPage() {
       <div className="aurora-blob aurora-blob--cyan" />
 
       {/* Навигация */}
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/favicon.svg" alt="" className="h-8 w-8" />
-          <span className="text-lg font-extrabold tracking-wide text-gradient">NODEZZLE</span>
-        </Link>
-        <nav className="flex items-center gap-1">
-          <a href="#features" className="rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:text-ink">
-            {t('landing.nav.features')}
-          </a>
-          <a href="#playground" className="rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:text-ink">
-            {t('landing.nav.playground')}
-          </a>
-          <Link to="/dashboard" className="btn-ghost ml-2 !px-4 !py-2 text-sm">
-            {t('landing.nav.dashboard')}
-          </Link>
-        </nav>
-      </header>
+
 
       {/* Hero */}
       <section className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 px-6 pb-16 pt-10 md:grid-cols-2 md:pt-16">
         <div>
+          <p className="workspace-eyebrow mb-5">{t('navigation.heroEyebrow')}</p>
           <h1 className="text-6xl font-extrabold tracking-tight md:text-7xl">
             <span className="text-gradient">NODEZZLE</span>
           </h1>
@@ -59,9 +44,9 @@ export function LandingPage() {
             <Link to="/dashboard" className="btn-primary">
               {t('landing.hero.cta')}
             </Link>
-            <a href="#playground" className="btn-ghost">
+            <button onClick={() => document.getElementById('playground')?.scrollIntoView({ behavior: 'smooth' })} className="btn-ghost">
               {t('landing.hero.ctaSecondary')}
-            </a>
+            </button>
           </div>
         </div>
         <Hero />

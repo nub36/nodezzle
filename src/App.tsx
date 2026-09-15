@@ -13,6 +13,8 @@
  */
 
 import { createHashRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
+import { SiteHeader } from '@/features/navigation/SiteHeader';
+import { WorkspaceSectionPage } from '@/features/navigation/WorkspaceSectionPage';
 import { LandingPage } from '@/features/landing/LandingPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ServerCanvasPage } from '@/features/projects/ServerCanvasPage';
@@ -26,9 +28,10 @@ import { TutorialOverlay } from '@/features/academy/TutorialOverlay';
 
 // Data-router сохраняет hash-адреса и позволяет блокировать уход с несохранённого серверного Canvas.
 const router = createHashRouter([{
-  element: <><TutorialWatcher /><TutorialOverlay /><Outlet /></>,
+  element: <><TutorialWatcher /><TutorialOverlay /><SiteHeader /><Outlet /></>,
   children: [
     { path: '/', element: <LandingPage /> },
+    { path: '/workspace/:section', element: <WorkspaceSectionPage /> },
     { path: '/dashboard', element: <DashboardPage /> },
     { path: '/server-projects/:projectId', element: <ServerCanvasPage /> },
     { path: '/projects/:projectId', element: <CanvasPage /> },

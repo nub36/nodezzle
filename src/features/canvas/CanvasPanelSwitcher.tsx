@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNarrowCanvas } from '@/lib/useNarrowCanvas';
+import { SiteMenu } from '@/features/navigation/SiteHeader';
 import { useUiStore, type CanvasPanel } from '@/store/ui-store';
 
 export function CanvasPanelSwitcher() {
@@ -29,7 +30,7 @@ export function CanvasPanelSwitcher() {
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
       // У открытого меню/диалога свой приоритет Escape; не закрываем панель под ним.
-      if (!narrow || event.key !== 'Escape' || !panel || document.querySelector('[data-testid="quick-insert-menu"], [data-canvas-menu], [aria-modal="true"]')) return;
+      if (!narrow || event.key !== 'Escape' || !panel || document.querySelector('[data-testid="quick-insert-menu"], [data-canvas-menu], [aria-modal="true"], [data-site-menu][open]')) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       setPanel(null);
@@ -39,7 +40,7 @@ export function CanvasPanelSwitcher() {
     return () => document.removeEventListener('keydown', close, true);
   }, [panel, setPanel, narrow]);
   return (
-    <nav className="flex shrink-0 gap-2 border-b border-line/70 px-3 py-1.5" aria-label={t('canvas.panels.navigation')}>
+    <nav className="canvas-section-nav flex shrink-0 items-center gap-2 border-b border-line/70 px-3 py-1.5" aria-label={t('canvas.panels.navigation')}>
       {(['library', 'inspector', null] as const).map((item) => (
         <button key={item ?? 'canvas'} id={`panel-toggle-${item ?? 'canvas'}`} data-testid={`panel-toggle-${item ?? 'canvas'}`}
           data-tutorial={`panel-toggle-${item ?? 'canvas'}`} className="btn-ghost justify-center !py-1.5 text-xs"
@@ -49,6 +50,7 @@ export function CanvasPanelSwitcher() {
           {t(`canvas.panels.${item ?? 'canvas'}`)}
         </button>
       ))}
+      <div className="ml-auto"><SiteMenu /></div>
     </nav>
   );
 }
