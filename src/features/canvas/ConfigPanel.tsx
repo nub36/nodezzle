@@ -1,3 +1,4 @@
+import { BlockIcon } from '@/components/BlockIcon';
 /**
  * Инспектор выбранной детали: переименование, конфигурация (параметры
  * из Block Definition.defaults), техническая информация и результат
@@ -84,10 +85,10 @@ export function ConfigPanel() {
   const lastRun = runInfo;
 
   return (
-    <div className="glass pointer-events-auto flex max-h-full w-[280px] flex-col overflow-hidden rounded-2xl">
+    <div className="canvas-panel glass pointer-events-auto flex max-h-full w-[280px] flex-col overflow-hidden rounded-2xl">
       <div className="flex items-center justify-between border-b border-line/70 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span aria-hidden="true">{def.ui?.icon}</span>
+          <span className="config-block-icon" style={{ color: def.ui?.color }} aria-hidden="true"><BlockIcon icon={def.ui?.icon} /></span>
           <span className="text-xs font-bold uppercase tracking-wider">{t('canvas.inspector.title')}</span>
         </div>
         <button className="text-muted transition-colors hover:text-ink" onClick={() => {

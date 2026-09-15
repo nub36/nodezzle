@@ -13,6 +13,10 @@
   --color-line: #1e2a4a;
   --color-ink: #e8edfb;
   --color-muted: #93a0c4;
+  --color-canvas: #0a111e;
+  --color-node: #152135;
+  --color-canvas-accent: #78dfce;
+  --color-canvas-border: #2c3c53;
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -231,12 +235,12 @@ select.input-dark {
 
 .nodezzle-node {
   width: 240px;
-  border-radius: 10px;
-  background: linear-gradient(160deg, rgba(17, 25, 46, 0.94), rgba(9, 14, 28, 0.96));
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(150deg, var(--color-node), #101a2c);
+  border: 1px solid var(--color-canvas-border);
   box-shadow:
-    0 10px 30px rgba(2, 6, 16, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 5px 14px #02061050,
+    inset 0 1px 0 #ffffff08;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .nodezzle-node:hover {
@@ -247,6 +251,11 @@ select.input-dark {
   border-color: rgba(34, 211, 238, 0.55);
   box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 10px 34px rgba(2, 6, 16, 0.6);
 }
+
+.node-heading { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid #a7b8d312; border-radius: 12px 12px 0 0; background: #ffffff03; }
+.node-icon { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: #ffffff07; border: 1px solid #a7b8d315; font-size: 13px; }
+.node-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; line-height: 1.2; letter-spacing: -.1px; }
+.node-trigger { font-size: 11px; flex-shrink: 0; }
 
 /* Состояния живого выполнения */
 .nodezzle-node.status-running {
@@ -272,20 +281,27 @@ select.input-dark {
 
 /* --- Порты (handles) --- */
 .nzz-handle {
-  top: calc(50% - 6.5px);
+  top: calc(50% - 8px);
   transform: none;
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #0b1220;
-  border: 2px solid var(--port-color, #64748b);
+  background: var(--color-node);
+  border: 1.5px solid var(--port-color, #64748b);
+  box-shadow: 0 0 0 3px var(--color-canvas), inset 0 0 0 2px var(--color-node);
   transition: box-shadow 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
+/* Площадь захвата 24×24 без увеличения шага строк и смещения конца ребра.
+   Псевдоэлемент принадлежит самому Handle: DnD и elementFromPoint сохранены. */
+.nzz-handle::after { content: ''; position: absolute; inset: -5.5px; border-radius: inherit; }
+.nzz-handle::before { content: ''; position: absolute; inset: 4px; border-radius: inherit; background: var(--port-color); pointer-events: none; }
+.nzz-handle[data-port-direction='input']::before { background: transparent; }
+.nzz-handle:hover { box-shadow: 0 0 0 3px var(--color-canvas), 0 0 0 5px #a4badb45; }
 /* Форма маркера кодирует ВИД порта (Этап 2, подэтап C):
    данные — круг, событие — ромб, ошибка — квадрат. */
 .nzz-handle--event {
   border-radius: 2.5px;
-  transform: rotate(45deg) scale(0.95);
+  rotate: 45deg;
 }
 .nzz-handle--error {
   border-radius: 3px;
@@ -295,7 +311,7 @@ select.input-dark {
   transform: scale(1.2);
 }
 .nzz-handle--event.port-compatible {
-  transform: rotate(45deg) scale(1.15);
+  transform: scale(1.15);
 }
 .nzz-handle.port-incompatible {
   opacity: 0.28;
@@ -315,7 +331,7 @@ select.input-dark {
   transform: scale(1.18);
 }
 .nzz-handle--event.port-active {
-  transform: rotate(45deg) scale(1.12);
+  transform: scale(1.12);
 }
 
 /* 2. READY TO CONNECT: курсор над совместимым портом. */
@@ -325,7 +341,7 @@ select.input-dark {
   transform: scale(1.35);
 }
 .nzz-handle--event.port-ready {
-  transform: rotate(45deg) scale(1.25);
+  transform: scale(1.25);
 }
 
 /* 3. Академия: порты, которые требует текущий шаг «соединить». */
@@ -455,7 +471,7 @@ select.input-dark {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
-  padding: 4px 10px;
+  padding: 5px 12px;
 }
 .port-row {
   position: relative;
@@ -465,13 +481,13 @@ select.input-dark {
   height: 24px;
 }
 .port-row--output { justify-content: flex-end; }
-.port-row--input .nzz-handle { left: -17px; }
-.port-row--output .nzz-handle { right: -17px; }
+.port-row--input .nzz-handle { left: -21px; }
+.port-row--output .nzz-handle { right: -21px; }
 .port-label {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
-  color: var(--color-muted);
+  color: #b9c7dc;
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -482,7 +498,10 @@ select.input-dark {
 /* Глиф типа порта: символ рядом с названием типа (цвет — по типу). */
 .port-glyph {
   display: inline-block;
-  min-width: 11px;
+  min-width: 15px;
+  border-radius: 4px;
+  background: #03091755;
+  line-height: 16px;
   text-align: center;
   font-size: 9px;
   font-weight: 700;
@@ -841,15 +860,29 @@ select.input-dark {
 .site-header-note { margin-left: auto; color: #70809a; font-size: 10px; }
 .site-primary-nav a:hover, .site-secondary-nav a:hover, .site-account:hover { color: white; background-color: #ffffff06; }
 .site-menu { position: relative; font-size: 11px; }
-.site-menu-trigger { display: flex; align-items: center; gap: 12px; justify-content: space-between; list-style: none; cursor: pointer; padding: 7px 12px; min-height: 30px; border: 1px solid #354158; border-radius: 7px; color: #c9d3e2; background: #141e2e; white-space: nowrap; }
+.site-menu-trigger { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; padding: 7px 10px; min-height: 36px; border: 1px solid #465d69; border-radius: 9px; color: #d3eee8; background: linear-gradient(120deg, #20383d, #172735); white-space: nowrap; font-weight: 600; }
+.site-menu-trigger > svg { width: 16px; height: 16px; color: var(--color-canvas-accent); }
+.site-menu-chevron { color: #a5bab8; margin-left: 4px; }
+.site-menu[open] .site-menu-chevron { rotate: 180deg; }
 .site-menu-trigger::-webkit-details-marker { display: none; }
 .site-menu[open] .site-menu-trigger { background: #24334a; }
-.site-menu-content { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: 290px; max-width: calc(100vw - 28px); max-height: min(580px, 65dvh); overflow: auto; padding: 8px; border: 1px solid #394760; border-radius: 12px; background: #101a2b; box-shadow: 0 18px 60px #0009; }
+.site-menu-content { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: 480px; max-width: calc(100vw - 28px); max-height: min(580px, 65dvh); overflow: auto; padding: 14px; border: 1px solid #394760; border-radius: 14px; background: #101a2b; box-shadow: 0 18px 60px #0009; }
 .site-menu-content a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 8px 10px; border-radius: 6px; }
 .site-menu-content a:hover { background: #25344a; }
-.site-menu-content small { color: #bda978; font-size: 9px; }
+.site-menu-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 8px 16px; border-bottom: 1px solid #29364b; }
+.site-menu-heading strong { font-size: 14px; font-weight: 650; }
+.site-menu-heading > span { font-size: 9px; letter-spacing: 1.5px; color: #8796b1; }
+.site-menu-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding-block: 14px; }
+.site-menu-group { min-width: 0; }
+.site-menu-group h3 { padding: 0 10px 8px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #a7b5ca; }
+.site-menu-group + .site-menu-group { border-left: 1px solid #29364b; padding-left: 8px; }
+.site-menu-group + .site-menu-group h3 { color: #ccb786; }
+.site-menu-arrow { color: #738aa5; }
+.site-menu-planned-dot { color: #ccb786; font-size: 24px; line-height: 12px; }
+.site-menu-content a[aria-current='page'] { background: #243e45; color: #c0f8e9; }
+.site-menu-content .site-menu-account { border-top: 1px solid #29364b; border-radius: 0; padding-top: 14px; color: #b9e8da; }
 .site-mobile-menu { display: none; }
-.site-header :is(a, summary):focus-visible, .canvas-section-nav summary:focus-visible { outline: 2px solid #b3f0da; outline-offset: 3px; }
+.site-header :is(a, summary):focus-visible, .canvas-section-nav :is(a, summary):focus-visible { outline: 2px solid #b3f0da; outline-offset: 3px; }
 .canvas-section-nav { position: relative; z-index: 25; background: linear-gradient(90deg, #101a2b, #0a1020); }
 .canvas-toolbar { background: linear-gradient(110deg, #131d31, #0a101e 70%); border-top: 2px solid #779f9b; }
 .workspace-page { max-width: 1200px; margin: auto; padding: 36px 28px 80px; }
@@ -915,3 +948,64 @@ select.input-dark {
 @media (max-width: 900px) {
   .workspace-grid { grid-template-columns: minmax(0,1fr); }
 }
+
+/* 0.5.51: рабочее поле и пустой старт — не ещё одна шапка. */
+.canvas-workspace { background: radial-gradient(ellipse at 48% 38%, #172c413d, transparent 68%), var(--color-canvas); }
+.canvas-panel.glass { background: #101b2de8; border-color: #304159b0; box-shadow: 0 8px 30px #03071338; border-radius: 14px; }
+.canvas-library-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.canvas-library-heading h2 { font-size: 13px; font-weight: 650; }
+.canvas-library-heading p { font-size: 10px; color: #a0afc7; margin-top: 2px; }
+.canvas-panel-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #78dfce0b; border: 1px solid #78dfce25; color: var(--color-canvas-accent); }
+.canvas-section-nav > button { gap: 6px; border-color: transparent; background: transparent; color: #aebed3; border-radius: 8px; padding-inline: 10px; }
+.canvas-section-nav > button > svg { width: 15px; height: 15px; }
+.canvas-section-nav > button[aria-expanded='true'], .canvas-section-nav > button[aria-pressed='true'] { border-color: #4c6c73; color: #c9f4e9; background: #78dfce12; }
+.canvas-stage-label { display: inline-flex; align-items: center; gap: 7px; margin-left: 14px; padding-left: 18px; border-left: 1px solid #324057; color: #899bb5; font-size: 10px; }
+.canvas-stage-label::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: #78dfce90; }
+.canvas-inspector-empty { padding-block: 10px 4px; }
+.canvas-inspector-emblem { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #3d516c; background: #192a42; border-radius: 12px; margin-bottom: 16px; color: #a8bcdf; }
+.canvas-inspector-empty h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.canvas-inspector-empty p { font-size: 11px; line-height: 1.7; color: #a1b0c8; }
+.canvas-port-guide { display: grid; gap: 12px; border-top: 1px solid #293951; margin-top: 20px; padding-top: 16px; font-size: 10px; line-height: 1.6; color: #a1b0c8; }
+.canvas-port-guide > div { display: flex; align-items: center; gap: 12px; }
+.canvas-port-guide-direction { color: #a2bfd6; white-space: nowrap; width: 36px; flex-shrink: 0; text-align: center; }
+.canvas-port-guide-error { width: 36px; flex-shrink: 0; color: #f8a4af; font-size: 20px; text-align: center; }
+.canvas-welcome-layer { padding-block: 20px; }
+.canvas-welcome { width: 430px; max-width: 100%; max-height: 100%; overflow: auto; scrollbar-width: thin; text-align: center; padding: 8px; border-radius: 18px; }
+.canvas-welcome-emblem { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 22px; border: 1px solid #6bbaaa65; border-radius: 17px; color: #abf5df; background: linear-gradient(145deg, #21403e, #172c3d); box-shadow: 0 0 60px #78dfce10, inset 0 1px 0 #ffffff10; }
+.canvas-welcome-emblem svg { width: 26px; height: 26px; }
+.canvas-welcome-eyebrow { color: #9abbc0; font-size: 9px; text-transform: uppercase; letter-spacing: 1.6px; margin-bottom: 10px; }
+.canvas-welcome h2 { font-size: clamp(22px, 2.2vw, 28px); font-weight: 650; letter-spacing: -.8px; line-height: 1.3; }
+.canvas-welcome-intro { color: #a0aec5; font-size: 11px; line-height: 1.6; margin: 10px auto 26px; max-width: 280px; }
+.canvas-start-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.canvas-start-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 16px; border: 1px solid #3b536c; border-radius: 13px; background: linear-gradient(145deg, #1b2b42, #142034); cursor: pointer; transition: border-color .15s, background .15s; }
+.canvas-start-card:hover { border-color: #89c7d3; background: #20364b; }
+.canvas-start-card--web { border-color: #4e486c; background: linear-gradient(145deg, #28263f, #171f33); }
+.canvas-start-card--web:hover { border-color: #b7a5e2; background: #302d4a; }
+.canvas-start-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: #9edcff; background: #78c7fa12; border: 1px solid #78c7fa20; margin-bottom: 14px; }
+.canvas-start-card--web .canvas-start-icon { color: #c6b5f6; background: #b49aee12; border-color: #b49aee25; }
+.canvas-start-card strong { font-size: 12px; font-weight: 650; line-height: 1.45; }
+.canvas-start-description { font-size: 10px; line-height: 1.5; color: #a8b7ce; margin-top: 6px; }
+.canvas-start-arrow { position: absolute; top: 15px; right: 15px; color: #94afc5; font-size: 14px; }
+.canvas-start-blank { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 10px; padding: 12px; font-size: 11px; color: #bccbdf; border: 1px solid #344259; border-radius: 10px; background: #12203485; cursor: pointer; }
+.canvas-start-blank svg { width: 15px; height: 15px; }
+.canvas-start-blank > span { margin-left: auto; }
+.canvas-start-blank:hover { color: #e0f6f0; border-color: #6b8b96; background: #1c3042; }
+.canvas-welcome-footnote { margin-top: 20px; font-size: 9px; color: #8b9cb7; line-height: 1.5; }
+.canvas-welcome button:focus-visible, .canvas-section-nav > button:focus-visible { outline: 2px solid var(--color-canvas-accent); outline-offset: 3px; }
+@media (max-width: 767px) {
+  .canvas-section-nav { gap: 4px; }
+  .canvas-section-nav > button { padding-inline: 7px; }
+  .canvas-section-nav > button > svg, .canvas-stage-label { display: none; }
+  .canvas-section-nav .site-menu-trigger { gap: 5px; padding-inline: 8px; }
+  .canvas-welcome-emblem { margin-bottom: 16px; }
+  .canvas-welcome-intro { margin-bottom: 18px; }
+  .canvas-start-card { padding: 13px; }
+}
+@media (max-width: 480px) {
+  .site-menu-groups { grid-template-columns: 1fr; }
+  .site-menu-group + .site-menu-group { border-left: 0; border-top: 1px solid #29364b; padding: 14px 0 0; }
+}
+.node-icon > svg { width: 15px; height: 15px; }
+.node-icon .block-icon-symbol { font-size: 10px; max-width: 22px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.config-block-icon { display: inline-flex; max-width: 28px; overflow: hidden; }
+.config-block-icon > svg { width: 18px; height: 18px; }

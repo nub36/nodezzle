@@ -632,7 +632,7 @@ function FlowCanvas() {
     <NoviceGuide onInsert={guideInsert} />
     <div
       ref={wrapperRef}
-      className="grid-bg relative min-h-0 flex-1 overflow-hidden"
+      className="canvas-workspace relative min-h-0 flex-1 overflow-hidden"
       data-tutorial="canvas"
       data-effects={effectsMode}
       onDrop={onDrop}
@@ -689,7 +689,8 @@ function FlowCanvas() {
         panOnDrag
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={26} size={1.4} color="#233150" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2b3b54" />
+        {!isEmpty && <>
         <MiniMap
           pannable
           zoomable
@@ -702,6 +703,7 @@ function FlowCanvas() {
           maskColor="rgba(4,6,13,0.72)"
         />
         <Controls showInteractive={false} position="bottom-right" />
+        </>}
       </ReactFlow>
 
       {/* Рамки групп (Этап 2, подэтап F часть 2) */}
@@ -724,7 +726,8 @@ function FlowCanvas() {
 
       {/* Быстрая вставка на пустой схеме */}
       {isEmpty && (
-        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+        <div className="canvas-welcome-layer pointer-events-none absolute inset-y-0 z-0 flex items-center justify-center"
+          style={{ left: narrow || libraryCollapsed ? 16 : 308, right: narrow || inspectorCollapsed ? 16 : 308 }}>
           <QuickInsertStarter onInsert={onInsertAtCenter} />
         </div>
       )}

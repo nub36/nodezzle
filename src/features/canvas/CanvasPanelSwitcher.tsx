@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNarrowCanvas } from '@/lib/useNarrowCanvas';
+import { CanvasIcon } from '@/components/CanvasIcon';
 import { SiteMenu } from '@/features/navigation/SiteHeader';
 import { useUiStore, type CanvasPanel } from '@/store/ui-store';
 
@@ -47,9 +48,10 @@ export function CanvasPanelSwitcher() {
           aria-controls={item ? `canvas-${item}` : undefined} title={t(`canvas.panels.${item ?? 'canvas'}`)}
           aria-expanded={item ? narrow ? panel === item : item === 'library' ? !libraryCollapsed : !inspectorCollapsed : undefined}
           aria-pressed={item === null ? narrow ? panel === null : libraryCollapsed && inspectorCollapsed : undefined} onClick={() => toggle(item)}>
-          {t(`canvas.panels.${item ?? 'canvas'}`)}
+          <CanvasIcon name={item ?? 'canvas'} />{t(`canvas.panels.${item ?? 'canvas'}`)}
         </button>
       ))}
+      <span className="canvas-stage-label">{t('canvas.design.editorLabel')}</span>
       <div className="ml-auto"><SiteMenu /></div>
     </nav>
   );

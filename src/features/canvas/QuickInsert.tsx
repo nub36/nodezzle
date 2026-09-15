@@ -1,3 +1,4 @@
+import { CanvasIcon } from '@/components/CanvasIcon';
 /**
  * Быстрая вставка (Этап 2, подэтап D).
  *
@@ -114,11 +115,20 @@ export function QuickInsertStarter({ onInsert }: { onInsert: (payload: DndPayloa
       ...(kind === 'web' ? { config: { value: t('novice.webExample') } } : {}) });
   };
   if (dismissed) return null;
-  return <section data-testid="empty-onboarding" className="glass pointer-events-auto w-[320px] max-w-[calc(100vw-40px)] rounded-2xl p-4">
-    <h2 className="text-sm font-semibold">{t('novice.startTitle')}</h2>
-    <p className="mb-3 mt-1 text-xs text-muted">{t('novice.startHint')}</p>
-    <div className="grid gap-2">{(['telegram', 'web', 'empty'] as const).map((kind) =>
-      <button key={kind} className="btn-ghost justify-start !py-2 text-xs" data-testid={`start-${kind}`} onClick={() => choose(kind)}>{t(`novice.start.${kind}`)}</button>
+  return <section data-testid="empty-onboarding" className="canvas-welcome pointer-events-auto" aria-labelledby="canvas-welcome-title">
+    <div className="canvas-welcome-emblem" aria-hidden="true"><CanvasIcon name="library" /></div>
+    <p className="canvas-welcome-eyebrow">{t('canvas.design.welcomeEyebrow')}</p>
+    <h2 id="canvas-welcome-title">{t('novice.startTitle')}</h2>
+    <p className="canvas-welcome-intro">{t('novice.startHint')}</p>
+    <div className="canvas-start-options">{(['telegram', 'web'] as const).map((kind) =>
+      <button key={kind} className={`canvas-start-card canvas-start-card--${kind}`} data-testid={`start-${kind}`} onClick={() => choose(kind)}>
+        <span className="canvas-start-icon"><CanvasIcon name={kind} /></span>
+        <strong>{t(`novice.start.${kind}`)}</strong>
+        <span className="canvas-start-description">{t(`canvas.design.startDescription.${kind}`)}</span>
+        <span className="canvas-start-arrow" aria-hidden="true">↗</span>
+      </button>
     )}</div>
+    <button className="canvas-start-blank" data-testid="start-empty" onClick={() => choose('empty')}><CanvasIcon name="empty" />{t('novice.start.empty')}<span aria-hidden="true">→</span></button>
+    <p className="canvas-welcome-footnote">{t('canvas.design.welcomeFootnote')}</p>
   </section>;
 }

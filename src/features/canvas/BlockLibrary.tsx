@@ -15,6 +15,7 @@
  * состоянии, а не выдаётся за готовую функцию.
  */
 
+import { CanvasIcon } from '@/components/CanvasIcon';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -182,10 +183,10 @@ export function BlockLibrary({ onInsert }: { onInsert: (payload: DndPayload) => 
   const showCategories = tab === 'basic' || tab === 'all';
 
   return (
-    <div className="glass pointer-events-auto flex h-full w-[280px] flex-col rounded-2xl">
+    <div className="canvas-panel glass pointer-events-auto flex h-full w-[280px] flex-col rounded-2xl">
       <div className="border-b border-line/70 p-3">
-        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
-          {t('canvas.library.title')}
+        <div className="canvas-library-heading"><span className="canvas-panel-icon"><CanvasIcon name="library" /></span>
+          <div><h2>{t('canvas.library.title')}</h2><p>{t('canvas.design.libraryHint')}</p></div>
         </div>
         <div className="mb-2 flex flex-wrap gap-1">
           {TABS.map(({ id, labelKey }) => (

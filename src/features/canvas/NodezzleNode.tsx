@@ -13,6 +13,7 @@
  *   разные сторы (execution-store и connection-fx-store).
  */
 
+import { BlockIcon } from '@/components/BlockIcon';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 import { blockRegistry } from '@/core/registry/block-registry';
@@ -133,7 +134,8 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
         connectSuccess && (flashPortId === 'all' || flashPortId === port.id) && 'port-connect-success',
       ),
       title: view.tooltip ?? `${t(port.labelKey)} · ${t(`portTypes.${port.type}`)}`,
-      'aria-label': `${t(port.labelKey)} · ${t(`portTypes.${port.type}`)}`,
+      'aria-label': `${t(`canvas.design.${direction}`)}: ${t(port.labelKey)} · ${t(`portTypes.${port.type}`)}`,
+      'data-port-kind': port.kind,
       'data-port-id': port.id,
       'data-port-direction': direction,
       'data-node-id': id,
@@ -174,15 +176,15 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
       data-connection-state={connectSuccess ? 'connect-success' : isDragSource ? 'drag-source' : undefined}
     >
       {/* Заголовок */}
-      <div className="flex items-center gap-1.5 border-b border-line/70 px-2.5 py-2">
-        <span className="text-sm" aria-hidden="true">
-          {def.ui?.icon ?? '🧩'}
+      <div className="node-heading">
+        <span className="node-icon" style={{ color: def.ui?.color }} aria-hidden="true">
+          <BlockIcon icon={def.ui?.icon} />
         </span>
-        <span className="flex-1 truncate text-[12.5px] font-semibold leading-tight" title={title}>
+        <span className="node-title" title={title}>
           {title}
         </span>
         {def.trigger === true && (
-          <span className="shrink-0 text-xs text-fuchsia-300" title={t('canvas.node.trigger')} aria-label={t('canvas.node.trigger')}>
+          <span className="node-trigger" title={t('canvas.node.trigger')} aria-label={t('canvas.node.trigger')}>
             ⚡
           </span>
         )}

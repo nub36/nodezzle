@@ -12,6 +12,7 @@
  * конфигурация веб-детали), отдельная панель не дублируется.
  */
 
+import { CanvasIcon } from '@/components/CanvasIcon';
 import type { Edge } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 import { blockRegistry } from '@/core/registry/block-registry';
@@ -27,7 +28,7 @@ function PanelShell({ title, children }: { title: string; children: React.ReactN
   const selectNode = useProjectStore((s) => s.selectNode);
   const selectEdge = useProjectStore((s) => s.selectEdge);
   return (
-    <div className="glass pointer-events-auto flex max-h-full w-[280px] flex-col overflow-hidden rounded-2xl">
+    <div className="canvas-panel glass pointer-events-auto flex max-h-full w-[280px] flex-col overflow-hidden rounded-2xl">
       <div className="flex items-center justify-between border-b border-line/70 px-4 py-3">
         <span className="text-xs font-bold uppercase tracking-wider">{title}</span>
         <button
@@ -132,8 +133,17 @@ function CanvasInspector() {
   const novice = useUiStore((s) => s.noviceMode);
   if (!project) return null;
 
-  if (novice && nodes.length === 0) return <PanelShell title={t('canvas.panels.inspector')}><p className="text-xs leading-relaxed text-muted">{t('novice.propertiesHint')}</p></PanelShell>;
-
+  if (novice && nodes.length === 0) return <PanelShell title={t('canvas.panels.inspector')}>
+    <div className="canvas-inspector-empty">
+      <span className="canvas-inspector-emblem"><CanvasIcon name="inspector" /></span>
+      <h3>{t('canvas.design.inspectorTitle')}</h3>
+      <p>{t('novice.propertiesHint')}</p>
+      <div className="canvas-port-guide">
+        <div><span className="canvas-port-guide-direction" aria-hidden="true">→ ▢ →</span><span>{t('canvas.design.directionHint')}</span></div>
+        <div><span className="canvas-port-guide-error" aria-hidden="true">□</span><span>{t('canvas.design.errorHint')}</span></div>
+      </div>
+    </div>
+  </PanelShell>;
   return (
     <PanelShell title={t('canvas.inspector.canvas.title')}>
       <div className="space-y-3 text-[11.5px]">
