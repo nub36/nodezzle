@@ -226,7 +226,7 @@ describe('Публикация через АПИ', () => {
     expect(livePayload.project.canvas.nodes.length).toBe(2);
 
     // Черновик меняется, публикуем заново — прежняя LIVE уходит в архив.
-    await api('PUT', `/api/projects/${projectId}`, {
+    await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision,
       document: doc([textNode, outputNode], [validEdge], 'Обновлённая схема'),
     }, cookie);
     const second = await api('POST', `/api/projects/${projectId}/publish`, { label: 'Вторая' }, cookie);
@@ -245,7 +245,7 @@ describe('Публикация через АПИ', () => {
 
   it('невалидная схема — 422 со списком проблем', async () => {
     const { cookie, projectId } = await setup();
-    await api('PUT', `/api/projects/${projectId}`, {
+    await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision,
       document: doc([textNode], [{ id: 'e', source: 'n1', sourcePort: 'text', target: 'ghost', targetPort: 'value' }]),
     }, cookie);
     const res = await api('POST', `/api/projects/${projectId}/publish`, {}, cookie);

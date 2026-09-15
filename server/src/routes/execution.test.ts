@@ -143,7 +143,7 @@ describe('Исполнение опубликованных схем', () => {
   it('исполняет снимок на момент публикации: правки черновика не влияют', async () => {
     const { cookie, projectId } = await publishPipeline(0);
     // Ломает исполнимость черновика, но не опубликованной версии.
-    await api('PUT', `/api/projects/${projectId}`, { document: { ...pipelineDoc(0), canvas: { ...pipelineDoc(0).canvas, nodes: [], edges: [] } } }, cookie);
+    await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision, document: { ...pipelineDoc(0), canvas: { ...pipelineDoc(0).canvas, nodes: [], edges: [] } } }, cookie);
     const res = await api('POST', `/api/projects/${projectId}/execute`, { payload: tgPayload }, cookie);
     expect(res.status).toBe(200);
     const payload = (await res.json()) as { result: { status: string; outbox: unknown[] } };

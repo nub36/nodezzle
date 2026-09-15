@@ -126,20 +126,20 @@ describe('Проекты на сервере', () => {
 
     const fetched = await api('GET', '/api/projects/proj-001', undefined, cookie);
     expect(fetched.status).toBe(200);
-    const body = (await fetched.json()) as { project: { id: string; name: string } };
+    const body = (await fetched.json()) as { project: { id: string; name: string }; revision: string };
     expect(body.project).toEqual(doc);
 
     const updated = await api(
       'PUT',
       '/api/projects/proj-001',
-      { document: { ...doc, name: 'Мой бот (новый)' } },
+      { document: { ...doc, name: 'Мой бот (новый)' }, expectedRevision: body.revision },
       cookie,
     );
     expect(updated.status).toBe(200);
-    const updatedBody = (await updated.json()) as { project: { name: string } };
+    const updatedBody = (await updated.json()) as { project: { name: string }; revision: string };
     expect(updatedBody.project.name).toBe('Мой бот (новый)');
 
-    expect((await api('DELETE', '/api/projects/proj-001', undefined, cookie)).status).toBe(200);
+    expect((await api('DELETE', '/api/projects/proj-001', { expectedRevision: updatedBody.revision }, cookie)).status).toBe(200);
     expect((await api('GET', '/api/projects/proj-001', undefined, cookie)).status).toBe(404);
   });
 

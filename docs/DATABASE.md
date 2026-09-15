@@ -1,14 +1,16 @@
 # DATABASE — Хранилище данных и база данных
 
-**Обновлено:** 2026-09-14 (Этап 5, подэтап 5.6). Статусы — по легенде [MASTER_SPEC.md](MASTER_SPEC.md) §1.
+**Обновлено:** 2026-09-15 (10B1, ревизии проектов). Статусы — по легенде [MASTER_SPEC.md](MASTER_SPEC.md) §1.
 
 ## 1. Текущее состояние: РЕАЛИЗОВАНО (браузерное хранилище)
 
 ### 1.1 Адаптер хранилища
 Точка подмены — интерфейс `ProjectStorage` (`src/core/project/storage.ts`):
 `list() / get(id) / save(project) / remove(id)`. Реализация —
-`LocalStorageAdapter` (MVP, без сервера). Замена на серверный
-`ApiStorageAdapter` не затрагивает ни ядро, ни UI (см. [PROJECT_FORMAT.md](PROJECT_FORMAT.md)).
+`LocalStorageAdapter` для текущего редактора и уроков. Сервер/SQLite уже
+существуют; ручные копии — 10A, условные записи — 10B1. Серверный режим
+Canvas требует отдельной интеграции (10B2), а не простой глобальной
+замены адаптера: HTTP не гарантирует синхронный flush при закрытии.
 
 ### 1.2 Ключи LocalStorage (фактические)
 
@@ -39,7 +41,8 @@
 `008_telegram_bots` (бот ↔ пространство/проект; токен — только ссылка `secret_id`),
 `009_executions` (история исполнений; статусы — контролируемый набор),
 `010_execution_steps` (шаги: сводки входов/выходов после санитайзера),
-`011_audit_logs` (журнал действий; только добавление на уровне приложения).
+`011_audit_logs` (журнал действий; только добавление на уровне приложения),
+`012_project_revisions` (непрозрачная метка условной записи черновика).
 
 ### 2.4 Хранение журналов (подэтап 5.9)
 - Исполнения и шаги — рабочий журнал: в будущем допускается политика
@@ -61,7 +64,7 @@
 | `users` | `id`, `email`, `password_hash`, `name`, `created_at` | Аккаунты (страница Авторизация) |
 | `workspaces` | `id`, `owner_id`, `name` | Рабочие пространства |
 | `workspace_members` | `workspace_id`, `user_id`, `role` | Доступы (ролевой доступ) |
-| `projects` | `id`, `workspace_id`, `name`, `kind`, `document(jsonb)`, `format_version`, `updated_at` | Проекты (весь `NodezzleProject` документом) |
+| `projects` | `id`, `workspace_id`, `name`, `kind`, `document(jsonb)`, `format_version`, `updated_at`, `revision` | Проекты (весь `NodezzleProject` документом) |
 | `project_versions` | `id`, `project_id`, `snapshot(jsonb)`, `label`, `created_at` | История версий: снапшот, сравнение, откат |
 | `executions` | `id`, `workspace_id`, `project_id`, `project_version_id`, `trigger_type`, `trigger_source`, `telegram_bot_id`, `external_event_id`, `parent_execution_id`, `status`, `error_code`, `started_at`, `finished_at`, `duration_ms`, `created_at` | История выполнений (подэтап 5.9) |
 | `execution_steps` | `id`, `execution_id`, `node_id`, `block_type`, `sequence`, `status`, `started_at`, `finished_at`, `duration_ms`, `error_code`, `input_summary`, `output_summary` | Шаги выполнения (задел Time Travel Debug) |
@@ -90,3 +93,23 @@
 2. Секреты в таблицы проектов не попадают (см. [SECURITY.md](SECURITY.md)).
 3. Документ проекта — единственный источник структуры; таблицы лишь индексируют
    его для списков и истории.
+
+
+## 4. Ревизии черновика (10B1)
+
+Миграция 012: новая TEXT-колонка revision; старые строки получают случайные
+32 hex-символа через randomblob. JSON/даты/ID/версии не переписываются.
+Мигратор выполняет изменение в транзакции и не повторяет применённую миграцию.
+Store всегда задаёт новую метку при создании/успешном обновлении, включая
+restore и запись тех же данных. Токен нельзя сравнивать по порядку или времени.
+
+CAS — один UPDATE с условием ID + revision и RETURNING; отдельный SELECT
+с последующим безусловным UPDATE запрещён. DELETE также условный. Отсутствие
+совпадения не меняет строку; при повторном создании ID случайная метка не
+совпадает с предыдущей. Ревизия не является ID версии/публикации или секретом.
+Два подключения к одному файлу SQLite и миграция заполненной старой БД
+проверены в `server/src/projects/revisions.test.ts`.
+
+Контракт API/совместимость — [PROJECT_API.md](PROJECT_API.md). Старые процессы
+backend с безусловными запросами к БД нельзя оставлять рядом с обновлёнными;
+при будущем деплое сделать резервную копию и согласованно обновить backend.

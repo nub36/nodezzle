@@ -162,7 +162,7 @@ describe('5.8D: LIVE-версия из обновления', () => {
 
   it('черновик не исполняется: правки после публикации не влияют', async () => {
     const { cookie, projectId, webhookPath } = await setup(true);
-    await api('PUT', `/api/projects/${projectId}`, { document: replyDoc('ЧЕРНОВИК НЕ ДОЛЖЕН УЙТИ') }, cookie);
+    await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision, document: replyDoc('ЧЕРНОВИК НЕ ДОЛЖЕН УЙТИ') }, cookie);
     await api('POST', `/api/telegram/webhook/${webhookPath}`, update(2, 77));
     expect(sent).toHaveLength(1);
     expect(sent[0].text).toBe('ЖИВОЙ ОТВЕТ');
@@ -211,7 +211,7 @@ const callbackUpdate = (data = 'confirm') => ({ update_id: 99, callback_query: {
 } });
 it('09C1: callback → LIVE → outbox → answerCallbackQuery, не sendMessage; черновик не исполняется', async () => {
   const { webhookPath, projectId, cookie } = await setup(true, callbackDoc());
-  await api('PUT', `/api/projects/${projectId}`, { document: replyDoc('Черновик') }, cookie);
+  await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision, document: replyDoc('Черновик') }, cookie);
   const res = await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate());
   expect(res.status).toBe(200);
   expect(answers).toEqual([{ callbackQueryId: 'query-99', text: 'Подтверждено', showAlert: true }]);

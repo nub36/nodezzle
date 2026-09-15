@@ -228,7 +228,7 @@ describe('Рантайм пишет журнал', () => {
   it('таймаут фиксируется статусом «таймаут»', async () => {
     const { cookie, projectId } = await publishProject();
     // Задержка 1500 мс > лимита 300 мс в конфигурации теста.
-    await api('PUT', `/api/projects/${projectId}`, {
+    await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision,
       document: {
         ...replyDoc('ОТВЕТ'),
         canvas: {

@@ -123,12 +123,12 @@ describe('Журнал действий (5.9D)', () => {
     };
     const created = await api('POST', '/api/projects', { workspaceId, document: doc }, cookie);
     const { project } = (await created.json()) as { project: { id: string } };
-    await api('PUT', `/api/projects/${project.id}`, { document: { ...doc, name: 'Правка' } }, cookie);
+    await api('PUT', `/api/projects/${project.id}`, { expectedRevision: (await (await api('GET', `/api/projects/${project.id}`, undefined, cookie)).json() as { revision: string }).revision, document: { ...doc, name: 'Правка' } }, cookie);
     const snapshot = await api('POST', `/api/projects/${project.id}/versions`, { label: 'Ручной' }, cookie);
     const { version } = (await snapshot.json()) as { version: { id: string } };
     await api('POST', `/api/projects/${project.id}/publish`, {}, cookie);
-    await api('POST', `/api/projects/${project.id}/versions/${version.id}/restore`, {}, cookie);
-    await api('DELETE', `/api/projects/${project.id}`, undefined, cookie);
+    await api('POST', `/api/projects/${project.id}/versions/${version.id}/restore`, { expectedRevision: (await (await api('GET', `/api/projects/${project.id}`, undefined, cookie)).json() as { revision: string }).revision }, cookie);
+    await api('DELETE', `/api/projects/${project.id}`, { expectedRevision: (await (await api('GET', `/api/projects/${project.id}`, undefined, cookie)).json() as { revision: string }).revision }, cookie);
 
     const actions = auditRows().map((r) => r.action);
     expect(actions).toEqual([

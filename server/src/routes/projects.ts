@@ -8,12 +8,12 @@
  */
 
 import { tryParseProject } from '../../../src/core/project/schema.ts';
-import { badRequest, conflict, notFound, unauthorized, validationFailed } from '../errors.ts';
+import { ApiError, badRequest, conflict, notFound, unauthorized, validationFailed } from '../errors.ts';
 import { validateForPublish } from '../publication/validate.ts';
 
 const VERSION_LABEL_MAX = 120;
 import { readJsonBody, sendJson } from '../http.ts';
-import type { Router } from '../router.ts';
+import type { Router, RouteContext } from '../router.ts';
 import type { ProjectStore } from '../projects/store.ts';
 import type { VersionStore } from '../projects/versions.ts';
 import { currentUser, type AuthDeps } from './auth.ts';
@@ -31,6 +31,28 @@ function parseDocument(body: Record<string, unknown>) {
   const document = tryParseProject(raw);
   if (!document) throw badRequest('Документ проекта не соответствует формату NodezzleProject');
   return document;
+}
+
+/** Проверять снова после await чтения тела: сессия/доступ могли измениться. */
+function authorizedProject(ctx: RouteContext, deps: ProjectDeps) {
+  const user = currentUser(ctx, deps);
+  if (!user) throw unauthorized();
+  const row = deps.projects.get(ctx.params.id);
+  if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+  return { user, row };
+}
+function expectedRevision(body: Record<string, unknown>): string {
+  if (body.expectedRevision === undefined) {
+    throw new ApiError(428, 'REVISION_REQUIRED', 'Прочитайте проект и передайте expectedRevision');
+  }
+  if (typeof body.expectedRevision !== 'string' || !/^[0-9a-f]{32}$/.test(body.expectedRevision)) {
+    throw badRequest('Некорректная expectedRevision');
+  }
+  return body.expectedRevision;
+}
+function revisionConflict(): never {
+  // Не возвращаем чужой документ или актуальную ревизию для слепого повтора.
+  throw new ApiError(409, 'REVISION_CONFLICT', 'Проект изменён. Прочитайте актуальный документ и разрешите конфликт');
 }
 
 export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
@@ -58,7 +80,7 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
       targetId: created.id,
       metadata: { name: document.name },
     });
-    sendJson(ctx.res, 201, { project: created.document, updatedAt: created.updatedAt });
+    sendJson(ctx.res, 201, { project: created.document, updatedAt: created.updatedAt, revision: created.revision, workspaceId: created.workspaceId });
   });
 
   router.get('/api/projects/:id', (ctx) => {
@@ -66,18 +88,17 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     if (!user) throw unauthorized();
     const row = deps.projects.get(ctx.params.id);
     if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
-    sendJson(ctx.res, 200, { project: row.document, updatedAt: row.updatedAt });
+    sendJson(ctx.res, 200, { project: row.document, updatedAt: row.updatedAt, revision: row.revision, workspaceId: row.workspaceId });
   });
 
   router.put('/api/projects/:id', async (ctx) => {
-    const user = currentUser(ctx, deps);
-    if (!user) throw unauthorized();
-    const existing = deps.projects.get(ctx.params.id);
-    if (!existing || !deps.workspaces.isMember(existing.workspaceId, user.id)) throw notFound('Проект не найден');
+    authorizedProject(ctx, deps);
     const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
+    const { user, row: existing } = authorizedProject(ctx, deps);
     const document = parseDocument(body);
     if (document.id !== ctx.params.id) throw badRequest('Идентификатор документа не совпадает с адресом проекта');
-    deps.projects.update(ctx.params.id, document);
+    const fresh = deps.projects.update(ctx.params.id, document, expectedRevision(body));
+    if (!fresh) revisionConflict();
     deps.audit.append({
       workspaceId: existing.workspaceId,
       actorUserId: user.id,
@@ -86,16 +107,14 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
       targetId: ctx.params.id,
       metadata: { name: document.name },
     });
-    const fresh = deps.projects.get(ctx.params.id);
-    sendJson(ctx.res, 200, { project: fresh!.document, updatedAt: fresh!.updatedAt });
+    sendJson(ctx.res, 200, { project: fresh.document, updatedAt: fresh.updatedAt, revision: fresh.revision, workspaceId: fresh.workspaceId });
   });
 
-  router.delete('/api/projects/:id', (ctx) => {
-    const user = currentUser(ctx, deps);
-    if (!user) throw unauthorized();
-    const row = deps.projects.get(ctx.params.id);
-    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
-    deps.projects.delete(ctx.params.id);
+  router.delete('/api/projects/:id', async (ctx) => {
+    authorizedProject(ctx, deps);
+    const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
+    const { user, row } = authorizedProject(ctx, deps);
+    if (!deps.projects.delete(ctx.params.id, expectedRevision(body))) revisionConflict();
     deps.audit.append({
       workspaceId: row.workspaceId,
       actorUserId: user.id,
@@ -147,15 +166,15 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     sendJson(ctx.res, 200, { project: snapshot });
   });
 
-  router.post('/api/projects/:id/versions/:versionId/restore', (ctx) => {
-    const user = currentUser(ctx, deps);
-    if (!user) throw unauthorized();
-    const row = deps.projects.get(ctx.params.id);
-    if (!row || !deps.workspaces.isMember(row.workspaceId, user.id)) throw notFound('Проект не найден');
+  router.post('/api/projects/:id/versions/:versionId/restore', async (ctx) => {
+    authorizedProject(ctx, deps);
+    const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
+    const { user, row } = authorizedProject(ctx, deps);
     const snapshot = deps.versions.get(ctx.params.id, ctx.params.versionId);
     if (!snapshot) throw notFound('Версия не найдена');
     // Восстановление перезаписывает черновик; сама версия остаётся.
-    deps.projects.update(ctx.params.id, snapshot);
+    const fresh = deps.projects.update(ctx.params.id, snapshot, expectedRevision(body));
+    if (!fresh) revisionConflict();
     deps.audit.append({
       workspaceId: row.workspaceId,
       actorUserId: user.id,
@@ -164,7 +183,7 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
       targetId: ctx.params.versionId,
       metadata: { projectId: ctx.params.id },
     });
-    sendJson(ctx.res, 200, { project: snapshot });
+    sendJson(ctx.res, 200, { project: fresh.document, updatedAt: fresh.updatedAt, revision: fresh.revision, workspaceId: fresh.workspaceId });
   });
 
   // ── Публикация: серверная валидация → неизменяемая LIVE-версия ──

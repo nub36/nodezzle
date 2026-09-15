@@ -97,7 +97,7 @@ describe('Версии проектов', () => {
     expect(version.label).toBe('До правок');
 
     // Черновик меняется независимо от снапшота.
-    await api('PUT', `/api/projects/${projectId}`, { document: projectDocument(projectId, 'Изменённое имя') }, cookie);
+    await api('PUT', `/api/projects/${projectId}`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision, document: projectDocument(projectId, 'Изменённое имя') }, cookie);
 
     const list = (await (await api('GET', `/api/projects/${projectId}/versions`, undefined, cookie)).json()) as {
       versions: Array<{ id: string; label: string }>;
@@ -109,7 +109,7 @@ describe('Версии проектов', () => {
     };
     expect(snap.project.name).toBe('Исходное имя');
 
-    const restored = await api('POST', `/api/projects/${projectId}/versions/${version.id}/restore`, {}, cookie);
+    const restored = await api('POST', `/api/projects/${projectId}/versions/${version.id}/restore`, { expectedRevision: (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json() as { revision: string }).revision }, cookie);
     expect(restored.status).toBe(200);
     const fresh = (await (await api('GET', `/api/projects/${projectId}`, undefined, cookie)).json()) as {
       project: { name: string };
