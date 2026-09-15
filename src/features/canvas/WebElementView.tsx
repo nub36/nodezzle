@@ -1,11 +1,16 @@
 /** Рендерит только уже проверенное дерево. Атрибуты пользователя не распространяются в DOM. */
 import { useTranslation } from 'react-i18next';
+import { WebModalView } from './WebModalView';
 import { WebFieldView } from './WebFieldView';
 import { WebImageView } from './WebImageView';
 import type { WebElement } from '@/core/web/layout-element';
 
 export function WebElementView({ element }: { element: WebElement }) {
   const { t } = useTranslation();
+  if (element.kind === 'modal') return <WebModalView key={JSON.stringify(element)} title={element.title}>
+    {element.children.length ? element.children.map((child, index) => <WebElementView key={index} element={child} />)
+      : <p className="text-xs text-muted">{t('execution.panel.web.emptyLayout')}</p>}
+  </WebModalView>;
   if (element.kind === 'input' || element.kind === 'textarea') return <WebFieldView key={JSON.stringify(element)} element={element} />;
   if (element.kind === 'image') return <WebImageView key={element.src} src={element.src} caption={element.caption} />;
   if (element.kind === 'link') return <a data-web-kind="link" href={element.href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" title={t('execution.panel.web.externalLink', { url: element.href })} className="block min-w-0 whitespace-pre-wrap break-words text-sm text-cyan-300 underline">{element.text.trim() ? element.text : element.href}<span className="sr-only"> — {t('execution.panel.web.newTab')}</span></a>;

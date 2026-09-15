@@ -121,7 +121,7 @@ export function ConfigPanel() {
             <div className="space-y-2.5">
               {configKeys.map((key) => {
                 const value = config[key];
-                const labelKey = isWebField(node.data.blockId) && key === 'label' ? 'fieldLabel' : key;
+                const labelKey = isWebField(node.data.blockId) && key === 'label' ? 'fieldLabel' : node.data.blockId === 'web.modal' && key === 'title' ? 'modalTitle' : key;
                 if ((key === 'formMode' && node.data.blockId === 'web.form') || (key === 'formNodeId' && isWebField(node.data.blockId))) {
                   const forms = nodes.filter((n) => n.data.blockId === 'web.form');
                   return <label key={key} className="block">

@@ -4,7 +4,7 @@
  * Элементы оформления страницы: текст, заголовки, картинки, поля ввода,
  * контейнеры. Определения фиксируют контракты и место в библиотеке.
  * Текст/заголовок реализованы в 09B1, контейнер/секция/сетка — 09B2.
- * Изображение/ссылка — 09B3. Поля — 09B4, модальное окно пока planned (см. docs/WEB.md).
+ * Изображение/ссылка — 09B3. Поля — 09B4, информационное модальное окно — 09B5 (см. docs/WEB.md).
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
@@ -225,8 +225,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'структура',
     difficulty: 'advanced',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { title: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildLayoutElement('modal', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_TREE' };
+    },
     inputs: [
       dport('title', 'blocks.ports.title', 'text'),
       dport('children', 'blocks.ports.children', 'array'),

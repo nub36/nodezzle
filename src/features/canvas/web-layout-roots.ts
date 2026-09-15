@@ -4,7 +4,7 @@ import type { Edge } from '@xyflow/react';
 import type { NodezzleFlowNode } from '@/core/project/serialize';
 import { blockRegistry } from '@/core/registry/block-registry';
 
-export const isWebLayout = (id: string) => ['web.container', 'web.section', 'web.grid'].includes(id);
+export const isWebLayout = (id: string) => ['web.container', 'web.section', 'web.grid', 'web.modal'].includes(id);
 export const isWebUrlBlock = (id: string) => id === 'web.image' || id === 'web.link';
 export const isWebRenderable = (id: string) => id === 'web.text' || id === 'web.heading' || isWebUrlBlock(id) || isWebField(id) || isWebLayout(id);
 
