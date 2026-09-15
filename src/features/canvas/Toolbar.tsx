@@ -140,7 +140,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
 
       <button data-testid="toolbar-tools-toggle" aria-expanded={toolsOpen} aria-controls="canvas-toolbar-tools"
         title={t('canvas.panels.tools')} className="canvas-tools-toggle btn-ghost !py-1.5 text-xs" onClick={() => setToolsOpen(!toolsOpen)}>{t('canvas.panels.tools')}</button>
-      <div id="canvas-toolbar-tools" className="canvas-toolbar-tools" data-open={toolsOpen || (!novice && !teaching)}>
+      <div id="canvas-toolbar-tools" className="canvas-toolbar-tools" data-open={toolsOpen}>
       <button className="btn-ghost text-xs" title={t('novice.modeHint')} aria-pressed={novice} onClick={() => useUiStore.getState().setNoviceMode(!novice)}>{t(novice ? 'novice.advanced' : 'novice.simple')}</button>
       {/* Масштаб */}
       <div className="flex items-center">

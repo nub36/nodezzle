@@ -94,4 +94,14 @@ for (const width of [390, 768, 1440]) test(`адаптивность ${width}: �
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   expect((await page.locator('[data-tutorial="canvas"]').boundingBox())!.height).toBeGreaterThan(200);
   if (width === 1440) await page.screenshot({ path: '/home/user/11-editor.png' });
+  await page.getByRole('button', { name: 'Расширенный вид', exact: true }).click();
+  await expect(page.getByTestId('novice-guide')).toHaveCount(0);
+  if (width < 1280) {
+    await page.getByTestId('toolbar-tools-toggle').click();
+    await expect(page.getByTestId('effects-mode')).toBeHidden();
+    await page.getByTestId('toolbar-tools-toggle').click();
+    await expect(page.getByTestId('effects-mode')).toBeVisible();
+  }
+  await page.getByRole('button', { name: 'Подсказки новичку', exact: true }).click();
+  await expect(page.getByTestId('novice-guide')).toBeVisible();
 });
