@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { readCallback } from '@/core/telegram/callback';
+import { TelegramKeyboardView } from './TelegramKeyboardView';
 import { TelegramCallbackNotice } from './TelegramCallbackNotice';
 import { buildTriggerPayload, useExecutionStore } from '@/store/execution-store';
 import { helpRouteForError } from '@/academy/search';
@@ -226,6 +227,7 @@ function ChatTab() {
           <div data-testid="simulator-chat-bot" data-chat-id={m.chatId} className="chat-bubble chat-bubble--bot">
             {m.kind === 'photo' ? `📷 ${t('execution.panel.chat.photo')}` : m.text}
             {m.kind === 'photo' && m.text ? ` — ${m.text}` : ''}
+            {m.kind === 'text' && m.keyboard && <TelegramKeyboardView message={m} />}
           </div>
         </div>
       ))}

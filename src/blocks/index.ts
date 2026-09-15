@@ -11,6 +11,7 @@ import { coreBlocks } from './core/blocks';
 import { dataBlocks } from './data/blocks';
 import { logicBlocks } from './logic/blocks';
 import { flowBlocks } from './flow/blocks';
+import { telegramKeyboardBlocks } from './telegram/keyboard';
 import { telegramBlocks } from './telegram/blocks';
 import { webBlocks } from './web/blocks';
 import { modelBlocks } from './models/blocks';
@@ -45,6 +46,7 @@ const ALL_BLOCKS = [
   ...flowBlocks,
   ...telegramBlocks,
   ...telegramExtendedBlocks,
+  ...telegramKeyboardBlocks,
   ...webBlocks,
   ...webUiBlocks,
   ...webEventBlocks,

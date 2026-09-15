@@ -125,3 +125,15 @@ it('answerCallbackQuery: show_alert true/false и пустой текст не �
     { method: 'answerCallbackQuery', body: { callback_query_id: 'cb-2', text: 'Ответ', show_alert: true } },
   ]);
 });
+
+it('09C2: клавиатура становится reply_markup; старое тело запроса неизменно, ошибки до fetch', async () => {
+  const { fetchImpl, calls } = mockFetch(() => okJson({ message_id: 321 }));
+  const api = createTelegramApi({ token: TOKEN, fetchImpl });
+  const keyboard = { inline_keyboard: [[{ text: 'Да', callback_data: 'confirm' }]] };
+  expect(await api.sendMessage({ chatId: 42, text: 'Выберите', keyboard })).toEqual({ messageId: 321 });
+  expect(calls[0]).toEqual({ method: 'sendMessage', body: { chat_id: 42, text: 'Выберите', reply_markup: keyboard } });
+  await api.sendMessage({ chatId: 42, text: 'Без кнопок' });
+  expect(calls[1].body).toEqual({ chat_id: 42, text: 'Без кнопок' });
+  await expect(api.sendMessage({ chatId: 42, text: 'Не отправлять', keyboard: { inline_keyboard: [] } })).rejects.toMatchObject({ message: 'ERR_TELEGRAM_KEYBOARD' });
+  expect(calls).toHaveLength(2);
+});

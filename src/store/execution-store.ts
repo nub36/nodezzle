@@ -3,6 +3,8 @@
  * история выполнения. Связывает UI Canvas с чистым движком executeCanvas.
  */
 
+import { readInlineKeyboard } from '@/core/telegram/inline-keyboard';
+import { readCallback } from '@/core/telegram/callback';
 import { create } from 'zustand';
 import { executeCanvas } from '@/core/runtime/execute';
 import { flowToCanvas } from '@/core/project/serialize';
@@ -72,6 +74,7 @@ interface ExecutionState {
   run: () => Promise<void>;
   /** Запуск схемы веб-событием из превью страницы (Этап 2, подэтап I ч. 2). */
   fireWebTrigger: (web: Record<string, unknown>, targetNodeId?: string) => Promise<void>;
+  fireTelegramButton: (outboxId: string, row: number, column: number) => Promise<boolean>;
   stop: () => void;
   reset: () => void;
 }
@@ -228,6 +231,22 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
     await startRun({ source: 'web', web, ...(targetNodeId !== undefined ? { targetNodeId } : {}) }, null);
   },
 
+  fireTelegramButton: async (outboxId, row, column) => {
+    if (!canUseTelegramKeyboard(outboxId) || !Number.isInteger(row) || !Number.isInteger(column) || row < 0 || column < 0) return false;
+    const message = get().outbox.find((m) => m.id === outboxId);
+    if (message?.kind !== 'text') return false;
+    const button = readInlineKeyboard(message.keyboard)?.inline_keyboard[row]?.[column];
+    if (!button) return false;
+    const payload: TriggerPayload = { source: 'telegram', telegram: {
+      event: 'callback_query', text: '', callback_id: `sim-${uid()}`, data: button.callback_data,
+      message_id: message.messageId, chat_id: message.chatId, user_id: get().payload.userId,
+    } };
+    if (!readCallback(payload)) return false;
+    // startRun синхронно включает running и удаляет прежний outbox до первого await.
+    await startRun(payload, null);
+    return true;
+  },
+
   stop: () => {
     const ref = get().cancelRef;
     if (ref) ref.cancelled = true;
@@ -249,3 +268,17 @@ export const useExecutionStore = create<ExecutionState>()((set, get) => {
     }),
   };
 });
+
+
+/** Проверяется и перед рендером, и в действии: disabled — не граница доверия. */
+export function canUseTelegramKeyboard(outboxId: string): boolean {
+  const context = useProjectStore.getState();
+  const state = useExecutionStore.getState();
+  if (!context.project || state.running || state.status !== 'success' || !state.nodeInfoRunId
+    || !Number.isSafeInteger(state.payload.userId) || state.payload.userId <= 0) return false;
+  const key = executionGraphKey(context.nodes, context.edges, context.project.id, context.activeModelId, context.project.models);
+  if (state.nodeInfoGraphKey !== key) return false;
+  const message = state.outbox.find((m) => m.id === outboxId);
+  return message?.kind === 'text' && Number.isSafeInteger(message.messageId) && (message.messageId ?? 0) > 0
+    && Number.isSafeInteger(message.chatId) && message.chatId !== 0 && readInlineKeyboard(message.keyboard) !== null;
+}

@@ -7,6 +7,7 @@
  * через backend (см. docs/TELEGRAM.md). Токен бота — только в серверном Secrets Vault.
  */
 
+import { readInlineKeyboard } from '@/core/telegram/inline-keyboard';
 import type { BlockDefinition } from '@/core/types/blocks';
 import type { TriggerPayload } from '@/core/types/runtime';
 import { dport, eport, ERR } from '../shared';
@@ -98,15 +99,18 @@ export const telegramBlocks: BlockDefinition[] = [
     keywords: ['телеграм', 'бот', 'отправить', 'сообщение', 'ответ', 'чат'],
     category: 'telegram_actions',
     difficulty: 'basic',
-    inputs: [dport('text', 'blocks.ports.text', 'text'), dport('chat_id', 'blocks.ports.chat_id', 'number')],
+    inputs: [dport('text', 'blocks.ports.text', 'text'), dport('chat_id', 'blocks.ports.chat_id', 'number'), dport('keyboard', 'blocks.ports.keyboard', 'object')],
     outputs: [dport('message_id', 'blocks.ports.message_id', 'number'), eport()],
-    runtime: async ({ inputs, runtime }) => {
+    runtime: async ({ inputs, connectedInputs, runtime }) => {
+      if (connectedInputs?.includes('keyboard') && inputs.keyboard === undefined) return { error: 'ERR_TELEGRAM_KEYBOARD' };
       const text = String(inputs.text ?? '');
       const chatId = Number(inputs.chat_id);
       if (text.trim() === '') return { error: ERR.EMPTY_INPUT };
       if (!Number.isFinite(chatId)) return { error: ERR.EMPTY_INPUT };
+      const keyboard = inputs.keyboard === undefined ? undefined : readInlineKeyboard(inputs.keyboard);
+      if (keyboard === null || (keyboard && (!Number.isSafeInteger(chatId) || chatId === 0))) return { error: 'ERR_TELEGRAM_KEYBOARD' };
       runtime.log('info', 'telegram.send_message', { chatId, text });
-      const messageId = await runtime.telegram.send({ chatId, text });
+      const messageId = await runtime.telegram.send({ chatId, text, ...(keyboard ? { keyboard } : {}) });
       return { outputs: { message_id: messageId } };
     },
     ui: { icon: '💬', color: '#60a5fa' },

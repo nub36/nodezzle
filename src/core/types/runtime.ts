@@ -9,6 +9,7 @@
  * тот же код может работать на сервере (backend Runtime).
  */
 
+import type { InlineKeyboard } from '../telegram/inline-keyboard';
 import type { StoredModel } from '../project/schema';
 
 export type ExecutionStatus =
@@ -61,7 +62,8 @@ export interface LogEntry {
 
 /** Исходящее действие: локальный outbox, на сервере — очередь передачи адаптеру. */
 export type TelegramOutMessage = { id: string; text: string; at: number } & (
-  | { kind: 'text' | 'photo'; chatId: number }
+  | { kind: 'text'; chatId: number; messageId?: number; keyboard?: InlineKeyboard }
+  | { kind: 'photo'; chatId: number }
   | { kind: 'callback_answer'; callbackQueryId: string; showAlert: boolean }
 );
 
@@ -76,7 +78,7 @@ export interface RuntimeContext {
   cancel: { cancelled: boolean };
   log: (level: LogLevel, message: string, data?: unknown) => void;
   telegram: {
-    send: (msg: { chatId: number; text: string }) => Promise<number>;
+    send: (msg: { chatId: number; text: string; keyboard?: InlineKeyboard }) => Promise<number>;
     /** Необязателен для совместимости старых пользовательских адаптеров. */
     answerCallback?: (answer: { callbackQueryId: string; text: string; showAlert: boolean }) => Promise<boolean>;
     sendPhoto: (msg: { chatId: number; photo: unknown; caption?: string }) => Promise<number>;
@@ -93,6 +95,8 @@ export interface RuntimeContext {
 
 /** Контекст, передаваемый в handler блока. */
 export interface NodeExecutionContext {
+  /** Подключённые входы: отличаем отсутствие провода от недоставленного значения. */
+  connectedInputs?: readonly string[];
   /** Значения входов: { [portId]: value } */
   inputs: Record<string, unknown>;
   /** Конфигурация конкретного экземпляра блока (data.config). */

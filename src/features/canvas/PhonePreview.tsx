@@ -8,6 +8,7 @@
  * дорожной карты).
  */
 
+import { TelegramKeyboardView } from './TelegramKeyboardView';
 import { TelegramCallbackNotice } from './TelegramCallbackNotice';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -69,6 +70,7 @@ export function PhonePreview() {
                   </div>
                 )}
                 <div className="whitespace-pre-wrap break-words">{msg.text || t('execution.panel.phone.photo')}</div>
+                {msg.kind === 'text' && msg.keyboard && <TelegramKeyboardView message={msg} />}
                 <div className="mt-0.5 text-right text-[8.5px] text-muted/70">{formatTimeRu(msg.at)}</div>
               </div>
             </div>

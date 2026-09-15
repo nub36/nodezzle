@@ -43,7 +43,8 @@ test('порты: реальные входы/выходы, квадрат ош�
   const text = await add(page, 'core.text');
   await step(page, 'shapes');
   await arrangePair(page, text, sender);
-  await expect(sender.locator('[data-port-direction="input"]')).toHaveCount(2);
+  await expect(sender.locator('[data-port-direction="input"]')).toHaveCount(3);
+  await expect(port(sender, 'input', 'keyboard')).toHaveAttribute('aria-label', /Объект/);
   await expect(text.locator('[data-port-direction="input"]')).toHaveCount(0);
   await expect(port(sender, 'input', 'chat_id')).toHaveAttribute('aria-label', /Число/);
   await expect(port(text, 'output', 'text')).toHaveAttribute('aria-label', /Текст/);

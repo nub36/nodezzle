@@ -138,6 +138,13 @@ export function ConfigPanel() {
                     </select>
                   </label>;
                 }
+                if (node.data.blockId === 'telegram.inline_keyboard' && key === 'rows') {
+                  return <label key={key} className="block">
+                    <span className="mb-1 block text-[11px] text-muted">{t('blocks.config.keyboardRows')}</span>
+                    <textarea aria-label={t('blocks.config.keyboardRows')} className="input-dark h-24 resize-y font-mono text-xs" value={typeof value === 'string' ? value : ''}
+                      onChange={(e) => setNodeConfig(node.id, key, e.target.value)} />
+                  </label>;
+                }
                 if (key === 'operator') {
                   return (
                     <label key={key} className="block">

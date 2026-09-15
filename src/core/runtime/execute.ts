@@ -118,10 +118,11 @@ export async function executeCanvas(
         return true; // Поставлено в outbox; не подтверждение доставки Telegram.
       },
       send: async (m) => {
-        const msg: TelegramOutMessage = { id: uid(), chatId: m.chatId, kind: 'text', text: m.text, at: Date.now() };
+        const messageId = 9001 + outbox.length;
+        const msg: TelegramOutMessage = { id: uid(), chatId: m.chatId, kind: 'text', text: m.text, at: Date.now(), messageId, ...(m.keyboard ? { keyboard: m.keyboard } : {}) };
         outbox.push(msg);
         options.onOutbox?.(msg);
-        return 9000 + outbox.length;
+        return messageId;
       },
       sendPhoto: async (m) => {
         const msg: TelegramOutMessage = {
@@ -355,7 +356,8 @@ export async function executeCanvas(
     let error: string | undefined;
     try {
       if (def.runtime) {
-        const result = await def.runtime({ inputs, config: node.config ?? {}, payload, runtime });
+        const connectedInputs = def.inputs.filter((p) => (inByPort.get(`${nodeId}:${p.id}`)?.length ?? 0) > 0).map((p) => p.id);
+        const result = await def.runtime({ inputs, connectedInputs, config: node.config ?? {}, payload, runtime });
         outputs = result.outputs ?? {};
         error = result.error;
       }

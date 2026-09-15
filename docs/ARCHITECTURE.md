@@ -262,3 +262,21 @@ callback_answer в размеченном outbox. Серверный LIVE-handle
 а callback_answer — как чат-сообщение. При старте урока режим сообщения
 восстанавливается. TelegramCallbackNotice общий для Чата/Телефона и явно
 помечен как симуляция. Ограничения доставки — TELEGRAM.md, ADR-025.
+
+
+### Разметка клавиатуры и проверка актуальности (09C2)
+
+core/telegram/inline-keyboard.ts валидирует/копирует только callback-разметку.
+Конструктор и send_message используют ту же границу, что серверный Bot API.
+RuntimeContext.telegram.send принимает опциональный keyboard; текстовый
+outbox имеет keyboard и локальный messageId, прежний порт ID сохранён.
+NodeExecutionContext.connectedInputs сообщает факт провода независимо
+от доставленного значения: C2 отказывает при ошибке подключённого источника.
+Это метаданные вызова, не новая семантика планировщика.
+
+TelegramKeyboardView общий для Чата/Телефона. canUseTelegramKeyboard проверяет
+UUID записи, userId, running/status и executionGraphKey (проект/модель/данные
+без позиции). fireTelegramButton повторяет проверку, берёт data/chat/message
+из текущей записи, создаёт callback C1 и запускает обычный startRun. Старый
+outbox очищается до первого await, поэтому повторный вызов не переиспользует
+кнопку. LIVE-handler передаёт keyboard в sendMessage → reply_markup. ADR-026.

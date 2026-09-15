@@ -12,6 +12,8 @@
  *  - ошибки Telegram нормализуются в `TelegramApiError`.
  */
 
+import { readInlineKeyboard, type InlineKeyboard } from '../../../src/core/telegram/inline-keyboard.ts';
+
 const PROD_BASE_URL = 'https://api.telegram.org';
 
 export class TelegramApiError extends Error {
@@ -45,7 +47,7 @@ export interface TelegramTransportOptions {
 
 export interface TelegramTransport {
   getMe(): Promise<{ id: number; username?: string; firstName?: string }>;
-  sendMessage(params: { chatId: number | string; text: string }): Promise<{ messageId: number }>;
+  sendMessage(params: { chatId: number | string; text: string; keyboard?: InlineKeyboard }): Promise<{ messageId: number }>;
   sendPhoto(params: { chatId: number | string; photo: string; caption?: string }): Promise<{ messageId: number }>;
   editMessageText(params: { chatId: number | string; messageId: number; text: string }): Promise<boolean>;
   deleteMessage(params: { chatId: number | string; messageId: number }): Promise<boolean>;
@@ -105,8 +107,10 @@ export function createTelegramApi(options: TelegramTransportOptions): TelegramTr
       const result = await call<{ id: number; username?: string; first_name?: string }>('getMe', {});
       return { id: result.id, username: result.username, firstName: result.first_name };
     },
-    async sendMessage({ chatId, text }) {
-      const result = await call<{ message_id: number }>('sendMessage', { chat_id: chatId, text });
+    async sendMessage({ chatId, text, keyboard }) {
+      const markup = keyboard === undefined ? undefined : readInlineKeyboard(keyboard);
+      if (markup === null) throw new TelegramApiError('sendMessage', 'ERR_TELEGRAM_KEYBOARD');
+      const result = await call<{ message_id: number }>('sendMessage', { chat_id: chatId, text, ...(markup ? { reply_markup: markup } : {}) });
       return { messageId: result.message_id };
     },
     async sendPhoto({ chatId, photo, caption }) {

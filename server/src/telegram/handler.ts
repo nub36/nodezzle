@@ -81,7 +81,7 @@ export function createTelegramUpdateHandler(deps: TelegramHandlerDeps): Telegram
       }
       // Снапшот-журнал хранит текст; фото-сообщения пока отправляются
       // подписью как текстом (см. docs/TELEGRAM.md).
-      await transport.sendMessage({ chatId: msg.chatId, text: msg.text });
+      await transport.sendMessage({ chatId: msg.chatId, text: msg.text, ...(msg.kind === 'text' && msg.keyboard ? { keyboard: msg.keyboard } : {}) });
     }
   };
 }

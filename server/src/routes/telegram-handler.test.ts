@@ -4,6 +4,7 @@
  * токен течёт только через Secrets Vault.
  */
 
+import type { InlineKeyboard } from '../../../src/core/telegram/inline-keyboard';
 import http, { type Server } from 'node:http';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -17,7 +18,7 @@ let db: Db;
 let server: Server;
 let baseUrl = '';
 const answers: Array<{ callbackQueryId: string; text?: string; showAlert?: boolean }> = [];
-const sent: Array<{ token: string; chatId: number | string; text: string }> = [];
+const sent: Array<{ token: string; chatId: number | string; text: string; keyboard?: InlineKeyboard }> = [];
 
 const config: ServerConfig = {
   host: '127.0.0.1',
@@ -98,8 +99,8 @@ beforeEach(async () => {
     webhookLimiter: undefined,
     telegramTransportFor: (token: string) => ({
       getMe: async () => ({ id: 1 }),
-      sendMessage: async ({ chatId, text }) => {
-        sent.push({ token, chatId, text });
+      sendMessage: async ({ chatId, text, keyboard }) => {
+        sent.push({ token, chatId, text, ...(keyboard ? { keyboard } : {}) });
         return { messageId: 1 };
       },
       sendPhoto: async () => ({ messageId: 1 }),
@@ -229,4 +230,28 @@ it('09C1: callback без LIVE не исполняет черновик', async 
   expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate())).status).toBe(200);
   expect(answers).toEqual([]);
   expect(sent).toEqual([]);
+});
+
+
+it('09C2: LIVE-сообщение с клавиатурой → callback от сообщения Telegram → ответ', async () => {
+  const doc = callbackDoc();
+  const keyboard = { inline_keyboard: [[{ text: 'Подтвердить', callback_data: 'confirm' }]] };
+  doc.canvas.nodes.push(node('keyboard', 'telegram.inline_keyboard', { rows: JSON.stringify(keyboard.inline_keyboard) }));
+  doc.canvas.edges.push(edge('markup', 'keyboard', 'keyboard', 's', 'keyboard'));
+  const { webhookPath } = await setup(true, doc);
+  expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, update(101, -77))).status).toBe(200);
+  expect(sent).toHaveLength(1);
+  expect(sent[0]).toMatchObject({ chatId: -77, keyboard });
+  expect(answers).toHaveLength(0);
+  expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, callbackUpdate())).status).toBe(200);
+  expect(answers).toEqual([{ callbackQueryId: 'query-99', text: 'Подтверждено', showAlert: true }]);
+  expect(sent).toHaveLength(1); // callback не отправляет исходное сообщение повторно
+});
+it('09C2: неверные ряды конструктора не доходят до отправки', async () => {
+  const doc = replyDoc('Не отправлять');
+  doc.canvas.nodes.push(node('keyboard', 'telegram.inline_keyboard', { rows: '[[]]' }));
+  doc.canvas.edges.push(edge('markup', 'keyboard', 'keyboard', 's', 'keyboard'));
+  const { webhookPath } = await setup(true, doc);
+  expect((await api('POST', `/api/telegram/webhook/${webhookPath}`, update(102, 42))).status).toBe(200);
+  expect(sent).toHaveLength(0);
 });
