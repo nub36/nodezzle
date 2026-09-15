@@ -129,7 +129,10 @@ function CanvasInspector() {
   const project = useProjectStore((s) => s.project);
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
+  const novice = useUiStore((s) => s.noviceMode);
   if (!project) return null;
+
+  if (novice && nodes.length === 0) return <PanelShell title={t('canvas.panels.inspector')}><p className="text-xs leading-relaxed text-muted">{t('novice.propertiesHint')}</p></PanelShell>;
 
   return (
     <PanelShell title={t('canvas.inspector.canvas.title')}>

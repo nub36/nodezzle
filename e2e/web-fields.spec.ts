@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, moveNode, port } from './helpers';
 const config = (page: Page, label: string) => page.locator('[data-tutorial="inspector"]').getByLabel(label, { exact: true });
@@ -25,6 +26,7 @@ async function field(page: Page, kind: string, formId: string, name: string, lab
   return node;
 }
 async function output(page: Page, expected: Record<string, unknown>, last = false) {
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   const node = page.getByTestId('debug-node-web.form');
   const target = last ? node.last() : node.first();
@@ -41,6 +43,7 @@ test('поля отправляют строки и переносы, черно
   await field(page, 'web.input', f.id, 'name', 'Ваше имя');
   await config(page, 'Начальное значение').fill('Начальное');
   await field(page, 'web.textarea', f.id, 'message', 'Сообщение');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const preview = page.getByTestId('web-preview');
   await expect(preview.getByRole('textbox', { name: 'Ваше имя', exact: true })).toHaveValue('Начальное');
@@ -51,6 +54,7 @@ test('поля отправляют строки и переносы, черно
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toContainText('Анна');
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(preview.getByRole('textbox', { name: 'Ваше имя', exact: true })).toHaveValue('Начальное');
   await expect(preview.getByRole('textbox', { name: 'Сообщение', exact: true })).toHaveValue('');
@@ -72,6 +76,7 @@ test('копия поля вместе с формой адресует свою
   await input.click({ modifiers: ['Control'] });
   await log.click({ modifiers: ['Control'] });
   await page.keyboard.press('Control+d');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const names = page.getByTestId('web-preview').getByRole('textbox', { name: 'Имя', exact: true });
   await expect(names).toHaveCount(2);
@@ -88,6 +93,7 @@ test('дубликаты блокируют только поля, JSON оста
   const f = await form(page);
   await field(page, 'web.input', f.id, 'name', 'Первое');
   const second = await field(page, 'web.textarea', f.id, 'name', 'Второе');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const formView = page.getByTestId('web-preview-form');
   await expect(formView.getByRole('button')).toBeDisabled();
@@ -111,6 +117,7 @@ test('удалённая форма и копия одного поля не п�
   const input = await field(page, 'web.input', f.id, 'name', 'Имя');
   await input.click();
   await page.keyboard.press('Control+d');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const names = page.getByTestId('web-preview').getByRole('textbox', { name: 'Имя', exact: true });
   await expect(names.first()).toBeEnabled();
@@ -145,12 +152,14 @@ test('вложенное поле: загрузка страницы готов�
   await connectPorts(page, port(array, 'output', 'value'), port(set, 'input', 'value'));
   await connectPorts(page, port(set, 'output', 'object'), port(get, 'input', 'object'));
   await connectPorts(page, port(get, 'output', 'value'), port(grid, 'input', 'children'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const nested = page.getByTestId('web-preview-layout-element').getByRole('textbox', { name: 'Вложенное поле', exact: true });
   await expect(nested).toBeEnabled();
   await nested.fill('Из контейнера');
   await page.getByTestId('web-preview-form').getByRole('button').click();
   await output(page, { message: 'Из контейнера' });
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   // Возврат на вкладку монтирует превью заново и вызывает page_load (09A).
   await expect(nested).toHaveValue('');

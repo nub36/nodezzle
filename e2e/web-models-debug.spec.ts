@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 07B3: веб-события, содержимое модели и инструменты отладки через UI. */
 import { expect, test, type Page } from '@playwright/test';
 import { add, completed, startLesson, step } from './lesson-helpers';
@@ -25,17 +26,22 @@ test('веб: загрузка страницы не запускает кноп
   await moveNode(page, button, 400, 320);
   await connectPorts(page, port(button, 'output', 'data'), port(log, 'input', 'value'));
   await step(page, 'run-web');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.page')).toHaveAttribute('data-status', 'success');
   await expect(page.getByTestId('debug-node-web.button').getByTestId('output-data')).toHaveCount(0);
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveCount(0);
   await step(page, 'run-web');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await page.locator('[data-tutorial="debug"]').getByRole('button', { name: 'Кнопка', exact: true }).click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   const output = page.getByTestId('debug-node-web.button').getByTestId('output-data');
   await expect(output).toContainText('button_click');
@@ -68,8 +74,10 @@ test('модель: упаковка двух деталей, запуск, F5 �
   await step(page, 'run');
   await page.getByTestId('run-button').click();
   await step(page, 'drilldown');
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await expect(page.getByTestId('execution-log-entry')).toContainText(['Внутри модели: 73']);
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-models.call')).toHaveAttribute('data-status', 'success');
   // Пустой контракт — ожидаемый результат; внутренний лог проверен отдельно.
@@ -91,19 +99,23 @@ test('отладка: журнал, порты и локальная истор�
   await step(page, 'run');
   await page.getByTestId('run-button').click();
   await step(page, 'open-debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await step(page, 'open-debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await step(page, 'ports-tab');
   await expect(page.getByTestId('execution-log-entry')).toContainText(['Отладка: 123']);
   await page.getByTestId('tutorial-recheck').click();
   await step(page, 'ports-tab');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await step(page, 'history-tab');
   await expect(page.getByTestId('debug-node-core.text').getByTestId('output-text')).toHaveText('"Отладка: 123"');
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveText('"Отладка: 123"');
   await page.getByTestId('tutorial-recheck').click();
   await step(page, 'history-tab');
+  await openResult(page);
   await page.getByTestId('debug-tab-history').click();
   await expect(page.getByTestId('local-history-entry')).toHaveCount(1);
   await expect(page.getByTestId('local-history-entry')).toHaveAttribute('data-status', 'success');
@@ -125,6 +137,7 @@ test('модель: ошибка внутри не считается успех
   await connectPorts(page, port(text, 'output', 'text'), port(converter, 'input', 'value'));
   await page.getByRole('button', { name: 'Проект', exact: true }).click();
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-models.call')).toHaveAttribute('data-status', 'error');
   await expect(page.getByTestId('debug-node-models.call').getByTestId('output-result')).toHaveCount(0);
@@ -145,6 +158,7 @@ test('модель: ошибка внутри не считается успех
 test('отладка: новый запуск проверяется и после заполнения истории из 30 записей', async ({ page }) => {
   await startLesson(page, 'debug-why-not-working');
   const text = await add(page, 'core.text');
+  await openResult(page);
   await page.getByTestId('debug-tab-history').click();
   // Реальные запуски до шага запуска; историю/сторы не подменяем.
   for (let count = 1; count <= 30; count++) {
@@ -159,8 +173,11 @@ test('отладка: новый запуск проверяется и посл
   // Ни смены вкладки, ни ручной перепроверки: автошаг должен сработать сам.
   await step(page, 'open-debug');
   await expect(page.getByTestId('local-history-entry')).toHaveCount(30);
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-history').click();
   await page.getByTestId('tutorial-quiz-ports').click();
   await completed(page, 'debug-why-not-working');

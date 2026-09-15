@@ -98,6 +98,7 @@ interface ProjectState {
   listProjects: () => Promise<ProjectSummary[]>;
   deleteProject: (id: string) => Promise<void>;
 
+  setProjectKind: (kind: ProjectKind) => void;
   renameProject: (name: string) => void;
   /** Возвращает id созданного узла (или undefined, если блок/проект недоступны). */
   addNode: (blockId: string, position: { x: number; y: number }, configOverrides?: Record<string, unknown>) => string | undefined;
@@ -441,6 +442,10 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       await projectStorage.remove(id);
     },
 
+    setProjectKind: (kind) => {
+      const { project } = get();
+      if (project && project.kind !== kind) { set({ project: { ...project, kind } }); scheduleSave(); }
+    },
     renameProject: (name) => {
       const { project } = get();
       if (!project || project.name === name) return;

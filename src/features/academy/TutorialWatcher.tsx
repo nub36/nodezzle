@@ -110,6 +110,8 @@ export function TutorialWatcher() {
     if (stepTarget === undefined || manualTab) return;
     const tabByTarget: Record<string, 'simulator' | 'chat' | 'history' | null> = {
       simulator: 'simulator',
+      // На шаге запуска раскрываем панель, но сохраняем выбранную учеником вкладку.
+      run: null,
       chat: 'chat',
       history: 'history',
       debug: null,

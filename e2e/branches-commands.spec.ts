@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 07B2: результаты ветвления и команды важнее общего статуса «Успешно». */
 import { expect, test, type Page } from '@playwright/test';
 import { add, completed, startLesson, step } from './lesson-helpers';
@@ -35,6 +36,7 @@ test('условие: ложная ветка не завершает задан
   await step(page, 'run');
   await page.getByLabel('Текст сообщения', { exact: true }).fill('добрый день');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   const result = page.getByTestId('debug-node-logic.condition');
   await expect(result).toHaveAttribute('data-status', 'success');
@@ -43,12 +45,14 @@ test('условие: ложная ветка не завершает задан
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveCount(0);
   await step(page, 'run');
   // Нельзя засчитать запуск простым редактированием текста после него.
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await page.getByLabel('Текст сообщения', { exact: true }).fill('привет, NODEZZLE');
   await page.getByTestId('tutorial-recheck').click();
   await step(page, 'run');
   await page.getByTestId('run-button').click();
   await step(page, 'quiz-branch');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(result.getByTestId('output-true')).toHaveText('"привет, NODEZZLE"');
   await expect(result.getByTestId('output-false')).toHaveCount(0);
@@ -85,9 +89,11 @@ test('команда: /help игнорируется, /start отвечает в
   await buildCommandLesson(page);
   await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/help');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(page.getByTestId('simulator-chat-bot')).toHaveCount(0);
   await step(page, 'send');
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/start');
   await page.getByLabel('ID чата', { exact: true }).fill('13579');
@@ -95,10 +101,12 @@ test('команда: /help игнорируется, /start отвечает в
   await step(page, 'send');
   await page.getByTestId('run-button').click();
   await step(page, 'chat');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-telegram.command').getByTestId('output-command')).toHaveText('"/start"');
   await expect(page.getByTestId('debug-node-telegram.send_message').getByTestId('input-chat_id')).toHaveText('13579');
   await step(page, 'chat');
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(page.getByTestId('simulator-chat-bot')).toHaveCount(1);
   await expect(page.getByTestId('simulator-chat-bot')).toHaveText('/start');
@@ -115,6 +123,7 @@ test('команда: изменение настройки на /help не по
   await setting.fill('/help');
   await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/help');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(page.getByTestId('simulator-chat-bot')).toHaveText('/help');
   await step(page, 'send');
@@ -126,6 +135,7 @@ test('команда: изменение настройки на /help не по
   await page.getByTestId('canvas-node-telegram.command').click();
   await expect(setting).toHaveValue('/help');
   await setting.fill('/start');
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await page.getByLabel('Команда (пусто — обычное сообщение)', { exact: true }).fill('/start');
   await page.getByTestId('tutorial-collapse').click();
@@ -133,6 +143,7 @@ test('команда: изменение настройки на /help не по
   await step(page, 'send');
   await page.getByTestId('run-button').click();
   await step(page, 'chat');
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(page.getByTestId('simulator-chat-bot')).toHaveText('/start');
   await completed(page, 'telegram-command');

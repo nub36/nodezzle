@@ -1,3 +1,5 @@
+import { openTools } from './helpers';
+import { openResult } from './helpers';
 /** Поправки владельца: окно мешало проводу, проверка была немой, Escape закрывал урок. */
 import { expect, test, type Page } from '@playwright/test';
 const lessonIds = ['intro-what', 'intro-canvas', 'basics-ports', 'basics-chain', 'logic-condition', 'data-converters', 'telegram-first-bot', 'telegram-command', 'web-first-page', 'models-first-model', 'debug-why-not-working', 'publish-versions'];
@@ -22,7 +24,9 @@ test('первая цепочка: неверный порт, лишняя де�
   await step(page, 'connect');
   // Как на скриншоте: лишняя деталь не должна ломать проверку нужной пары.
   await add(page, 'security.mask');
+  await openTools(page);
   await page.getByTitle('Приблизить').click();
+  await openTools(page);
   await page.getByTitle('Приблизить').click();
   await moveNode(page, log, 720, 390);
   await moveNode(page, trigger, 340, 160);
@@ -71,6 +75,7 @@ test('первая цепочка: неверный порт, лишняя де�
   await page.getByLabel('Текст сообщения', { exact: true }).fill('Исправлено: 42');
   await page.getByTestId('run-button').click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await expect(page.getByTestId('execution-log-entry')).toContainText(['Исправлено: 42']);
   await completed(page, 'basics-chain');

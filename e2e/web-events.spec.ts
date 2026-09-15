@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 09A: одинаковые подписи не означают одинаковый адрес события. */
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, port } from './helpers';
@@ -26,6 +27,7 @@ async function pair(page: Page, type: string) {
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
 }
 async function onlySecond(page: Page, type: string, expected: unknown) {
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId(`debug-node-${type}`).first()).toHaveAttribute('data-status', 'skipped');
   await expect(page.getByTestId(`debug-node-${type}`).last()).toHaveAttribute('data-status', 'success');
@@ -36,12 +38,14 @@ async function onlySecond(page: Page, type: string, expected: unknown) {
 
 test('две одинаковые кнопки: клик запускает только свою цепочку, в том числе после F5', async ({ page }) => {
   await pair(page, 'web.button');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByTestId('web-preview-button')).toHaveText(['Кнопка', 'Кнопка']);
   await page.getByTestId('web-preview-button').last().click();
   await onlySecond(page, 'web.button', { event: 'button_click', button: 'Кнопка' });
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await page.getByTestId('web-preview-button').last().click();
   await onlySecond(page, 'web.button', { event: 'button_click', button: 'Кнопка' });
@@ -49,6 +53,7 @@ test('две одинаковые кнопки: клик запускает то
 
 test('две формы: независимые данные и запрет отправки некорректного JSON', async ({ page }) => {
   await pair(page, 'web.form');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const forms = page.getByTestId('web-preview-form');
   await expect(forms).toHaveCount(2);
@@ -75,12 +80,16 @@ test('две страницы: загрузка и перезагрузка от
   await page.getByTestId('canvas-node-web.page').click();
   await page.keyboard.press('Control+d');
   await expect(page.getByTestId('canvas-node-web.page')).toHaveCount(2);
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.page').first()).toHaveAttribute('data-status', 'success');
   await expect(page.getByTestId('debug-node-web.page').last()).toHaveAttribute('data-status', 'skipped');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await page.getByTestId('web-preview').getByRole('button', { name: /загруз|обнов|перезагруз/i }).click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.page').first()).toHaveAttribute('data-status', 'success');
   await expect(page.getByTestId('debug-node-web.page').last()).toHaveAttribute('data-status', 'skipped');

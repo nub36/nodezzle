@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 07B4: последние четыре урока. Целевой прогресс не задаётся фикстурами. */
 import { expect, test, type Page } from '@playwright/test';
 import { add, completed, openLesson, step } from './lesson-helpers';
@@ -89,10 +90,12 @@ test('первая цепочка: точный текст в портах и ж
   await page.getByLabel('Текст сообщения', { exact: true }).fill(message);
   await page.getByTestId('run-button').click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-telegram.message_received').getByTestId('output-text')).toHaveText(JSON.stringify(message));
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveText(JSON.stringify(message));
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await expect(page.getByTestId('execution-log-entry')).toContainText([message]);
   await completed(page, 'basics-chain');
@@ -103,6 +106,7 @@ test('первая цепочка: запуск без передачи в ло�
   await page.getByTitle('Отменить (Ctrl+Z)').click();
   await expect(page.locator('.react-flow__edge')).toHaveCount(0);
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-telegram.message_received')).toHaveAttribute('data-status', 'success');
   await step(page, 'run');
@@ -111,6 +115,7 @@ test('первая цепочка: запуск без передачи в ло�
   await step(page, 'run');
   await page.getByTestId('run-button').click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await completed(page, 'basics-chain');
 });

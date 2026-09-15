@@ -11,6 +11,7 @@
  * Поисковые строки НЕ сохраняются — это состояние текущей сессии.
  */
 
+import { LIBRARY_GROUPS, migrateCollapsedCategories } from '@/lib/library-groups';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -37,6 +38,11 @@ export const RECENT_LIMIT = 10;
 export type CanvasPanel = 'library' | 'inspector' | null;
 
 interface UiState {
+  noviceMode: boolean;
+  setNoviceMode: (value: boolean) => void;
+  libraryCollapsed: boolean;
+  inspectorCollapsed: boolean;
+  setSideCollapsed: (side: 'library' | 'inspector', value: boolean) => void;
   /** Временное состояние узкого Canvas, не часть проекта или persist. */
   canvasPanel: CanvasPanel;
   setCanvasPanel: (panel: CanvasPanel) => void;
@@ -100,6 +106,11 @@ function resolveStorage(): Storage {
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
+      noviceMode: true,
+      setNoviceMode: (noviceMode) => set({ noviceMode }),
+      libraryCollapsed: false,
+      inspectorCollapsed: false,
+      setSideCollapsed: (side, value) => set(side === 'library' ? { libraryCollapsed: value } : { inspectorCollapsed: value }),
       canvasPanel: null,
       setCanvasPanel: (canvasPanel) => set({ canvasPanel }),
       libraryTab: 'basic',
@@ -108,10 +119,10 @@ export const useUiStore = create<UiState>()(
       effectsMode: 'full',
       schemaQuery: '',
       focusMode: false,
-      debugOpen: true,
+      debugOpen: false,
       favorites: [],
       recent: [],
-      collapsedCategories: [],
+      collapsedCategories: [...LIBRARY_GROUPS],
 
       setDebugOpen: (open) => set({ debugOpen: open }),
       setLibraryTab: (tab) => set({ libraryTab: tab }),
@@ -148,7 +159,7 @@ export const useUiStore = create<UiState>()(
     {
       name: 'nodezzle-ui-v1',
       storage: createJSONStorage(resolveStorage),
-      version: 2,
+      version: 3,
       // Старое поле `effectsEnabled` (до 0.5.28) → режим эффектов.
       migrate: (persisted, version) => {
         const p = persisted as Record<string, unknown>;
@@ -156,10 +167,14 @@ export const useUiStore = create<UiState>()(
           p.effectsMode = p.effectsEnabled === false ? 'off' : 'full';
           delete p.effectsEnabled;
         }
+        if (version < 3 && Array.isArray(p.collapsedCategories)) p.collapsedCategories = migrateCollapsedCategories(p.collapsedCategories);
         return p as never;
       },
       // Поисковая строка — состояние сессии, не сохраняем.
       partialize: (state) => ({
+        noviceMode: state.noviceMode,
+        libraryCollapsed: state.libraryCollapsed,
+        inspectorCollapsed: state.inspectorCollapsed,
         libraryTab: state.libraryTab,
         canvasMode: state.canvasMode,
         effectsMode: state.effectsMode,

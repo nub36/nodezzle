@@ -9,9 +9,10 @@
  *    создаёт деталь рядом и автоматически подключает её к исходному порту.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { blockRegistry } from '@/core/registry/block-registry';
+import { useUiStore } from '@/store/ui-store';
+import { useProjectStore } from '@/store/project-store';
 import type { BlockDefinition } from '@/core/types/blocks';
 import type { DndPayload, QuickInsertCandidate } from './library-utils';
 
@@ -91,40 +92,33 @@ export function QuickInsertMenu({
 /** Стартовые детали на пустом Canvas. */
 export function QuickInsertStarter({ onInsert }: { onInsert: (payload: DndPayload) => void }) {
   const { t } = useTranslation();
+  const [dismissed, setDismissed] = useState(false);
 
-  const groups = useMemo(() => {
-    const available = blockRegistry.available();
-    const telegram = available.filter((b) => b.trigger === true && b.category.startsWith('telegram'));
-    const web = available.filter((b) => b.trigger === true && b.category.startsWith('web'));
-    const values = available.filter((b) => ['core.text', 'core.number', 'core.json'].includes(b.id));
-    return [
-      { key: 'startTelegram', items: telegram },
-      { key: 'startWeb', items: web },
-      { key: 'startValues', items: values },
-    ].filter((g) => g.items.length > 0);
-  }, []);
-
-  return (
-    <div className="glass pointer-events-auto max-w-md rounded-2xl px-6 py-5">
-      <div className="mb-2 text-center text-3xl" aria-hidden="true">
-        🧩
-      </div>
-      <div className="mb-1 text-center text-sm font-bold">{t('canvas.empty.title')}</div>
-      <div className="mb-4 text-center text-xs leading-relaxed text-muted">{t('canvas.empty.lead')}</div>
-      <div className="grid gap-3">
-        {groups.map((group) => (
-          <div key={group.key}>
-            <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-wider text-muted">
-              {t(`canvas.empty.${group.key}`)}
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {group.items.map((def) => (
-                <QuickBlockButton key={def.id} def={def} onPick={() => onInsert({ blockId: def.id })} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  const choose = (kind: 'telegram' | 'web' | 'empty') => {
+    const store = useProjectStore.getState();
+    if (!store.activeModelId) store.setProjectKind(kind);
+    useUiStore.getState().setCanvasPanel(null);
+    if (kind === 'empty') {
+      setDismissed(true);
+      useUiStore.getState().setSideCollapsed('library', false);
+      useUiStore.getState().setCanvasPanel('library');
+      useUiStore.getState().setLibraryQuery('');
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>('[data-testid=library-search]')?.focus());
+      return;
+    }
+    if (useUiStore.getState().noviceMode && !store.activeModelId) {
+      useUiStore.getState().setSideCollapsed('library', true);
+      useUiStore.getState().setSideCollapsed('inspector', true);
+    }
+    onInsert({ blockId: kind === 'telegram' ? 'telegram.message_received' : 'core.text',
+      ...(kind === 'web' ? { config: { value: t('novice.webExample') } } : {}) });
+  };
+  if (dismissed) return null;
+  return <section data-testid="empty-onboarding" className="glass pointer-events-auto w-[320px] max-w-[calc(100vw-40px)] rounded-2xl p-4">
+    <h2 className="text-sm font-semibold">{t('novice.startTitle')}</h2>
+    <p className="mb-3 mt-1 text-xs text-muted">{t('novice.startHint')}</p>
+    <div className="grid gap-2">{(['telegram', 'web', 'empty'] as const).map((kind) =>
+      <button key={kind} className="btn-ghost justify-start !py-2 text-xs" data-testid={`start-${kind}`} onClick={() => choose(kind)}>{t(`novice.start.${kind}`)}</button>
+    )}</div>
+  </section>;
 }

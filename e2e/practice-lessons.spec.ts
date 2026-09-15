@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 07B: проходим практику через UI и проверяем результат, а не только индекс шага. */
 import { expect, test, type Page } from '@playwright/test';
 import { connectPorts, moveNode, port } from './helpers';
@@ -40,8 +41,10 @@ test('конвертеры: неверное значение не засчит�
   const toggleBox = (await page.getByTestId('debug-toggle').boundingBox())!;
   await expect.poll(async () => (await page.getByTestId('tutorial-highlight').boundingBox())?.width).toBeCloseTo(toggleBox.width + 12, 0);
   await page.getByTestId('debug-toggle').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-log').click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   const conversion = page.getByTestId('debug-node-data.text_to_number');
   await expect(conversion).toHaveAttribute('data-status', 'success');
@@ -76,12 +79,14 @@ test('эхо-бот: два нужных соединения, ответ с т�
   await step(page, 'chat');
   const chatTab = (await page.getByTestId('debug-tab-chat').boundingBox())!;
   await expect.poll(async () => (await page.getByTestId('tutorial-highlight').boundingBox())?.x).toBeCloseTo(chatTab.x - 6, 0);
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await step(page, 'chat');
   const sent = page.getByTestId('debug-node-telegram.send_message');
   await expect(sent).toHaveAttribute('data-status', 'success');
   await expect(sent.getByTestId('input-chat_id')).toHaveText('24680');
   await expect(sent.getByTestId('input-text')).toHaveText(JSON.stringify(message));
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await step(page, 'quiz-token');
   await expect(page.getByTestId('simulator-chat-user')).toHaveText(message);
@@ -109,6 +114,7 @@ test('конвертеры: F5 сохраняет схему; ошибочный
   await expect(value).toHaveValue('42');
   await value.fill('не число');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   const conversion = page.getByTestId('debug-node-data.text_to_number');
   await expect(conversion).toHaveAttribute('data-status', 'error');
@@ -116,10 +122,12 @@ test('конвертеры: F5 сохраняет схему; ошибочный
   await step(page, 'run');
   await expect(page.getByTestId('tutorial-finished')).toHaveCount(0);
   // Возвращаемся в симулятор до успешного запуска: затем нужно самим открыть «Порты».
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await value.fill('42');
   await page.getByTestId('run-button').click();
   await step(page, 'debug');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(conversion).toHaveAttribute('data-status', 'success');
   await expect(conversion.getByTestId('output-value')).toHaveText('42');

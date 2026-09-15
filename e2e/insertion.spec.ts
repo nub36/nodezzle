@@ -1,3 +1,5 @@
+import { openTools } from './helpers';
+import { openResult } from './helpers';
 /** 07C: настоящая вставка без ручного раздвигания новых деталей. */
 import { expect, test, type Page } from '@playwright/test';
 import { moveNode, port } from './helpers';
@@ -49,7 +51,10 @@ test('вставка: разные высоты, неизменные стары
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
   await expect(page.locator('.react-flow__node')).toHaveCount(6);
-  expect(await positions(page)).toEqual(saved);
+  // Формат проекта хранит координаты целыми пикселями (flowToCanvas).
+  // При новой высоте верхних панелей drag может дать доли пикселя.
+  const persisted = Object.fromEntries(Object.entries(saved).map(([id, value]) => [id, String(value).replace(/-?\d+\.\d+/g, (number) => String(Math.round(Number(number))))]));
+  expect(await positions(page)).toEqual(persisted);
   await noOverlap(page);
 });
 
@@ -57,6 +62,7 @@ test('вставка при масштабе и открытой отладке 
   await emptyProject(page);
   await add(page, 'core.text');
   await page.getByTestId('debug-toggle').click();
+  await openTools(page);
   await page.getByTitle('Приблизить').click();
   for (const id of ['telegram.message_received', 'logic.condition', 'debug.log', ...Array<string>(8).fill('telegram.message_received')]) {
     const before = await positions(page);
@@ -84,13 +90,14 @@ test('перетаскивание из библиотеки: точка кур�
   await page.getByTestId('library-search').fill('debug.log');
   const source = page.getByTestId('library-item-debug.log');
   const before = await positions(page);
-  await source.dragTo(canvas, { targetPosition: { x: 810 - area.x, y: 160 - area.y } });
+  const dropY = area.y + 50;
+  await source.dragTo(canvas, { targetPosition: { x: 810 - area.x, y: dropY - area.y } });
   const log = page.getByTestId('canvas-node-debug.log');
   await expect(log).toHaveCount(1);
   const box = (await log.boundingBox())!;
   expect(Math.abs(box.x - 810)).toBeLessThanOrEqual(1);
-  expect(Math.abs(box.y - 160)).toBeLessThanOrEqual(1);
-  await source.dragTo(canvas, { targetPosition: { x: 810 - area.x, y: 160 - area.y } });
+  expect(Math.abs(box.y - dropY)).toBeLessThanOrEqual(1);
+  await source.dragTo(canvas, { targetPosition: { x: 810 - area.x, y: dropY - area.y } });
   await expect(log).toHaveCount(2);
   await noOverlap(page);
   const after = await positions(page);
@@ -111,6 +118,7 @@ test('быстрая вставка от порта: свободная пози
   await expect(page.locator('.react-flow__edge')).toHaveCount(1);
   await noOverlap(page);
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveText('"Быстрая вставка: 42"');
 });

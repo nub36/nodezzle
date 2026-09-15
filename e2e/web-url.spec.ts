@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 09B3: сеть замокана; проверяем отсутствие авто-запросов, навигацию и реальные провода. */
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, port } from './helpers';
@@ -30,6 +31,7 @@ test('изображение: запрос только по кнопке, no-re
   await config(page, 'Адрес изображения (HTTPS)').fill('https://assets.example.com/photo.png');
   const caption = '<script>alert(1)</script>';
   await config(page, 'Подпись изображения').fill(caption);
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const root = page.getByTestId('web-preview-url-element');
   await expect(root.getByRole('button', { name: 'Загрузить изображение', exact: true })).toBeVisible();
@@ -50,6 +52,7 @@ test('изображение: запрос только по кнопке, no-re
   expect(requests).toHaveLength(3);
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(root.getByRole('button', { name: 'Загрузить изображение', exact: true })).toBeVisible();
   await expect(root.locator('img')).toHaveCount(0);
@@ -62,6 +65,7 @@ test('ссылка открывает новую вкладку без opener/re
   await add(page, 'web.link');
   await config(page, 'Адрес ссылки (HTTPS)').fill('https://example.com/destination');
   await config(page, 'Текст').fill('Перейти на сайт');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const editorUrl = page.url();
   const root = page.getByTestId('web-preview-url-element');
@@ -92,6 +96,7 @@ test('URL по проводу: ожидание, актуальный адрес
   await config(page, 'Текст').fill('Из схемы');
   await arrangePair(page, source, link);
   await connectPorts(page, port(source, 'output', 'value'), port(link, 'input', 'href'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const root = page.getByTestId('web-preview-url-element');
   await expect(root).toContainText('Запустите схему');
@@ -104,6 +109,7 @@ test('URL по проводу: ожидание, актуальный адрес
   await expect(root.getByRole('link')).toHaveAttribute('href', 'https://example.com/second');
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(root.getByRole('link')).toHaveCount(0);
   await page.getByTestId('run-button').click();
@@ -123,6 +129,7 @@ test('картинка и ссылка внутри сетки: проверка
   const grid = await add(page, 'web.grid');
   await arrangePair(page, array, grid);
   await connectPorts(page, port(array, 'output', 'value'), port(grid, 'input', 'children'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await page.getByTestId('run-button').click();
   const root = page.getByTestId('web-preview-layout-element');

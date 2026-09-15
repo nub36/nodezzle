@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, port } from './helpers';
 const config = (page: Page, label: string) => page.locator('[data-tutorial="inspector"]').getByLabel(label, { exact: true });
@@ -18,6 +19,7 @@ async function setup(page: Page) {
   await config(page, 'Показать окно Telegram').check();
   await arrangePair(page, q, a);
   await connectPorts(page, port(q, 'output', 'callback_id'), port(a, 'input', 'callback_id'));
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   return { q, a };
 }
@@ -26,17 +28,21 @@ const simulator = (page: Page, name: string) => page.locator('[data-tutorial="de
 test('callback симулятора → провод ID → ответ; обычное сообщение не запускает callback; F5', async ({ page }) => {
   await setup(page);
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(page.getByTestId('telegram-callback-answer')).toHaveCount(0);
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await simulator(page, 'Событие Telegram').selectOption('callback_query');
   await simulator(page, 'ID callback-запроса').fill('browser-cb');
   await simulator(page, 'ID сообщения с кнопкой').fill('55');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-telegram.callback_query').getByTestId('output-callback_id')).toHaveText('"browser-cb"');
   await expect(page.getByTestId('debug-node-telegram.callback_query').getByTestId('output-message_id')).toHaveText('55');
   await expect(page.getByTestId('debug-node-telegram.answer_callback').getByTestId('output-ok')).toHaveText('true');
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   const notice = page.getByTestId('telegram-callback-answer');
   await expect(notice).toContainText('окно Telegram (симуляция)');
@@ -44,16 +50,19 @@ test('callback симулятора → провод ID → ответ; обыч
   await expect(notice.locator('b')).toHaveCount(0);
   await expect(page.getByTestId('simulator-chat-bot')).toHaveCount(0);
   await expect(page.getByTestId('simulator-chat-user')).toHaveCount(0);
+  await openResult(page);
   await page.getByTestId('debug-tab-phone').click();
   await expect(notice).toContainText('Подтверждено');
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
   await expect(page.getByTestId('canvas-node-telegram.callback_query')).toHaveCount(1);
   await expect(page.getByTestId('canvas-node-telegram.answer_callback')).toHaveCount(1);
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await expect(simulator(page, 'Событие Telegram')).toHaveValue('message');
   await simulator(page, 'Событие Telegram').selectOption('callback_query');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(notice).toContainText('Подтверждено');
 });
@@ -65,8 +74,10 @@ test('фильтр и лимит UTF-8: неверные данные не от�
     await simulator(page, 'Данные кнопки').fill(data);
     if (data.length > 10) await expect(page.getByRole('alert').filter({ hasText: 'Некорректный callback' })).toBeVisible();
     await page.getByTestId('run-button').click();
+    await openResult(page);
     await page.getByTestId('debug-tab-chat').click();
     await expect(page.getByTestId('telegram-callback-answer')).toHaveCount(0);
+    await openResult(page);
     await page.getByTestId('debug-tab-simulator').click();
   }
   await simulator(page, 'Данные кнопки').fill('confirm');
@@ -74,6 +85,7 @@ test('фильтр и лимит UTF-8: неверные данные не от�
   await config(page, 'Текст').fill('');
   await config(page, 'Показать окно Telegram').uncheck();
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-chat').click();
   await expect(page.getByTestId('telegram-callback-answer')).toContainText('уведомление (симуляция)');
   await expect(page.getByTestId('telegram-callback-answer')).toContainText('Подтверждение без текста');
@@ -86,14 +98,17 @@ test('два callback-фильтра и обычный триггер: выпо�
   await add(page, 'telegram.message_received');
   await simulator(page, 'Событие Telegram').selectOption('callback_query');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   const queries = page.getByTestId('debug-node-telegram.callback_query');
   await expect(queries.first()).toHaveAttribute('data-status', 'success');
   await expect(queries.last()).toHaveAttribute('data-status', 'skipped');
   await expect(page.getByTestId('debug-node-telegram.message_received')).toHaveAttribute('data-status', 'skipped');
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await simulator(page, 'Событие Telegram').selectOption('message');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(queries.first()).toHaveAttribute('data-status', 'skipped');
   await expect(queries.last()).toHaveAttribute('data-status', 'skipped');
@@ -110,6 +125,7 @@ test('переход из callback-схемы в урок без перезаг�
   await page.getByTestId('lesson-start').click();
   await expect(page.getByTestId('tutorial-card')).toBeVisible();
   await page.evaluate((hash) => { window.location.hash = hash; }, projectHash);
+  await openResult(page);
   await page.getByTestId('debug-tab-simulator').click();
   await expect(simulator(page, 'Событие Telegram')).toHaveValue('message');
 });

@@ -797,3 +797,22 @@ select.input-dark {
   /* Кнопки панелей остаются сверху; окно урока можно передвинуть вручную. */
   body:has(.canvas-editor) .tutorial-step-window:not([style*="left:"]) { top: auto; bottom: 8px; left: 16px; right: 16px; max-height: 38dvh; }
 }
+
+/* 11: тихий первый план; те же инструменты раскрываются, а не удаляются. */
+.canvas-toolbar { flex-wrap: wrap; }
+.canvas-toolbar-kind { flex-shrink: 0; white-space: nowrap; }
+.canvas-toolbar :is(button, summary, a.btn-ghost) { min-height: 36px; min-width: 36px; border-radius: 8px; }
+.canvas-toolbar button:disabled { opacity: .4; cursor: not-allowed; }
+.canvas-toolbar :is(button, summary, a):focus-visible { outline: 2px solid var(--color-muted); outline-offset: 2px; }
+.canvas-toolbar button:active:not(:disabled) { background-color: #ffffff12; }
+.canvas-toolbar[data-novice="true"] .canvas-tools-toggle { display: inline-flex; }
+.canvas-toolbar[data-novice="true"] .canvas-toolbar-tools { display: none; }
+.canvas-toolbar[data-novice="true"] .canvas-toolbar-tools[data-open="true"] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; order: 10; width: 100%; padding-block: 6px; }
+.novice-guide [aria-current="step"] { color: var(--color-ink); font-weight: 600; }
+@media (max-width: 480px) {
+  .novice-guide { padding: 6px 10px; font-size: 11px; }
+  .canvas-toolbar-kind { display: inline-flex; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+}
+/* Целые высоты строк не смещают рабочую область на доли пикселя. */
+.novice-guide { line-height: 16px; }
+.novice-guide button { line-height: 16px; }

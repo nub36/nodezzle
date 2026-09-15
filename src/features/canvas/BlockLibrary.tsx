@@ -19,10 +19,11 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { blockRegistry } from '@/core/registry/block-registry';
-import { BLOCK_CATEGORIES, type BlockCategory, type BlockDefinition } from '@/core/types/blocks';
+import type { BlockDefinition } from '@/core/types/blocks';
 import { useUiStore, type LibraryTab } from '@/store/ui-store';
 import { useProjectStore } from '@/store/project-store';
-import { CATEGORY_COLORS, CATEGORY_ICONS } from './categoryColors';
+import { LIBRARY_GROUPS, libraryGroup } from '@/lib/library-groups';
+import { useTutorialStore } from '@/store/tutorial-store';
 import { DND_MIME, encodeDnd, matchesQuery, type DndPayload } from './library-utils';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +48,14 @@ function BlockRow({ def, onInsert }: { def: BlockDefinition; onInsert: (payload:
       className="palette-item group"
       data-testid={`library-item-${def.id}`}
       draggable
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onInsert({ blockId: def.id });
+        }
+      }}
       title={def.descriptionKey ? t(def.descriptionKey) : def.id}
       onDragStart={(e) => {
         e.dataTransfer.setData(DND_MIME, encodeDnd({ blockId: def.id }));
@@ -137,6 +146,7 @@ export function BlockLibrary({ onInsert }: { onInsert: (payload: DndPayload) => 
   const query = useUiStore((s) => s.libraryQuery);
   const favorites = useUiStore((s) => s.favorites);
   const recent = useUiStore((s) => s.recent);
+  const guided = useTutorialStore((s) => s.active);
   const collapsed = useUiStore((s) => s.collapsedCategories);
   const setTab = useUiStore((s) => s.setLibraryTab);
   const setQuery = useUiStore((s) => s.setLibraryQuery);
@@ -154,13 +164,13 @@ export function BlockLibrary({ onInsert }: { onInsert: (payload: DndPayload) => 
     ids.map((id) => available.find((b) => b.id === id)).filter((b): b is BlockDefinition => Boolean(b));
 
   // Режим «Основные» — только базовые детали; «Все» — все доступные.
-  const pool = tab === 'basic' ? available.filter((b) => b.difficulty !== 'advanced') : available;
+  const pool = tab === 'basic' && !query.trim() ? available.filter((b) => b.difficulty !== 'advanced') : available;
 
   const sections = useMemo(() => {
     const filtered = pool.filter((b) => matchesQuery(b, query, textsOf(b)));
-    return BLOCK_CATEGORIES.map((category: BlockCategory) => ({
+    return LIBRARY_GROUPS.map((category) => ({
       category,
-      items: filtered.filter((b) => b.category === category),
+      items: filtered.filter((b) => libraryGroup(b.category) === category),
     })).filter((s) => s.items.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, query, t]);
@@ -209,23 +219,22 @@ export function BlockLibrary({ onInsert }: { onInsert: (payload: DndPayload) => 
               <div className="px-2 py-6 text-center text-xs text-muted">{t('common.noResults')}</div>
             )}
             {sections.map(({ category, items }) => {
-              const isCollapsed = collapsed.includes(category);
+              const isCollapsed = !query.trim() && !guided && collapsed.includes(category);
               return (
                 <div key={category} className="mb-1">
                   <button
                     className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted transition-colors hover:text-ink"
                     data-testid={`library-category-${category}`}
+                    disabled={Boolean(query.trim()) || guided}
+                    aria-expanded={!isCollapsed}
+                    aria-controls={`library-group-${category}`}
                     onClick={() => toggleCategory(category)}
                   >
-                    <span aria-hidden="true">{CATEGORY_ICONS[category]}</span>
+                    <span aria-hidden="true">{category === 'telegram' ? '↗' : category === 'web' ? '▦' : '◇'}</span>
                     <span className="flex-1">{t(`categories.${category}`)}</span>
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: CATEGORY_COLORS[category] }}
-                    />
                     <span className="text-[10px] opacity-60">{isCollapsed ? '▸' : '▾'}</span>
                   </button>
-                  {!isCollapsed && items.map((b) => <BlockRow key={b.id} def={b} onInsert={onInsert} />)}
+                  <div id={`library-group-${category}`} hidden={isCollapsed}>{items.map((b) => <BlockRow key={b.id} def={b} onInsert={onInsert} />)}</div>
                 </div>
               );
             })}

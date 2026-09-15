@@ -77,7 +77,7 @@ export function DebugPanel({ open, projectId }: { open: boolean; projectId: stri
             ⏹ {t('common.stop')}
           </button>
         ) : (
-          <button className="btn-primary !px-3 !py-1 !text-xs" data-tutorial="run" onClick={() => void run()}>
+          <button className="btn-ghost !px-3 !py-1 !text-xs" data-tutorial="run" onClick={() => void run()}>
             ▶ {t('common.run')}
           </button>
         )}

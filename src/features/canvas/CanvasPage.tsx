@@ -39,6 +39,8 @@ import {
   type DndPayload,
   type QuickInsertCandidate,
 } from './library-utils';
+import { useTutorialStore } from '@/store/tutorial-store';
+import { NoviceGuide } from './NoviceGuide';
 import { QuickInsertMenu, QuickInsertStarter } from './QuickInsert';
 import { CanvasContextMenu, type ContextMenuItem } from './ContextMenu';
 import { useUiStore, type EffectsMode } from '@/store/ui-store';
@@ -185,7 +187,7 @@ function CanvasInner({ projectId, serverSession }: { projectId: string; serverSe
     <div className="canvas-editor flex h-dvh min-w-0 flex-col overflow-hidden bg-abyss">
       {serverSession && <ServerSaveBar session={serverSession} />}
       <Toolbar onToggleDebug={() => setDebugOpen(!debugOpen)} />
-      {narrow && <CanvasPanelSwitcher />}
+      <CanvasPanelSwitcher />
       <FlowCanvas />
       <DebugPanel open={debugOpen} projectId={projectId} />
     </div>
@@ -195,9 +197,11 @@ function CanvasInner({ projectId, serverSession }: { projectId: string; serverSe
 function FlowCanvas() {
   const narrow = useNarrowCanvas();
   const panel = useUiStore((s) => s.canvasPanel);
+  const libraryCollapsed = useUiStore((s) => s.libraryCollapsed);
+  const inspectorCollapsed = useUiStore((s) => s.inspectorCollapsed);
   const { t } = useTranslation();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, getViewport, setViewport } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition, getViewport, setViewport, fitView } = useReactFlow();
 
   const nodes = useProjectStore((s) => s.nodes);
   const edges = useProjectStore((s) => s.edges);
@@ -275,8 +279,8 @@ function FlowCanvas() {
       useUiStore.getState().setCanvasPanel(null);
       requestAnimationFrame(() => document.getElementById('panel-toggle-canvas')?.focus());
     }
-    const library = narrow ? undefined : wrapper.querySelector('[data-tutorial="library"]')?.getBoundingClientRect();
-    const inspector = narrow ? undefined : wrapper.querySelector('[data-tutorial="inspector"]')?.getBoundingClientRect();
+    const library = narrow ? undefined : wrapper.querySelector('[data-tutorial="library"]:not([hidden])')?.getBoundingClientRect();
+    const inspector = narrow ? undefined : wrapper.querySelector('[data-tutorial="inspector"]:not([hidden])')?.getBoundingClientRect();
     const left = (library?.right ?? rect.left) + 16;
     const right = (inspector?.left ?? rect.right) - 16;
     const top = rect.top + 16;
@@ -606,9 +610,26 @@ function FlowCanvas() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [undo, redo, insertSelectedFragment, copySelection]);
 
+  const guideInsert = (payload: DndPayload) => {
+    const first = useProjectStore.getState().nodes[0];
+    if (!first) { onInsertAtCenter(payload); return; }
+    const size = estimateNodeSize(blockRegistry.get(first.data.blockId));
+    insertAtFreePosition(payload, flowToScreenPosition({ x: first.position.x + size.width + 64, y: first.position.y }));
+  };
+  const resultOpen = useUiStore((s) => s.debugOpen);
+  useEffect(() => {
+    const ui = useUiStore.getState();
+    const state = useProjectStore.getState();
+    if (!resultOpen || !ui.noviceMode || !ui.libraryCollapsed || !ui.inspectorCollapsed || state.nodes.length > 2 || useTutorialStore.getState().active) return;
+    // После изменения высоты рабочей области обе первые детали остаются видны.
+    const timer = window.setTimeout(() => { void fitView({ padding: 0.3, maxZoom: 1 }); }, 80);
+    return () => window.clearTimeout(timer);
+  }, [resultOpen, fitView]);
   const isEmpty = nodes.length === 0;
 
   return (
+    <>
+    <NoviceGuide onInsert={guideInsert} />
     <div
       ref={wrapperRef}
       className="grid-bg relative min-h-0 flex-1 overflow-hidden"
@@ -687,13 +708,13 @@ function FlowCanvas() {
       <GroupFrames />
 
       {/* Библиотека деталей (вкладки, поиск, избранное, недавние, модели) */}
-      <div id="canvas-library" hidden={narrow && panel !== 'library'} className="canvas-side-panel pointer-events-none absolute bottom-3 left-3 top-3 z-10" data-tutorial="library">
+      <div id="canvas-library" hidden={narrow ? panel !== 'library' : libraryCollapsed} className="canvas-side-panel pointer-events-none absolute bottom-3 left-3 top-3 z-10" data-tutorial="library">
         <BlockLibrary onInsert={onInsertAtCenter} />
       </div>
 
       {/* Контекстный инспектор: деталь / соединение / холст (Этап 2, подэтап E) */}
       <div
-        id="canvas-inspector" hidden={narrow && panel !== 'inspector'}
+        id="canvas-inspector" hidden={narrow ? panel !== 'inspector' : inspectorCollapsed}
         className="canvas-side-panel pointer-events-none absolute right-3 top-3 z-10"
         style={{ bottom: 12 }}
         data-tutorial="inspector"
@@ -727,5 +748,6 @@ function FlowCanvas() {
       {/* Диалог «Создать модель из выделенного» (Этап 2, подэтап G) */}
       {createModelOpen && <CreateModelDialog onClose={() => setCreateModelOpen(false)} />}
     </div>
+    </>
   );
 }

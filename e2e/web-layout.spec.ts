@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 09B2: реальные провода, вложенный DOM, корни, ошибки и F5. */
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, moveNode, port } from './helpers';
@@ -25,6 +26,7 @@ test('секция → контейнер → сетка: порядок, без
   await config(page, 'Заголовок секции').fill('Мой раздел');
   await arrangePair(page, array, section);
   await connectPorts(page, port(array, 'output', 'value'), port(section, 'input', 'children'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const root = page.getByTestId('web-preview-layout-element');
   await expect(root).toContainText('Запустите схему');
@@ -36,6 +38,7 @@ test('секция → контейнер → сетка: порядок, без
   await expect(root.locator('[data-web-kind="grid"] > div')).toHaveCSS('grid-template-columns', /\d.*px \d.*px/);
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(root).toContainText('Запустите схему');
   await run(page);
@@ -58,6 +61,7 @@ test('текст → добавить в массив → сетка: без д�
   await connectPorts(page, port(empty, 'output', 'value'), port(append, 'input', 'array'));
   await connectPorts(page, port(text, 'output', 'element'), port(append, 'input', 'item'));
   await connectPorts(page, port(append, 'output', 'array'), port(grid, 'input', 'children'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByTestId('web-preview-text-element')).toHaveCount(0);
   const root = page.getByTestId('web-preview-layout-element');
@@ -74,6 +78,7 @@ test('текст → добавить в массив → сетка: без д�
   await expect(root.locator('[data-web-kind="text"]')).toHaveText('Новый текст');
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByTestId('web-preview-text-element')).toHaveCount(0);
   await run(page);
@@ -88,8 +93,10 @@ test('невалидный ребёнок: ошибка вместо части�
   await arrangePair(page, array, grid);
   await connectPorts(page, port(array, 'output', 'value'), port(grid, 'input', 'children'));
   await run(page);
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.grid')).toHaveAttribute('data-status', 'error');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const root = page.getByTestId('web-preview-layout-element');
   await expect(root).not.toContainText('Не показывать частично');
@@ -102,10 +109,12 @@ test('невалидный ребёнок: ошибка вместо части�
   await config(page, 'Колонки (1–6)').fill('7');
   await run(page);
   await expect(root).not.toContainText('Исправлено');
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.grid')).toHaveAttribute('data-status', 'error');
   await config(page, 'Колонки (1–6)').fill('1');
   await run(page);
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(root).toContainText('Исправлено');
 });
@@ -113,6 +122,7 @@ test('невалидный ребёнок: ошибка вместо части�
 test('пустые структуры доступны без запуска; ошибка настройки видна сразу', async ({ page }) => {
   await create(page);
   await add(page, 'web.container');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByTestId('web-preview-layout-element')).toContainText('Нет дочерних элементов');
   await add(page, 'web.grid');

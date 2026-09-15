@@ -1,3 +1,5 @@
+import { openTools } from './helpers';
+import { openResult } from './helpers';
 /** 08B: реальные панели редактора, не только ширина страницы Академии. */
 import { expect, test, type Page } from '@playwright/test';
 import { openLesson, step, completed } from './lesson-helpers';
@@ -41,11 +43,13 @@ for (const width of [390, 768]) {
     await page.getByTestId('panel-toggle-canvas').click();
     await page.getByTestId('toolbar-tools-toggle').click();
     await expect(page.getByTitle('Приблизить')).toBeVisible();
+    await openTools(page);
     await page.getByTitle('Приблизить').click();
     await noPageOverflow(page, width);
     await page.getByTestId('toolbar-tools-toggle').click();
     await page.getByTestId('debug-toggle').click();
     await page.getByTestId('run-button').click();
+    await openResult(page);
     await page.getByTestId('debug-tab-ports').click();
     await expect(page.getByTestId('debug-node-core.text').getByTestId('output-text')).toHaveText('"Узкий холст: 42"');
     await noPageOverflow(page, width);
@@ -58,7 +62,7 @@ for (const width of [390, 768]) {
     await expect(page.locator('[data-tutorial="inspector"]').getByLabel('Значение', { exact: true })).toHaveValue('Узкий холст: 42');
     const position = await page.locator('.react-flow__node').getAttribute('style');
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByTestId('panel-toggle-library')).toBeHidden();
+    await expect(page.getByTestId('panel-toggle-library')).toBeVisible();
     await expect(page.locator('[data-tutorial="library"]')).toBeVisible();
     await expect(page.locator('[data-tutorial="inspector"]')).toBeVisible();
     expect(await page.locator('.react-flow__node').getAttribute('style')).toBe(position);

@@ -1,3 +1,5 @@
+import { openTools } from './helpers';
+import { openResult } from './helpers';
 /** 08A: копируется фрагмент целиком, а не отдельные узлы в случайные места. */
 import { expect, test, type Page } from '@playwright/test';
 import { connectPorts, moveNode, port } from './helpers';
@@ -76,6 +78,7 @@ test('дублирование фрагмента: относительные п
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
   expect(await points(page)).toEqual(saved);
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveText(['"Копия: 42"', '"Копия: 42"']);
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
@@ -93,7 +96,9 @@ test('буфер: независимый снимок настроек, повт
   await text.click();
   await page.locator('[data-tutorial="inspector"]').getByLabel('Значение', { exact: true }).fill('Исходник изменён');
   await text.click(); // убрать фокус с поля: Ctrl+V должен вставить детали, а не текст
-  await expect(page.getByTestId('debug-tab-ports')).toBeVisible(); // отладка открыта по умолчанию
+  await openResult(page);
+  await expect(page.getByTestId('debug-tab-ports')).toBeVisible(); // открываем компактную панель явно
+  await openTools(page);
   await page.getByTitle('Приблизить').click();
   await page.keyboard.press('Control+v');
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
@@ -103,6 +108,7 @@ test('буфер: независимый снимок настроек, повт
   await expect(page.locator('.react-flow__edge')).toHaveCount(3);
   await assertFragment(page, originals);
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-debug.log').getByTestId('input-value')).toHaveText(['"Исходник изменён"', '"Копия: 42"', '"Копия: 42"']);
   const saved = await points(page);

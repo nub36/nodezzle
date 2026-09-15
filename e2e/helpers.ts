@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Расставляем детали пользовательским перетаскиванием, не меняя сторы.
  * Учебным сценариям нужна фиксированная раскладка независимо от поиска
@@ -32,4 +32,13 @@ export async function connectPorts(page: Page, from: Locator, to: Locator): Prom
 
 export function port(node: Locator, direction: 'input' | 'output', id: string): Locator {
   return node.locator(`[data-port-direction="${direction}"][data-port-id="${id}"]`);
+}
+
+/** Панель результата теперь свёрнута при первом открытии редактора. */
+export async function openResult(page: Page): Promise<void> {
+  await expect(page.getByTestId('run-button')).toBeVisible();
+  if (!await page.getByTestId('debug-tab-simulator').isVisible()) await page.getByTestId('debug-toggle').click();
+}
+export async function openTools(page: Page): Promise<void> {
+  if (!await page.getByTestId('effects-mode').isVisible()) await page.getByTestId('toolbar-tools-toggle').click();
 }

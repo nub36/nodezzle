@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 /** 09B1: реальные элементы, безопасный вывод и свежесть результата. */
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, port, moveNode } from './helpers';
@@ -21,17 +22,20 @@ test('текст и заголовок: настройки сразу в пре�
   await add(page, 'web.heading');
   await config(page, 'Текст').fill('Моя страница');
   await config(page, 'Уровень заголовка (1–6)').fill('3');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const preview = page.getByTestId('web-preview');
   await expect(preview.getByRole('heading', { level: 3 })).toHaveText('Моя страница');
   await expect(preview.getByTestId('web-preview-text-element').first()).toHaveText(literal);
   await expect(preview.locator('img, script')).toHaveCount(0);
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.text')).toHaveAttribute('data-status', 'success');
   await expect(page.getByTestId('debug-node-web.heading')).toHaveAttribute('data-status', 'success');
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(preview.getByRole('heading', { level: 3 })).toHaveText('Моя страница');
   await expect(preview.getByTestId('web-preview-text-element').first()).toHaveText(literal);
@@ -45,6 +49,7 @@ test('вход из схемы: ожидание запуска, обновле�
   await config(page, 'Текст').fill('Не заменяет вход');
   await arrangePair(page, source, target);
   await connectPorts(page, port(source, 'output', 'text'), port(target, 'input', 'text'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   const element = page.getByTestId('web-preview-text-element');
   await expect(element).toContainText('Запустите схему');
@@ -60,6 +65,7 @@ test('вход из схемы: ожидание запуска, обновле�
   await expect(element).toHaveText('После правки: 73');
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(element).toContainText('Запустите схему');
   await page.getByTestId('run-button').click();
@@ -71,12 +77,15 @@ test('неверный уровень заголовка показывает о
   await add(page, 'web.heading');
   await config(page, 'Текст').fill('Заголовок');
   await config(page, 'Уровень заголовка (1–6)').fill('7');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByTestId('web-preview-text-element')).toContainText('Проверьте настройки');
   await page.getByTestId('run-button').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-ports').click();
   await expect(page.getByTestId('debug-node-web.heading')).toHaveAttribute('data-status', 'error');
   await config(page, 'Уровень заголовка (1–6)').fill('1');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByTestId('web-preview').getByRole('heading', { level: 1 })).toHaveText('Заголовок');
 });

@@ -1,3 +1,4 @@
+import { openResult } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { arrangePair, connectPorts, port } from './helpers';
 const config = (page: Page, label: string) => page.locator('[data-tutorial="inspector"]').getByLabel(label, { exact: true });
@@ -20,6 +21,7 @@ test('диалог: фокус, Escape, изоляция клавиш Canvas и 
   await add(page, 'web.modal_close');
   const node = await add(page, 'web.modal');
   await config(page, 'Заголовок окна').fill('   ');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(openers(page)).toHaveText('Открыть окно: Модальное окно');
   await config(page, 'Заголовок окна').fill('Справка');
@@ -49,6 +51,7 @@ test('диалог: фокус, Escape, изоляция клавиш Canvas и 
   await expect(page.getByRole('dialog')).toHaveCount(1);
   await page.getByRole('dialog').getByRole('button', { name: 'Закрыть окно', exact: true }).click();
   await expect(openers(page).last()).toBeFocused();
+  await openResult(page);
   await page.getByTestId('debug-tab-history').click();
   await expect(page.getByTestId('local-history-entry')).toHaveCount(0);
 });
@@ -68,6 +71,7 @@ test('данные по проводу, безопасный текст, сог�
   await config(page, 'Заголовок окна').fill('Подробности');
   await arrangePair(page, array, modal);
   await connectPorts(page, port(array, 'output', 'value'), port(modal, 'input', 'children'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(openers(page)).toHaveCount(0);
   await page.getByTestId('run-button').click();
@@ -95,6 +99,7 @@ test('данные по проводу, безопасный текст, сог�
   expect(requests).toBe(1);
   await expect(page.getByText(/^Сохранено /).first()).toBeVisible();
   await page.reload();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByTestId('run-button').click();
@@ -110,6 +115,7 @@ test('поля и вложенные окна отклоняются целик�
   const modal = await add(page, 'web.modal');
   await arrangePair(page, array, modal);
   await connectPorts(page, port(array, 'output', 'value'), port(modal, 'input', 'children'));
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await page.getByTestId('run-button').click();
   await expect(page.getByTestId('web-preview-layout-element')).toContainText('Внутри модального окна поля и другие окна не поддерживаются');
@@ -131,9 +137,11 @@ test('узкий экран: окно не обрезается рамкой п�
   await create(page);
   await add(page, 'web.modal');
   await config(page, 'Заголовок окна').fill('Окно на телефоне');
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await page.setViewportSize({ width: 390, height: 800 });
   await page.getByTestId('debug-toggle').click();
+  await openResult(page);
   await page.getByTestId('debug-tab-web').click();
   await openers(page).click();
   const dialog = page.getByRole('dialog', { name: 'Окно на телефоне', exact: true });

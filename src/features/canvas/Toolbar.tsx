@@ -16,6 +16,7 @@ import { useReactFlow, useViewport } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '@/store/project-store';
 import { useExecutionStore } from '@/store/execution-store';
+import { useTutorialStore } from '@/store/tutorial-store';
 import { useUiStore } from '@/store/ui-store';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { contextHelp } from '@/academy/search';
@@ -85,12 +86,14 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
     ).length;
   }, [nodes, schemaQuery, t]);
 
+  const novice = useUiStore((s) => s.noviceMode);
+  const teaching = useTutorialStore((s) => s.active);
   const [toolsOpen, setToolsOpen] = useState(false);
   if (!project) return null;
 
   return (
-    <div className="canvas-toolbar glass-strong z-20 flex shrink-0 items-center gap-2 border-b border-line/70 px-4 py-2.5">
-      <Link to="/dashboard" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('common.back')}>
+    <div data-novice={novice && !teaching} className="canvas-toolbar glass-strong z-20 flex shrink-0 items-center gap-2 border-b border-line/70 px-4 py-2.5">
+      <Link to="/dashboard" className="btn-ghost !px-2.5 !py-1.5 text-xs" title={t('common.back')} aria-label={t('common.back')}>
         ←
       </Link>
       <details className="relative">
@@ -119,35 +122,36 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         className="input-dark max-w-[200px] !border-transparent !bg-transparent !px-2 text-sm font-semibold hover:!border-line focus:!border-cyan-400/50"
         value={project.name}
         onChange={(e) => renameProject(e.target.value)}
-        title={t('common.name')}
+        title={t('common.name')} aria-label={t('common.name')}
       />
 
       <span className="canvas-toolbar-kind status-chip !text-[10.5px]">{t(`dashboard.kinds.${project.kind}`)}</span>
 
       <div className="mx-1 h-5 w-px bg-line" />
 
-      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" onClick={undo} disabled={!canUndo} title={t('canvas.toolbar.undo')}>
+      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" onClick={undo} disabled={!canUndo} title={t('canvas.toolbar.undo')} aria-label={t('canvas.toolbar.undo')}>
         ↩
       </button>
-      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" onClick={redo} disabled={!canRedo} title={t('canvas.toolbar.redo')}>
+      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" onClick={redo} disabled={!canRedo} title={t('canvas.toolbar.redo')} aria-label={t('canvas.toolbar.redo')}>
         ↪
       </button>
 
       <div className="mx-1 h-5 w-px bg-line" />
 
       <button data-testid="toolbar-tools-toggle" aria-expanded={toolsOpen} aria-controls="canvas-toolbar-tools"
-        className="canvas-tools-toggle btn-ghost !py-1.5 text-xs" onClick={() => setToolsOpen(!toolsOpen)}>{t('canvas.panels.tools')}</button>
-      <div id="canvas-toolbar-tools" className="canvas-toolbar-tools" data-open={toolsOpen}>
+        title={t('canvas.panels.tools')} className="canvas-tools-toggle btn-ghost !py-1.5 text-xs" onClick={() => setToolsOpen(!toolsOpen)}>{t('canvas.panels.tools')}</button>
+      <div id="canvas-toolbar-tools" className="canvas-toolbar-tools" data-open={toolsOpen || (!novice && !teaching)}>
+      <button className="btn-ghost text-xs" title={t('novice.modeHint')} aria-pressed={novice} onClick={() => useUiStore.getState().setNoviceMode(!novice)}>{t(novice ? 'novice.advanced' : 'novice.simple')}</button>
       {/* Масштаб */}
       <div className="flex items-center">
-        <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => zoomOut()} title={t('canvas.toolbar.zoomOut')}>
+        <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => zoomOut()} title={t('canvas.toolbar.zoomOut')} aria-label={t('canvas.toolbar.zoomOut')}>
           −
         </button>
         <span className="w-11 text-center text-[11px] tabular-nums text-muted">{Math.round(zoom * 100)}%</span>
-        <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => zoomIn()} title={t('canvas.toolbar.zoomIn')}>
+        <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => zoomIn()} title={t('canvas.toolbar.zoomIn')} aria-label={t('canvas.toolbar.zoomIn')}>
           +
         </button>
-        <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => void fitView()} title={t('canvas.toolbar.fitView')}>
+        <button className="btn-ghost !px-2 !py-1.5 text-xs" onClick={() => void fitView()} title={t('canvas.toolbar.fitView')} aria-label={t('canvas.toolbar.fitView')}>
           ⤢
         </button>
       </div>
@@ -171,12 +175,14 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
       <div className="flex overflow-hidden rounded-lg border border-line/70 text-[10.5px] font-semibold">
         <button
           className={cn('px-2 py-1.5 transition-colors', canvasMode === 'draft' ? 'bg-cyan-400/15 text-cyan-100' : 'text-muted hover:text-ink')}
+          title={t('canvas.toolbar.draft')} aria-label={t('canvas.toolbar.draft')} aria-pressed={canvasMode === 'draft'}
           onClick={() => setCanvasMode('draft')}
         >
           {t('canvas.toolbar.draft')}
         </button>
         <button
           className={cn('px-2 py-1.5 transition-colors', canvasMode === 'live' ? 'bg-emerald-400/15 text-emerald-200' : 'text-muted hover:text-ink')}
+          title={t('canvas.toolbar.live')} aria-label={t('canvas.toolbar.live')} aria-pressed={canvasMode === 'live'}
           onClick={() => setCanvasMode('live')}
         >
           {t('canvas.toolbar.live')}
@@ -190,20 +196,21 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
           effectsMode !== 'off' && '!border-cyan-400/40 !text-cyan-200',
         )}
         onClick={toggleEffects}
-        title={t(`canvas.toolbar.effects.${effectsMode}`)}
+        title={t(`canvas.toolbar.effects.${effectsMode}`)} aria-label={t(`canvas.toolbar.effects.${effectsMode}`)}
         data-testid="effects-mode"
         data-effects-mode={effectsMode}
       >
-        {effectsMode === 'full' ? '✨' : effectsMode === 'reduced' ? '🌗' : '○'}
+        {effectsMode === 'full' ? '◉' : effectsMode === 'reduced' ? '◐' : '○'}
       </button>
 
       {/* Режим фокуса */}
       <button
         className={cn('btn-ghost !px-2.5 !py-1.5 text-xs', focusMode && '!border-amber-400/50 !text-amber-200')}
+        aria-pressed={focusMode}
         onClick={toggleFocusMode}
-        title={t('canvas.toolbar.focus')}
+        title={t('canvas.toolbar.focus')} aria-label={t('canvas.toolbar.focus')}
       >
-        🎯
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="4" /><path d="M8 0v4m0 8v4M0 8h4m8 0h4" /></svg>
       </button>
 
       </div>
@@ -228,13 +235,25 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
         className={cn(running ? 'btn-ghost !border-red-400/50 !text-red-300' : 'btn-primary !py-2 !text-sm')}
         data-tutorial="run"
         data-testid="run-button"
-        onClick={() => (running ? stop() : void run())}
+        title={t(running ? 'common.stop' : 'common.run')} aria-label={t(running ? 'common.stop' : 'common.run')}
+        disabled={!running && nodes.length === 0}
+        onClick={() => {
+          if (running) { stop(); return; }
+          if (!teaching) {
+            const revealResult = !useUiStore.getState().debugOpen;
+            useUiStore.getState().setDebugOpen(true);
+            const hasTelegram = nodes.some((n) => n.data.blockId.startsWith('telegram.'));
+            const hasWeb = nodes.some((n) => n.data.blockId.startsWith('web.'));
+            if (revealResult) useExecutionStore.getState().setPanelTab(hasTelegram ? 'chat' : hasWeb ? 'web' : 'simulator');
+          }
+          void run();
+        }}
       >
         {running ? '⏹ ' + t('common.stop') : '▶ ' + t('common.run')}
       </button>
 
-      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" data-testid="debug-toggle" data-tutorial="debug-toggle" onClick={onToggleDebug} title={t('execution.panel.title')}>
-        🐞
+      <button className="btn-ghost !px-2.5 !py-1.5 text-xs" data-testid="debug-toggle" data-tutorial="debug-toggle" onClick={onToggleDebug} title={t('execution.panel.title')} aria-label={t('execution.panel.title')}>
+        ▤
       </button>
     </div>
   );

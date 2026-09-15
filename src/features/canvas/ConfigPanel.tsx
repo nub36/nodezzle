@@ -66,6 +66,7 @@ function ModelContractInfo({ blockId, modelId }: { blockId: string; modelId: str
 
 export function ConfigPanel() {
   const { t } = useTranslation();
+  const novice = useUiStore((s) => s.noviceMode);
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const nodes = useProjectStore((s) => s.nodes);
   const setNodeConfig = useProjectStore((s) => s.setNodeConfig);
@@ -190,7 +191,8 @@ export function ConfigPanel() {
         )}
 
         {/* Техническая информация */}
-        <div className="rounded-xl border border-line/60 bg-abyss/40 p-3 text-[10.5px] leading-relaxed text-muted">
+        <details key={node.id} open={!novice} className="text-[11px] leading-relaxed text-muted">
+          <summary className="cursor-pointer py-2">{t('novice.technical')}</summary>
           <div>
             {t('canvas.inspector.info')}: <code className="text-cyan-300">{def.id}</code>
           </div>
@@ -205,7 +207,7 @@ export function ConfigPanel() {
               ? {t('canvas.library.help')}
             </Link>
           </div>
-        </div>
+        </details>
 
         <ModelContractInfo blockId={def.id} modelId={String(config.modelId ?? '')} />
 

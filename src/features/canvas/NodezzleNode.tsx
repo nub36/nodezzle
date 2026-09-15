@@ -109,7 +109,7 @@ export function NodezzleNode({ id, data, selected }: NodeProps) {
     let tooltip: string | undefined;
     if (state === 'incompatible' && dragPort !== null) {
       const { fromType, toType } = incompatibleTooltip(dragPort, port);
-      tooltip = t('canvas.port.incompatible', {
+      tooltip = dragPort.kind !== port.kind ? t('canvas.port.kindMismatch') : t('canvas.port.incompatible', {
         from: t(`portTypes.${fromType}`),
         to: t(`portTypes.${toType}`),
       });
