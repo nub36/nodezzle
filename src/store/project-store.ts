@@ -18,6 +18,7 @@ import {
 import i18n from 'i18next';
 import { create } from 'zustand';
 import { useConnectionFxStore } from './connection-fx-store';
+import { ServerSession, sameContent } from '@/core/project/server-session';
 import { projectStorage } from '@/core/project/storage';
 import { canvasToFlow, flowToCanvas, type CanvasNodeData } from '@/core/project/serialize';
 import type { CanvasGroup, NodezzleProject, ProjectKind, ProjectSummary } from '@/core/project/schema';
@@ -53,6 +54,7 @@ interface ClipboardData {
   edges: Edge[];
 }
 
+let loadGeneration = 0;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let clipboard: ClipboardData | null = null;
 let dragStartSnapshot: Snapshot | null = null;
@@ -63,6 +65,10 @@ const clone = <T,>(value: T): T =>
 
 interface ProjectState {
   project: NodezzleProject | null;
+  serverSession: ServerSession | null;
+  openServer: (session: ServerSession) => void;
+  closeServer: (session: ServerSession) => void;
+  replaceServerDocument: (session: ServerSession, document: NodezzleProject) => void;
   loading: boolean;
   saveState: SaveState;
   savedAt: number | null;
@@ -163,6 +169,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     JSON.stringify(a.groups) === JSON.stringify(b.groups);
 
   const scheduleSave = () => {
+    const state = get();
+    if (state.serverSession && state.project) {
+      state.serverSession.edit(withActiveCanvas(state.project, state.activeModelId, state.nodes, state.edges, state.groups));
+      return;
+    }
     set({ saveState: 'saving' });
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -251,17 +262,40 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
   const serializeAndSave = async () => {
     const { project, nodes, edges, activeModelId } = get();
     if (!project) return;
+    const session = get().serverSession;
+    if (session) { await session.flush(); return; }
+    const generation = loadGeneration;
     try {
       const updated = withActiveCanvas(project, activeModelId, nodes, edges, get().groups);
       await projectStorage.save(updated);
+      if (generation !== loadGeneration) return;
       set({ project: updated, saveState: 'saved', savedAt: updated.meta.updatedAt });
     } catch {
-      set({ saveState: 'error' });
+      if (generation === loadGeneration) set({ saveState: 'error' });
     }
   };
 
   return {
     project: null,
+    serverSession: null,
+    openServer: (session) => {
+      ++loadGeneration; clearTimeout(saveTimer ?? undefined); saveTimer = null;
+      get().serverSession?.dispose();
+      set({ serverSession: session });
+      get().replaceServerDocument(session, session.getSnapshot().document);
+    },
+    closeServer: (session) => {
+      session.dispose();
+      if (get().serverSession !== session) return;
+      ++loadGeneration; clearTimeout(saveTimer ?? undefined); saveTimer = null;
+      set({ serverSession: null, project: null, nodes: [], edges: [], groups: [], past: [], future: [] });
+    },
+    replaceServerDocument: (session, project) => {
+      if (get().serverSession !== session) return;
+      const { nodes, edges } = canvasToFlow(project.canvas);
+      set({ project, nodes, edges, groups: project.canvas.groups ?? [], past: [], future: [], activeModelId: null,
+        selectedNodeId: null, dragPort: null, loading: false, saveState: 'idle', savedAt: null });
+    },
     loading: false,
     saveState: 'idle',
     savedAt: null,
@@ -275,10 +309,14 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
     groups: [],
 
     loadById: async (id) => {
-      set({ loading: true });
+      const generation = ++loadGeneration;
+      clearTimeout(saveTimer ?? undefined); saveTimer = null;
+      get().serverSession?.dispose();
+      set({ loading: true, serverSession: null });
       const project = await projectStorage.get(id);
+      if (generation !== loadGeneration) return;
       if (!project) {
-        set({ loading: false });
+        set({ loading: false, project: null, nodes: [], edges: [], groups: [], past: [], future: [] });
         return;
       }
       const { nodes, edges } = canvasToFlow(project.canvas);
@@ -793,7 +831,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
         clearTimeout(saveTimer);
         saveTimer = null;
       }
-      set({ saveState: 'saving' });
+      if (!get().serverSession) set({ saveState: 'saving' });
       await serializeAndSave();
     },
 
@@ -801,6 +839,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       const { project, nodes, edges, activeModelId } = get();
       if (!project) return;
       const updated = withActiveCanvas(project, activeModelId, nodes, edges, get().groups);
+      const session = get().serverSession;
+      if (session) {
+        if (!sameContent(updated, session.getSnapshot().document)) session.edit(updated);
+        return;
+      }
       void projectStorage.save(updated);
     },
 

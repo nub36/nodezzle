@@ -225,3 +225,12 @@ describe('границы условной записи', () => {
     } finally { request.destroy(); }
   });
 });
+
+it('серверный редактор может привязать PUT к исходному пользователю сессии', async () => {
+  const { cookie, document, initial, url, read, audit } = await setupRevision();
+  const before = audit();
+  expect((await api('PUT', url, { document, expectedRevision: initial.revision, expectedUserId: 'another-user' }, cookie)).status).toBe(401);
+  expect(await read()).toEqual(initial); expect(audit()).toEqual(before);
+  const userId = db.prepare("SELECT id FROM users WHERE email = 'revisions@example.invalid'").get()!.id;
+  expect((await api('PUT', url, { document, expectedRevision: initial.revision, expectedUserId: userId }, cookie)).status).toBe(200);
+});

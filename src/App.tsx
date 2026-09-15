@@ -12,9 +12,10 @@
  * без настройки rewrite'ов (см. docs/DECISIONS.md, ADR-010).
  */
 
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { createHashRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import { LandingPage } from '@/features/landing/LandingPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
+import { ServerCanvasPage } from '@/features/projects/ServerCanvasPage';
 import { CanvasPage } from '@/features/canvas/CanvasPage';
 import { AcademyPage } from '@/features/academy/AcademyPage';
 import { LessonPage } from '@/features/academy/LessonPage';
@@ -23,23 +24,19 @@ import { GlossaryPage } from '@/features/academy/GlossaryPage';
 import { TutorialWatcher } from '@/features/academy/TutorialWatcher';
 import { TutorialOverlay } from '@/features/academy/TutorialOverlay';
 
-export default function App() {
-  return (
-    <HashRouter>
-      {/* Наблюдатель и оверлей урока — на уровне приложения: уроки без
-          песочницы (знакомство) идут вне Canvas, см. 5.11. */}
-      <TutorialWatcher />
-      <TutorialOverlay />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/projects/:projectId" element={<CanvasPage />} />
-        <Route path="/academy" element={<AcademyPage />} />
-        <Route path="/academy/reference" element={<BlockReferencePage />} />
-        <Route path="/academy/glossary" element={<GlossaryPage />} />
-        <Route path="/academy/lesson/:lessonId" element={<LessonPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </HashRouter>
-  );
-}
+// Data-router сохраняет hash-адреса и позволяет блокировать уход с несохранённого серверного Canvas.
+const router = createHashRouter([{
+  element: <><TutorialWatcher /><TutorialOverlay /><Outlet /></>,
+  children: [
+    { path: '/', element: <LandingPage /> },
+    { path: '/dashboard', element: <DashboardPage /> },
+    { path: '/server-projects/:projectId', element: <ServerCanvasPage /> },
+    { path: '/projects/:projectId', element: <CanvasPage /> },
+    { path: '/academy', element: <AcademyPage /> },
+    { path: '/academy/reference', element: <BlockReferencePage /> },
+    { path: '/academy/glossary', element: <GlossaryPage /> },
+    { path: '/academy/lesson/:lessonId', element: <LessonPage /> },
+    { path: '*', element: <Navigate to="/" replace /> },
+  ],
+}]);
+export default function App() { return <RouterProvider router={router} />; }

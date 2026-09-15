@@ -38,6 +38,7 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
   const renameProject = useProjectStore((s) => s.renameProject);
   const nodes = useProjectStore((s) => s.nodes);
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
+  const serverSession = useProjectStore((s) => s.serverSession);
   const saveState = useProjectStore((s) => s.saveState);
   const savedAt = useProjectStore((s) => s.savedAt);
   const canUndo = useProjectStore((s) => s.past.length > 0);
@@ -209,12 +210,12 @@ export function Toolbar({ onToggleDebug }: { onToggleDebug: () => void }) {
       <div className="flex-1" />
 
       {/* Автосохранение */}
-      <span className={cn('text-[11px]', saveState === 'error' ? 'text-red-300' : 'text-muted')}>
+      {!serverSession && <span className={cn('text-[11px]', saveState === 'error' ? 'text-red-300' : 'text-muted')}>
         {saveState === 'saving' && t('common.saving')}
         {saveState === 'saved' && savedAt && t('canvas.save.saved', { time: formatDateRu(savedAt) })}
         {saveState === 'error' && '⚠️'}
         {saveState === 'idle' && t('canvas.save.idle')}
-      </span>
+      </span>}
 
       {/* Статус выполнения */}
       <span className={cn('status-chip', STATUS_STYLES[status])}>

@@ -46,6 +46,8 @@ import { useConnectionFxStore } from '@/store/connection-fx-store';
 import { InspectorPanel } from './InspectorPanel';
 import { useNarrowCanvas } from '@/lib/useNarrowCanvas';
 import { CanvasPanelSwitcher } from './CanvasPanelSwitcher';
+import type { ServerSession } from '@/core/project/server-session';
+import { ServerSaveBar } from '@/features/projects/ServerSaveBar';
 import { Toolbar } from './Toolbar';
 import { CreateModelDialog } from './CreateModelDialog';
 import { GroupFrames } from './GroupFrames';
@@ -127,16 +129,16 @@ function useConnectionHover(dragPort: ReturnType<typeof useProjectStore.getState
   }, [dragPort]);
 }
 
-export function CanvasPage() {
+export function CanvasPage({ serverSession }: { serverSession?: ServerSession } = {}) {
   const { projectId } = useParams<{ projectId: string }>();
   return (
     <ReactFlowProvider>
-      <CanvasInner projectId={projectId ?? ''} />
+      <CanvasInner projectId={projectId ?? ''} serverSession={serverSession} />
     </ReactFlowProvider>
   );
 }
 
-function CanvasInner({ projectId }: { projectId: string }) {
+function CanvasInner({ projectId, serverSession }: { projectId: string; serverSession?: ServerSession }) {
   const narrow = useNarrowCanvas();
   const { t } = useTranslation();
   const debugOpen = useUiStore((s) => s.debugOpen);
@@ -146,8 +148,8 @@ function CanvasInner({ projectId }: { projectId: string }) {
   const loadById = useProjectStore((s) => s.loadById);
 
   useEffect(() => {
-    void loadById(projectId);
-  }, [projectId, loadById]);
+    if (!serverSession) void loadById(projectId);
+  }, [projectId, loadById, serverSession]);
 
   useEffect(() => {
     // При входе/переходе на узкий экран сначала освобождаем холст.
@@ -157,13 +159,14 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   // Autosave: flush при переходе/закрытии и beforeunload.
   useEffect(() => {
+    if (serverSession) return;
     const handler = () => useProjectStore.getState().flushSave();
     window.addEventListener('beforeunload', handler);
     return () => {
       window.removeEventListener('beforeunload', handler);
       useProjectStore.getState().flushSave();
     };
-  }, [projectId]);
+  }, [projectId, serverSession]);
 
   // Сброс состояния выполнения при смене проекта.
   useEffect(() => {
@@ -180,6 +183,7 @@ function CanvasInner({ projectId }: { projectId: string }) {
 
   return (
     <div className="canvas-editor flex h-dvh min-w-0 flex-col overflow-hidden bg-abyss">
+      {serverSession && <ServerSaveBar session={serverSession} />}
       <Toolbar onToggleDebug={() => setDebugOpen(!debugOpen)} />
       {narrow && <CanvasPanelSwitcher />}
       <FlowCanvas />

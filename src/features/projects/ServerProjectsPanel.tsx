@@ -197,6 +197,7 @@ export function ServerProjectsPanel({ localProjects, onLocalChange, onSessionCha
             <ul className="space-y-2">
               {projects.map((p) => <li key={p.id} data-testid="server-project" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-3">
                 <div className="min-w-0"><p className="break-all text-sm font-semibold">{p.name}</p><p className="text-xs text-slate-400">{t(`dashboard.kinds.${p.kind}`)} · {p.id.slice(0, 8)} · {formatDateRu(Date.parse(p.updatedAt))}</p></div>
+                {!busy && <Link className="btn-primary !py-2 text-xs" to={`/server-projects/${encodeURIComponent(p.id)}`}>{t('serverEditor.open')}</Link>}
                 <button disabled={busy} className="btn-ghost !py-2 text-xs" onClick={() => restore(p.id)}>{t('serverProjects.restore')}</button>
               </li>)}
             </ul>

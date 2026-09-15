@@ -12,7 +12,7 @@ const envelopeSchema = z.object({
 export type ServerProjectDocument = z.infer<typeof envelopeSchema>;
 export interface ServerProjectApi {
   load(id: string): Promise<ServerProjectDocument>;
-  save(document: NodezzleProject, expectedRevision: string): Promise<ServerProjectDocument>;
+  save(document: NodezzleProject, expectedRevision: string, expectedUserId?: string): Promise<ServerProjectDocument>;
   restore(id: string, versionId: string, expectedRevision: string): Promise<ServerProjectDocument>;
   remove(id: string, expectedRevision: string): Promise<void>;
 }
@@ -28,13 +28,13 @@ function envelope(raw: unknown, id: string, previousRevision?: string): ServerPr
 }
 const projectPath = (id: string) => `/api/projects/${encodeURIComponent(id)}`;
 export function createServerProjectApi(fetchImpl: FetchLike = fetch): ServerProjectApi {
-  const call = createJsonClient((path, init) => fetchImpl(path, { ...init, signal: AbortSignal.timeout(15_000) }));
+  const call = createJsonClient((path, init) => fetchImpl(path, { ...init, cache: 'no-store', signal: AbortSignal.timeout(15_000) }));
   return {
     async load(id) { return envelope(await call('GET', projectPath(id)), id); },
-    async save(document, expectedRevision) {
+    async save(document, expectedRevision, expectedUserId) {
       const parsed = nodezzleProjectSchema.safeParse(document);
       if (!parsed.success) throw new ApiClientError(400, 'INVALID_PROJECT', 'INVALID_PROJECT');
-      const value = await call('PUT', projectPath(document.id), { document: parsed.data, expectedRevision: revision(expectedRevision) });
+      const value = await call('PUT', projectPath(document.id), { document: parsed.data, expectedRevision: revision(expectedRevision), ...(expectedUserId ? { expectedUserId } : {}) });
       return envelope(value, document.id, expectedRevision);
     },
     async restore(id, versionId, expectedRevision) {

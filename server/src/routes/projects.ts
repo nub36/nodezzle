@@ -95,6 +95,7 @@ export function registerProjectRoutes(router: Router, deps: ProjectDeps): void {
     authorizedProject(ctx, deps);
     const body = await readJsonBody(ctx.req, deps.config.maxBodyBytes);
     const { user, row: existing } = authorizedProject(ctx, deps);
+    if (body.expectedUserId !== undefined && body.expectedUserId !== user.id) throw unauthorized('Аккаунт редактора изменился');
     const document = parseDocument(body);
     if (document.id !== ctx.params.id) throw badRequest('Идентификатор документа не совпадает с адресом проекта');
     const fresh = deps.projects.update(ctx.params.id, document, expectedRevision(body));
