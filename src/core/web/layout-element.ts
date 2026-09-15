@@ -1,9 +1,10 @@
-/** Безопасный переносимый контракт дерева. Не содержит DOM, ссылок на узлы или HTML. */
+/** Безопасный переносимый контракт дерева. Не содержит DOM или исполняемого HTML; поля могут адресовать форму по ID. */
+import { readFieldElement, type WebFieldElement } from './field-element';
 import { readUrlElement, type WebUrlElement } from './url-element';
 import { readTextElement, type WebTextElement } from './text-element';
 
 export type LayoutKind = 'container' | 'section' | 'grid';
-export type WebElement = WebTextElement | WebUrlElement
+export type WebElement = WebTextElement | WebUrlElement | WebFieldElement
   | { kind: 'container'; children: WebElement[] }
   | { kind: 'section'; title: string; children: WebElement[] }
   | { kind: 'grid'; columns: number; children: WebElement[] };
@@ -29,6 +30,11 @@ export function readWebElement(value: unknown): WebElement | null {
       const size = leaf.kind === 'image' ? leaf.src.length + leaf.caption.length : leaf.href.length + leaf.text.length;
       if ((textBudget -= size) < 0) return null;
       return leaf;
+    }
+    if (obj.kind === 'input' || obj.kind === 'textarea') {
+      const field = readFieldElement(obj);
+      if (!field || (textBudget -= field.name.length + field.formNodeId.length + field.label.length + field.placeholder.length + field.value.length) < 0) return null;
+      return field;
     }
     if (obj.kind !== 'container' && obj.kind !== 'section' && obj.kind !== 'grid') return null;
     if (!Array.isArray(obj.children) || obj.children.length > remaining) return null;

@@ -4,12 +4,13 @@
  * Элементы оформления страницы: текст, заголовки, картинки, поля ввода,
  * контейнеры. Определения фиксируют контракты и место в библиотеке.
  * Текст/заголовок реализованы в 09B1, контейнер/секция/сетка — 09B2.
- * Изображение/ссылка — 09B3. Поля и модальное окно пока planned (см. docs/WEB.md).
+ * Изображение/ссылка — 09B3. Поля — 09B4, модальное окно пока planned (см. docs/WEB.md).
  */
 
 import type { BlockDefinition } from '@/core/types/blocks';
 import { dport } from '../shared';
 import { buildLayoutElement } from '@/core/web/layout-element';
+import { buildFieldElement } from '@/core/web/field-element';
 import { buildUrlElement } from '@/core/web/url-element';
 import { buildTextElement } from '@/core/web/text-element';
 
@@ -89,8 +90,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'ввод',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { fieldName: '', formNodeId: '', label: '', placeholder: '', initialValue: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildFieldElement('input', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_FIELD' };
+    },
     inputs: [
       dport('label', 'blocks.ports.label', 'text'),
       dport('placeholder', 'blocks.ports.placeholder', 'text'),
@@ -107,8 +113,13 @@ export const webUiBlocks: BlockDefinition[] = [
     category: 'web_ui',
     subcategory: 'ввод',
     difficulty: 'basic',
-    status: 'planned',
-    available: false,
+    status: 'implemented',
+    available: true,
+    defaults: { fieldName: '', formNodeId: '', label: '', placeholder: '', initialValue: '' },
+    runtime: ({ inputs, config }) => {
+      const element = buildFieldElement('textarea', inputs, config);
+      return element ? { outputs: { element } } : { error: 'ERR_WEB_FIELD' };
+    },
     inputs: [
       dport('label', 'blocks.ports.label', 'text'),
       dport('placeholder', 'blocks.ports.placeholder', 'text'),

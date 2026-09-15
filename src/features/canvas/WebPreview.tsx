@@ -5,11 +5,11 @@
  * Действия в превью запускают схему настоящими веб-событиями:
  * загрузка страницы, клик по кнопке, отправка формы — тот же
  * `TriggerPayload` (`source: 'web'`), что создаёт симулятор
- * (см. docs/WEB.md). Ответные элементы (текст, картинки, окна)
- * появятся вместе с библиотекой веб-элементов на Этапе 4.
+ * (см. docs/WEB.md). Web UI поддерживает деревья и адресные поля (09B1–B4);
+ * JSON-формы 09A остаются отдельным режимом.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { blockRegistry } from '@/core/registry/block-registry';
 import { useExecutionStore } from '@/store/execution-store';
@@ -17,7 +17,9 @@ import { useProjectStore } from '@/store/project-store';
 import { cn } from '@/lib/utils';
 import { parseWebFormJson } from './web-form-json';
 import { isWebRenderable } from './web-layout-roots';
-import { WebTextPreview } from './WebTextPreview';
+import { WebFieldContext, fieldFormDomId } from './WebFieldView';
+import { fieldFormPlans, fieldFormValues } from './web-field-forms';
+import { WebTextPreview, useWebPreviewElements } from './WebTextPreview';
 import { collectWebElements } from './web-preview-utils';
 
 export function WebPreview() {
@@ -30,11 +32,16 @@ export function WebPreview() {
   const status = useExecutionStore((s) => s.status);
 
   const elements = collectWebElements(nodes, (id) => blockRegistry.get(id), (key) => t(key));
+  const preview = useWebPreviewElements();
+  const prefix = useId();
+  const fieldFormIds = elements.forms.filter((f) => nodes.find((n) => n.id === f.nodeId)?.data.config.formMode === 'fields').map((f) => f.nodeId);
+  const fieldPlans = fieldFormPlans(preview.items, fieldFormIds, preview.hasCycle);
+  const [fieldSubmitErrors, setFieldSubmitErrors] = useState<Record<string, boolean>>({});
   const [formDrafts, setFormDrafts] = useState<Record<string, string>>({});
   const pageFired = useRef<string | null>(null);
   const context = `${project?.id ?? ''}:${activeModelId ?? ''}`;
 
-  useEffect(() => { setFormDrafts({}); }, [context]);
+  useEffect(() => { setFormDrafts({}); setFieldSubmitErrors({}); }, [context]);
 
   // Каждый показанный экземпляр страницы получает своё событие, не все web.page.
   const pageId = elements.page?.nodeId;
@@ -87,11 +94,12 @@ export function WebPreview() {
           </button>
         </div>
 
+        <WebFieldContext.Provider value={{ prefix, formIds: new Set(fieldFormIds), running }}>
         <div className="max-h-[130px] space-y-3 overflow-y-auto p-4">
           {elements.page && (
             <div className="text-sm font-bold text-ink">{elements.page.label}</div>
           )}
-          <WebTextPreview />
+          <WebTextPreview preview={preview} />
           {elements.buttons.map((b) => (
             <button
               key={b.nodeId}
@@ -104,6 +112,22 @@ export function WebPreview() {
             </button>
           ))}
           {elements.forms.map((f) => {
+            const plan = fieldPlans.get(f.nodeId);
+            if (plan) return <form key={JSON.stringify([context, f.nodeId])} id={fieldFormDomId(prefix, f.nodeId)}
+              data-testid="web-preview-form" data-node-id={f.nodeId} className="rounded-lg border border-line/50 bg-panel/60 p-2.5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (running || plan.error) return;
+                const values = fieldFormValues(plan.fields, new FormData(event.currentTarget).entries());
+                setFieldSubmitErrors((errors) => ({ ...errors, [f.nodeId]: values === null }));
+                if (values !== null) void fireWebTrigger({ event: 'form_submit', form: f.label, values, at: Date.now() }, f.nodeId);
+              }}>
+              <div className="mb-1 text-[11px] font-semibold text-muted">📋 {f.label}</div>
+              <p className="text-xs text-muted">{t('execution.panel.web.fieldsSummary', { count: plan.fields.length })}</p>
+              {plan.error && <p role="alert" className="text-xs text-red-300">{t(`execution.panel.web.fieldErrors.${plan.error}`)}</p>}
+              {fieldSubmitErrors[f.nodeId] && <p role="alert" className="text-xs text-red-300">{t('execution.panel.web.fieldErrors.values')}</p>}
+              <button type="submit" className="btn-ghost mt-1.5 !px-3 !py-1 !text-[11px]" disabled={running || plan.error !== null}>{t('execution.panel.web.submit')}</button>
+            </form>;
             const draft = formDrafts[f.nodeId] ?? t('execution.panel.web.formExample');
             const values = parseWebFormJson(draft);
             return (
@@ -136,6 +160,7 @@ export function WebPreview() {
             );
           })}
         </div>
+        </WebFieldContext.Provider>
       </div>
 
       {/* Пояснение и статус последнего события */}

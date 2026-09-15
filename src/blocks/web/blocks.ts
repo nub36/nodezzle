@@ -61,6 +61,7 @@ export const webBlocks: BlockDefinition[] = [
     category: 'web_events',
     difficulty: 'advanced',
     trigger: true,
+    defaults: { formMode: 'json' },
     inputs: [],
     outputs: [dport('data', 'blocks.ports.data', 'object')],
     matches: webMatches('form_submit'),

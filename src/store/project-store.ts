@@ -6,6 +6,7 @@
  * История версий (версионированные снапшоты) — следующий этап ROADMAP.
  */
 
+import { isWebField } from '@/core/web/field-element';
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -199,6 +200,11 @@ export const useProjectStore = create<ProjectState>()((set, get) => {
       selected: true,
       dragging: false,
     }));
+    for (const node of newNodes) {
+      if (isWebField(node.data.blockId)) {
+        node.data.config.formNodeId = idMap.get(String(node.data.config.formNodeId ?? '')) ?? '';
+      }
+    }
     const newEdges: Edge[] = fragment.edges
       .filter((e) => idMap.has(e.source) && idMap.has(e.target))
       .map((e) => ({

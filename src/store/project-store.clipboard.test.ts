@@ -152,3 +152,27 @@ it('v1 сохраняет связи и настройки, дробные по�
   }
   expect(reloaded.edges.at(-1)).toMatchObject({ source: ids[0], target: ids[1], sourceHandle: 'text', targetHandle: 'value' });
 });
+
+for (const operation of ['duplicate', 'paste'] as const) {
+  it(`${operation}: поле+форма переназначает привязку; внешняя привязка отдельно скопированного поля сбрасывается`, () => {
+    const flow = canvasToFlow({ id: 'c', name: 'Холст', nodes: [
+      { id: 'f', blockId: 'web.form', config: { formMode: 'fields' }, position: { x: 0, y: 0 } },
+      { id: 'i', blockId: 'web.input', config: { fieldName: 'name', formNodeId: 'f' }, position: { x: 400, y: 0 } },
+    ], edges: [] });
+    useProjectStore.setState({ ...flow, nodes: flow.nodes.map((n) => ({ ...n, selected: true })), selectedNodeId: 'i' });
+    const insert = () => {
+      if (operation === 'paste') { state().copySelection(); return state().pasteAt(undefined, bounds); }
+      return state().duplicateSelection(bounds);
+    };
+    const ids = insert();
+    expect(state().nodes.find((n) => n.id === ids[1])?.data.config.formNodeId).toBe(ids[0]);
+    expect(state().nodes.find((n) => n.id === 'i')?.data.config.formNodeId).toBe('f');
+    state().undo();
+    expect(state().nodes).toHaveLength(2);
+    state().redo();
+    expect(state().nodes.find((n) => n.id === ids[1])?.data.config.formNodeId).toBe(ids[0]);
+    useProjectStore.setState({ nodes: state().nodes.map((n) => ({ ...n, selected: n.id === 'i' })) });
+    const alone = insert();
+    expect(state().nodes.find((n) => n.id === alone[0])?.data.config.formNodeId).toBe('');
+  });
+}

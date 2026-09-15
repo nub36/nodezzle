@@ -10,6 +10,7 @@ import { blockRegistry } from '@/core/registry/block-registry';
 import { useProjectStore } from '@/store/project-store';
 import { useUiStore } from '@/store/ui-store';
 import { useExecutionStore } from '@/store/execution-store';
+import { isWebField } from '@/core/web/field-element';
 import { CONDITION_OPERATORS } from '@/blocks/logic/blocks';
 import { cn, safeStringify, translateError } from '@/lib/utils';
 
@@ -78,7 +79,7 @@ export function ConfigPanel() {
   if (!def) return null;
 
   const config = node.data.config ?? {};
-  const configKeys = def.defaults ? Object.keys(def.defaults) : Object.keys(config);
+  const configKeys = node.data.blockId === 'web.form' ? [...new Set([...Object.keys(def.defaults ?? {}), ...Object.keys(config)])] : def.defaults ? Object.keys(def.defaults) : Object.keys(config);
   const lastRun = runInfo;
 
   return (
@@ -120,10 +121,27 @@ export function ConfigPanel() {
             <div className="space-y-2.5">
               {configKeys.map((key) => {
                 const value = config[key];
+                const labelKey = isWebField(node.data.blockId) && key === 'label' ? 'fieldLabel' : key;
+                if ((key === 'formMode' && node.data.blockId === 'web.form') || (key === 'formNodeId' && isWebField(node.data.blockId))) {
+                  const forms = nodes.filter((n) => n.data.blockId === 'web.form');
+                  return <label key={key} className="block">
+                    <span className="mb-1 block text-[11px] text-muted">{t(`blocks.config.${labelKey}`)}</span>
+                    <select className="input-dark" aria-label={t(`blocks.config.${labelKey}`)} value={String(value ?? (key === 'formMode' ? 'json' : ''))} onChange={(e) => setNodeConfig(node.id, key, e.target.value)}>
+                      {key === 'formMode' ? <>
+                        <option value="json">{t('execution.panel.web.jsonMode')}</option>
+                        <option value="fields">{t('execution.panel.web.fieldsMode')}</option>
+                      </> : <>
+                        <option value="">{t('execution.panel.web.chooseForm')}</option>
+                        {value && !forms.some((f) => f.id === value) ? <option value={String(value)}>{t('execution.panel.web.missingForm')}</option> : null}
+                        {forms.map((f, index) => <option key={f.id} value={f.id}>{String(f.data.label || f.data.config.label || t('blocks.web.form.label'))} · {index + 1}</option>)}
+                      </>}
+                    </select>
+                  </label>;
+                }
                 if (key === 'operator') {
                   return (
                     <label key={key} className="block">
-                      <span className="mb-1 block text-[11px] text-muted">{t(`blocks.config.${key}`)}</span>
+                      <span className="mb-1 block text-[11px] text-muted">{t(`blocks.config.${labelKey}`)}</span>
                       <select
                         className="input-dark"
                         value={String(value ?? '')}
@@ -141,7 +159,7 @@ export function ConfigPanel() {
                 const isNumber = typeof value === 'number';
                 return (
                   <label key={key} className="block">
-                    <span className="mb-1 block text-[11px] text-muted">{t(`blocks.config.${key}`, key)}</span>
+                    <span className="mb-1 block text-[11px] text-muted">{t(`blocks.config.${labelKey}`, key)}</span>
                     <input
                       className="input-dark"
                       type={isNumber ? 'number' : 'text'}
